@@ -1,1 +1,1 @@
-include ':app', ':kaoldb'
+include ':kaoldb', ':kaoldbtest'

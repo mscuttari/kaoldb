@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<database name="Test">
+    <class>it.mscuttari.kaoldbtest.models.Book</class>
+    <class>it.mscuttari.kaoldbtest.models.FantasyBook</class>
+    <class>it.mscuttari.kaoldbtest.models.ThrillerBook</class>
+    <class>it.mscuttari.kaoldbtest.models.Library</class>
+</database>

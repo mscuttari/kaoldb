@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldbtest;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

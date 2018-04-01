@@ -16,6 +16,7 @@ public class MyApplication extends Application {
 
         KaolDB kaolDB = KaolDB.getInstance();
         kaolDB.setConfig(this, R.xml.persistence);
+        kaolDB.setDebugMode(true);
 
         long time = System.currentTimeMillis() - start;
 

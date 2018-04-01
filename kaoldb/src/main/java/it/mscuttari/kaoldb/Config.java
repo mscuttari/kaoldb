@@ -19,6 +19,7 @@ class Config {
     String databaseName;
     List<Class<?>> classes;
     List<EntityObject> entities;
+    boolean debug = false;
 
 
     /**
@@ -53,7 +54,7 @@ class Config {
      * @throws  IOException                 in case of general i/o error
      */
     private void parseDatabaseTag(XmlResourceParser xml) throws XmlPullParserException, IOException {
-        databaseName = xml.getAttributeValue(null, "tableName");
+        databaseName = xml.getAttributeValue(null, "name");
         classes = new ArrayList<>();
 
         int eventType = xml.getEventType();
@@ -81,7 +82,7 @@ class Config {
      */
     void check() {
         // Database tableName not empty
-        if (databaseName.isEmpty()) {
+        if (databaseName == null || databaseName.isEmpty()) {
             throw new InvalidConfigException("Database name not specified");
         }
 

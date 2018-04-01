@@ -1,6 +1,8 @@
 package it.mscuttari.kaoldbtest.models;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
+import it.mscuttari.kaoldb.annotations.DiscriminatorType;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
@@ -14,7 +16,8 @@ import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 @Table(name = "books", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"author_first_name", "author_last_name", "year"})
 })
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.INTEGER)
 public class Book {
 
     @Id

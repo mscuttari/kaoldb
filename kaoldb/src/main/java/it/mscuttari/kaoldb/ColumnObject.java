@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb;
 
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.lang.annotation.Annotation;
@@ -18,14 +19,32 @@ import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class ColumnObject {
 
-    public Field field;                     // Class column field
-    public Annotation annotation;           // Annotation
-    public String name;                     // Column name
-    public Class<?> type;                   // Column type
-    public boolean nullable;                // Nullable
-    public boolean primaryKey;              // Primary key
-    public boolean unique;                  // Unique
-    public String referencedColumnName;     // Referenced column name (if join column)
+    // Class column field
+    public Field field;
+
+    // Annotation
+    public Annotation annotation;
+
+    // Column name
+    public String name;
+
+    // Column type
+    // This is null until the entities relationships has not been checked yet
+    public Class<?> type;
+
+    // Nullable
+    public boolean nullable;
+
+    // Primary key
+    public boolean primaryKey;
+
+    // Unique
+    public boolean unique;
+
+    // Referenced column name (if join column)
+    // Null if the column is not a join column
+    @Nullable
+    public String referencedColumnName;
 
 
     /**
@@ -237,7 +256,7 @@ class ColumnObject {
                 throw new InvalidConfigException("Field " + field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
 
             String referencedColumnName = ((JoinColumn)annotation).referencedColumnName();
-            ColumnObject referencedColumn = referencedEntity.searchColumn(referencedColumnName);
+            ColumnObject referencedColumn = referencedEntity.searchColumn(referencedColumnName, true);
 
             if (referencedColumn == null)
                 throw new InvalidConfigException("Field " + field.getName() + ": referenced column " + referencedColumnName + " not found");

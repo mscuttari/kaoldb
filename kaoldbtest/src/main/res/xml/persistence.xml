@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<database name="Test">
+<database name="test">
     <class>it.mscuttari.kaoldbtest.models.Book</class>
     <class>it.mscuttari.kaoldbtest.models.Genre</class>
     <class>it.mscuttari.kaoldbtest.models.Library</class>

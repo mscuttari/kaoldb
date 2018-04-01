@@ -15,7 +15,7 @@ public final class KaolDB {
     private Config config;
 
     private KaolDB() {
-
+        this.config = new Config();
     }
 
 
@@ -29,6 +29,16 @@ public final class KaolDB {
             instance = new KaolDB();
 
         return instance;
+    }
+
+
+    /**
+     * Set the framework in debug mode or not (default = false)
+     *
+     * @param   enabled     boolean     whether to enable or not debug logs
+     */
+    public void setDebugMode(boolean enabled) {
+        config.debug = true;
     }
 
 
@@ -48,7 +58,6 @@ public final class KaolDB {
         }
 
         try {
-            config = new Config();
             config.parseConfigFile(xml);
             config.check();
         } catch (Exception e) {

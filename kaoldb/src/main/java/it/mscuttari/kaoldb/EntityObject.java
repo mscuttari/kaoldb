@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
+import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -25,12 +27,33 @@ import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class EntityObject {
 
-    public Class<?> modelClass;                 // Model class
-    public String tableName;                    // Table name
-    public List<ColumnObject> columns;          // Table columns
-    public InheritanceType inheritanceType;     // Inheritance type
-    public EntityObject parent;                 // Parent
-    public List<EntityObject> children;         // Children
+    // Model class
+    public Class<?> modelClass;
+
+    // Table name
+    @Nullable
+    public String tableName;
+
+    // Table columns
+    public List<ColumnObject> columns;
+
+    // Inheritance type
+    @Nullable
+    public InheritanceType inheritanceType;
+
+    // Discriminator column
+    // This is null until the entities relationships has not been checked yet
+    public ColumnObject discriminatorColumn;
+
+    // Discriminator value
+    public String discriminatorValue;
+
+    // Parent
+    @Nullable
+    public EntityObject parent;
+
+    // Children
+    public List<EntityObject> children;
 
 
     /**
@@ -43,6 +66,8 @@ class EntityObject {
         this.tableName = getTableName(modelClass);
         this.columns = null;
         this.inheritanceType = getInheritanceType(modelClass);
+        this.discriminatorColumn  = null;
+        this.discriminatorValue = modelClass.isAnnotationPresent(DiscriminatorValue.class) ? modelClass.getAnnotation(DiscriminatorValue.class).value() : null;
         this.parent = null;
         this.children = new ArrayList<>();
     }
@@ -246,6 +271,7 @@ class EntityObject {
             columns.add(column);
         }
 
+
         // @JoinColumn
         List<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
 
@@ -392,11 +418,13 @@ class EntityObject {
     /**
      * Search column by name (search n class, parent and children)
      *
-     * @param   name        String      column name to search
+     * @param   name                String      column name to search
+     * @param   recursiveSearch     boolean     whether to search up in entity hierarchy
+     *
      * @return  column object (null if not found)
      */
     @Nullable
-    ColumnObject searchColumn(String name) {
+    ColumnObject searchColumn(String name, boolean recursiveSearch) {
         // Entity
         List<ColumnObject> columns = getColumns();
 
@@ -405,15 +433,11 @@ class EntityObject {
                 return column;
         }
 
-        // Parent
-        if (parent != null) {
-            return parent.searchColumn(name);
-        }
-
-        // Children
-        for (EntityObject child : children) {
-            ColumnObject childResult = child.searchColumn(name);
-            if (childResult != null) return childResult;
+        if (recursiveSearch) {
+            // Parent
+            if (parent != null) {
+                return parent.searchColumn(name, true);
+            }
         }
 
         return null;
@@ -421,7 +445,7 @@ class EntityObject {
 
 
     /**
-     * Check entity consistence
+     * Check entity consistence and complete relationships configuration
      *
      * @param   entities    List    list of all entities
      * @throws  KaolDBException if the configuration is invalid
@@ -432,16 +456,46 @@ class EntityObject {
             throw new InvalidConfigException("Entity " + modelClass.getSimpleName() + " can't have empty table name");
         }
 
-        // A TABLE_PER_CLASS model can't have a SINGLE_TABLE parent
-        /*if (inheritanceType == InheritanceType.TABLE_PER_CLASS && parent != null && parent.inheritanceType == InheritanceType.SINGLE_TABLE) {
-            throw new KaolDBException(parent.modelClass.getSimpleName() + "is not allowed to have children with an inheritance type different than SINGLE_TABLE");
-        }*/
-
+        // JoinColumns consistence
         List<ColumnObject> columns = getColumns();
 
         for (ColumnObject column : columns) {
             column.checkConsistence(entities);
         }
+
+        // Inheritance and discriminator column
+        if (children.size() != 0) {
+            if (!modelClass.isAnnotationPresent(Inheritance.class))
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @Inheritance annotation");
+
+            if (inheritanceType != InheritanceType.TABLE_PER_CLASS) {
+                if (!modelClass.isAnnotationPresent(DiscriminatorColumn.class))
+                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+
+                DiscriminatorColumn discriminatorColumnAnnotation = modelClass.getAnnotation(DiscriminatorColumn.class);
+                if (discriminatorColumnAnnotation.name().isEmpty())
+                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + ": empty discriminator column");
+
+                discriminatorColumn = searchColumn(discriminatorColumnAnnotation.name(), false);
+
+                if (discriminatorColumn == null) {
+                    throw new InvalidConfigException(modelClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+                } else {
+                    discriminatorColumn.nullable = false;
+                }
+            }
+        }
+
+        // Discriminator value
+        if (parent != null && parent.inheritanceType != InheritanceType.TABLE_PER_CLASS) {
+            if (!modelClass.isAnnotationPresent(DiscriminatorValue.class))
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
+
+            DiscriminatorValue discriminatorValueAnnotation = modelClass.getAnnotation(DiscriminatorValue.class);
+            discriminatorValue = discriminatorValueAnnotation.value();
+        }
+
+
     }
 
 }

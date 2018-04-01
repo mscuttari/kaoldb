@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb;
 
 import android.util.Log;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,18 +12,20 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class ColumnObject {
 
-    public Field field;             // Class column field
-    public String name;             // Column name
-    public Class<?> type;           // Column type
-    public boolean nullable;        // Nullable
-    public boolean primaryKey;      // Primary key
-    public boolean unique;          // Unique
+    public Field field;                     // Class column field
+    public Annotation annotation;           // Annotation
+    public String name;                     // Column name
+    public Class<?> type;                   // Column type
+    public boolean nullable;                // Nullable
+    public boolean primaryKey;              // Primary key
+    public boolean unique;                  // Unique
+    public String referencedColumnName;     // Referenced column name (if join column)
 
 
     /**
@@ -33,26 +36,40 @@ class ColumnObject {
     private ColumnObject(Field field) {
         this.field = field;
         this.name = getColumnName(field);
-        this.type = getType(field);
-        this.nullable = isNullable(field);
-        this.primaryKey = isPrimaryKey(field);
-        this.unique = isUnique(field);
+        this.primaryKey = field.isAnnotationPresent(Id.class);
+
+        if (field.isAnnotationPresent(Column.class)) {
+            this.annotation = field.getAnnotation(Column.class);
+            this.type = field.getType();
+            this.nullable = ((Column)annotation).nullable();
+            this.unique = ((Column)annotation).unique();
+            this.referencedColumnName = null;
+
+        } else if (field.isAnnotationPresent(JoinColumn.class)) {
+            this.annotation = field.getAnnotation(JoinColumn.class);
+            this.type = null;
+            this.nullable = ((JoinColumn)annotation).nullable();
+            this.unique = ((JoinColumn)annotation).unique();
+            this.referencedColumnName = ((JoinColumn)annotation).referencedColumnName();
+        }
     }
 
 
     /**
      * Constructor
      *
-     * @param   joinColumnAnnotation    JoinColumn      join column annotation
+     * @param   joinColumnAnnotation    JoinColumn      join column annotation (@JoinColumn)
      * @param   field                   Field           field which has the above annotation
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
         this.field = field;
+        this.annotation = joinColumnAnnotation;
         this.name = joinColumnAnnotation.name();
-        this.type = joinColumnAnnotation.type();
+        this.type = null;
         this.nullable = joinColumnAnnotation.nullable();
-        this.primaryKey = isPrimaryKey(field);
+        this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
+        this.referencedColumnName = joinColumnAnnotation.referencedColumnName();
     }
 
 
@@ -101,13 +118,13 @@ class ColumnObject {
      *
      * @param   field       Field       multiple join columns field
      * @return  list of column objects
-     * @throws  KaolDBException if the field doesn't have the @JoinColumns annotation
+     * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
      */
     static List<ColumnObject> joinColumnsFieldToColumnObjects(Field field) {
         List<ColumnObject> columns = new ArrayList<>();
 
         if (!field.isAnnotationPresent(JoinColumns.class))
-            throw new KaolDBException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
+            throw new InvalidConfigException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
 
         JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
 
@@ -124,13 +141,13 @@ class ColumnObject {
      *
      * @param   field       Field       multiple join columns field
      * @return  list of column objects
-     * @throws  KaolDBException if the field doesn't have the @JoinColumns annotation
+     * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
      */
     static List<ColumnObject> joinTableFieldToColumnObjects(Field field) {
         List<ColumnObject> columns = new ArrayList<>();
 
         if (!field.isAnnotationPresent(JoinTable.class))
-            throw new KaolDBException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
+            throw new InvalidConfigException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
 
         JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
 
@@ -152,7 +169,7 @@ class ColumnObject {
      *
      * @param   field       Field       column field
      * @return  table tableName
-     * @throws  KaolDBException if the field doesn't have @Column or @JoinColumn annotations
+     * @throws  InvalidConfigException if the field doesn't have @Column or @JoinColumn annotations
      */
     private static String getColumnName(Field field) {
         if (field.isAnnotationPresent(Column.class)) {
@@ -166,7 +183,7 @@ class ColumnObject {
             if (!joinColumn.name().isEmpty()) return joinColumn.name();
 
         } else {
-            throw new KaolDBException("Field " + field.getName() + " doesn't have @Column or @JoinColumn annotations");
+            throw new InvalidConfigException("Field " + field.getName() + " doesn't have @Column or @JoinColumn annotations");
         }
 
         // Currently not reachable (column name is a required field)
@@ -182,77 +199,52 @@ class ColumnObject {
 
 
     /**
-     * Get column type
+     * Check column consistence
      *
-     * @param   field       Field       column field
-     * @return  column type
-     * @throws  KaolDBException if the field is not a column
+     * @param   entities    List    list of all entities
+     * @throws  InvalidConfigException if the configuration is invalid
      */
-    private static Class<?> getType(Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            // @Column
-            return field.getType();
+    void checkConsistence(List<EntityObject> entities) {
+        // Check annotation count
+        int annotationCount = 0;
 
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            // @JoinColumn
-            JoinColumn joinColumn = field.getAnnotation(JoinColumn.class);
-            return joinColumn.type();
+        if (field.isAnnotationPresent(Column.class)) annotationCount++;
+        if (field.isAnnotationPresent(JoinColumn.class)) annotationCount++;
+        if (field.isAnnotationPresent(JoinColumns.class)) annotationCount++;
+        if (field.isAnnotationPresent(JoinTable.class)) annotationCount++;
+
+        if (annotationCount == 0) {
+            throw new InvalidConfigException("Field " + field.getName() + " has no column annotation");
+        } else if (annotationCount > 1) {
+            throw new InvalidConfigException("Field " + field.getName() + " has too much column annotations");
         }
 
-        throw new KaolDBException("Field is not a column");
-    }
 
-
-    /**
-     * Check if column is nullable
-     *
-     * @param   field       Field       column field
-     * @return  true if nullable; false otherwise
-     * @throws  KaolDBException if the field is not a column
-     */
-    private static boolean isNullable(Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            // @Column
-            return field.getAnnotation(Column.class).nullable();
-
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
+        // Check reference
+        if (annotation instanceof JoinColumn) {
             // @JoinColumn
-            return field.getAnnotation(JoinColumn.class).nullable();
+            Class<?> referencedClass = field.getType();
+            EntityObject referencedEntity = null;
+
+            for (EntityObject entity : entities) {
+                if (entity.modelClass.equals(referencedClass)) {
+                    referencedEntity = entity;
+                    break;
+                }
+            }
+
+            if (referencedEntity == null)
+                throw new InvalidConfigException("Field " + field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
+
+            String referencedColumnName = ((JoinColumn)annotation).referencedColumnName();
+            ColumnObject referencedColumn = referencedEntity.searchColumn(referencedColumnName);
+
+            if (referencedColumn == null)
+                throw new InvalidConfigException("Field " + field.getName() + ": referenced column " + referencedColumnName + " not found");
+
+            type = referencedColumn.type;
         }
 
-        throw new KaolDBException("Field is not a column");
-    }
-
-
-    /**
-     * Check if column is a primary key
-     *
-     * @param   field       Field       column field
-     * @return  true if primary key; false otherwise
-     */
-    private static boolean isPrimaryKey(Field field) {
-        return field.isAnnotationPresent(Id.class);
-    }
-
-
-    /**
-     * Check if column is unique
-     *
-     * @param   field       Field       column field
-     * @return  true if unique; false otherwise
-     * @throws  KaolDBException if the field is not a column
-     */
-    private static boolean isUnique(Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            // @Column
-            return field.getAnnotation(Column.class).unique();
-
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            // @JoinColumn
-            return field.getAnnotation(JoinColumn.class).unique();
-        }
-
-        throw new KaolDBException("Field is not a column");
     }
 
 }

@@ -11,7 +11,6 @@ public @interface JoinColumn {
 
     String name();
     String referencedColumnName();
-    Class<?> type();
     boolean nullable() default true;
     boolean unique() default false;
 

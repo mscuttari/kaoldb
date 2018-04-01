@@ -12,37 +12,29 @@ import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 
 @Table(name = "books", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"name", "year"}),
-        @UniqueConstraint(columnNames = {"name", "year", "cost"})
+        @UniqueConstraint(columnNames = {"author_first_name", "author_last_name", "year"})
 })
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public abstract class Book {
+public class Book {
 
     @Id
-    @Column(name = "id")
-    private int id;
+    @JoinColumns(value = {
+            @JoinColumn(name = "author_first_name", referencedColumnName = "first_name"),
+            @JoinColumn(name = "author_last_name", referencedColumnName = "last_name")
+    })
+    private Person author;
 
-    @Column(name = "name")
-    private String name;
+    @Id
+    @Column(name = "title")
+    private String title;
+
+    @JoinColumn(name = "genre", referencedColumnName = "name")
+    private Genre genre;
 
     @Column(name = "year")
     private int year;
 
-    @Column(name = "cost", unique = true)
+    @Column(name = "cost")
     private float cost;
-
-    @ManyToOne
-    @JoinColumns(value = {
-            @JoinColumn(name = "library_name", referencedColumnName = "name", type = String.class),
-            @JoinColumn(name = "library_place", referencedColumnName = "place", type = String.class)
-    })
-    private Library library;
-
-
-    @JoinTable(joinColumns = {
-            @JoinColumn(name = "prova", referencedColumnName = "prova_referenced", type = String.class),
-            @JoinColumn(name = "prova2", referencedColumnName = "referenced2", type = Integer.class)
-    })
-    private Library test;
 
 }

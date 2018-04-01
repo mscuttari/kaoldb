@@ -10,13 +10,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class Config {
 
-    public String databaseName;
-    public List<Class<?>> classes;
-    public List<EntityObject> entities;
+    String databaseName;
+    List<Class<?>> classes;
+    List<EntityObject> entities;
 
 
     /**
@@ -27,7 +29,7 @@ class Config {
      * @throws  XmlPullParserException      in case of parsing error
      * @throws  IOException                 in case of general i/o error
      */
-    public void parseConfigFile(XmlResourceParser xml) throws XmlPullParserException, IOException {
+    void parseConfigFile(XmlResourceParser xml) throws XmlPullParserException, IOException {
         int eventType = xml.getEventType();
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_TAG && xml.getName().equals("database")) {
@@ -75,15 +77,15 @@ class Config {
     /**
      * Check if the configuration is valid
      *
-     * @return  boolean     true if valid
+     * @throws  InvalidConfigException if the database name has not been specified
      */
-    boolean checkConfig() {
+    void check() {
         // Database tableName not empty
-        if (databaseName.isEmpty()) return false;
+        if (databaseName.isEmpty()) {
+            throw new InvalidConfigException("Database name not specified");
+        }
 
-        // TODO: check models tree structure
-
-        return true;
+        // Models tree structure has already been checked while creating the entities
     }
 
 }

@@ -2,22 +2,9 @@ package it.mscuttari.kaoldb;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-
-import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.Id;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.Table;
-import it.mscuttari.kaoldb.annotations.UniqueConstraint;
-
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class TableManager {
 
@@ -46,6 +33,16 @@ class TableManager {
             entity.searchParentAndChildren(entities);
         }
 
+        // Third scan to assign columns
+        for (EntityObject entity : entities) {
+            entity.columns = entity.getColumns();
+        }
+
+        // Fourth scan to check consistence
+        for (EntityObject entity : entities) {
+            entity.checkConsistence(entities);
+        }
+
         return entities;
     }
 
@@ -63,7 +60,7 @@ class TableManager {
 
         StringBuilder result = new StringBuilder();
 
-        // Table tableName
+        // Table name
         result.append("CREATE TABLE IF NOT EXISTS ").append(entity.tableName).append(" (");
 
         // Columns
@@ -200,7 +197,7 @@ class TableManager {
                 uc.append(")");
             }
 
-            result.append(prefixExternal).append(uc);;
+            result.append(prefixExternal).append(uc);
             prefixExternal = ", ";
         }
 

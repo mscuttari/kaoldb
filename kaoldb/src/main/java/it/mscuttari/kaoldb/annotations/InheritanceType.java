@@ -5,7 +5,8 @@ public enum InheritanceType {
     TABLE_PER_CLASS,
     JOINED;
 
-    InheritanceType() {
+    private InheritanceType() {
+
     }
 
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
+import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
@@ -14,7 +15,7 @@ public final class KaolDB {
     private Config config;
 
     private KaolDB() {
-
+        this.config = new Config();
     }
 
 
@@ -32,12 +33,22 @@ public final class KaolDB {
 
 
     /**
+     * Set the framework in debug mode or not (default = false)
+     *
+     * @param   enabled     boolean     whether to enable or not debug logs
+     */
+    public void setDebugMode(boolean enabled) {
+        config.debug = true;
+    }
+
+
+    /**
      * Set configuration
      *
      * @param   resId   int     resource ID of the XML configuration file
      * @throws  KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
      */
-    public void setConfig(Context context, int resId) throws KaolDBException {
+    public void setConfig(Context context, int resId) {
         XmlResourceParser xml = null;
 
         try {
@@ -47,11 +58,10 @@ public final class KaolDB {
         }
 
         try {
-            config = new Config();
             config.parseConfigFile(xml);
+            config.check();
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new KaolDBException(e.getMessage());
+            throw new ConfigParseException(e.getMessage());
         } finally {
             if (xml != null)
                 xml.close();
@@ -64,11 +74,6 @@ public final class KaolDB {
             Log.e(LOG_TAG, entity.toString());
             Log.e(LOG_TAG, "Create table SQL: " + TableManager.getCreateTableSql(entity));
         }
-
-        /*for (Class model : config.classes) {
-            EntityObject table = EntityObject.modelClassToTableObject(model);
-            Log.e(LOG_TAG, "Class " + model + "; Sql: " + TableManager.getCreateTableSql(table));
-        }*/
     }
 
 

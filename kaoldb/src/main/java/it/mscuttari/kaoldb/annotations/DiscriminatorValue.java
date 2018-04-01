@@ -5,13 +5,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface JoinColumn {
+public @interface DiscriminatorValue {
 
-    String name();
-    String referencedColumnName();
-    boolean nullable() default true;
-    boolean unique() default false;
+    String value();
 
 }

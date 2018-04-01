@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
+import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -18,17 +20,40 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
+import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class EntityObject {
 
-    public Class<?> modelClass;                 // Model class
-    public String tableName;                    // Table name
-    public InheritanceType inheritanceType;     // Inheritance type
-    public EntityObject parent;                 // Parent
-    public List<EntityObject> children;         // Children
+    // Model class
+    public Class<?> modelClass;
+
+    // Table name
+    @Nullable
+    public String tableName;
+
+    // Table columns
+    public List<ColumnObject> columns;
+
+    // Inheritance type
+    @Nullable
+    public InheritanceType inheritanceType;
+
+    // Discriminator column
+    // This is null until the entities relationships has not been checked yet
+    public ColumnObject discriminatorColumn;
+
+    // Discriminator value
+    public String discriminatorValue;
+
+    // Parent
+    @Nullable
+    public EntityObject parent;
+
+    // Children
+    public List<EntityObject> children;
 
 
     /**
@@ -39,7 +64,10 @@ class EntityObject {
     private EntityObject(Class<?> modelClass) {
         this.modelClass = modelClass;
         this.tableName = getTableName(modelClass);
+        this.columns = null;
         this.inheritanceType = getInheritanceType(modelClass);
+        this.discriminatorColumn  = null;
+        this.discriminatorValue = modelClass.isAnnotationPresent(DiscriminatorValue.class) ? modelClass.getAnnotation(DiscriminatorValue.class).value() : null;
         this.parent = null;
         this.children = new ArrayList<>();
     }
@@ -54,7 +82,7 @@ class EntityObject {
         if (parent != null)
             result += "Parent: " + parent.modelClass.getSimpleName() + ", ";
 
-        result += "Children: " + children.toString() + ", ";
+        //result += "Children: " + children.toString() + ", ";
         result += "Columns: " + getColumns() + ", ";
         result += "Primary keys: " + getPrimaryKeys();
 
@@ -107,12 +135,12 @@ class EntityObject {
      *
      * @param   modelClass      Class       model class
      * @return  table tableName (null if the class doesn't need a real table)
-     * @throws  KaolDBException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
+     * @throws  InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
      */
     private String getTableName(Class<?> modelClass) {
         if (!modelClass.isAnnotationPresent(Table.class)) {
             if (isRealTable()) {
-                throw new KaolDBException("Class " + modelClass.getSimpleName() + " doesn't have the @Table annotation");
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have the @Table annotation");
             } else {
                 return null;
             }
@@ -223,9 +251,14 @@ class EntityObject {
      * Load columns
      *
      * @return  list of columns
-     * @throws  KaolDBException in case of multiple column declaration
+     * @throws  InvalidConfigException in case of multiple column declaration
      */
     List<ColumnObject> getColumns() {
+        // Check if the columns have already been assigned
+        if (this.columns != null)
+            return this.columns;
+
+        // Determine columns for the first time
         List<ColumnObject> columns = new ArrayList<>();
         List<Field> allFields = Arrays.asList(modelClass.getDeclaredFields());
 
@@ -234,16 +267,17 @@ class EntityObject {
 
         for (Field columnField : columnFields) {
             ColumnObject column = ColumnObject.columnFieldToColumnObject(columnField);
-            if (columns.contains(column)) throw new KaolDBException("Column " + column.name + " already defined");
+            if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
             columns.add(column);
         }
+
 
         // @JoinColumn
         List<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
 
         for (Field joinColumnField : joinColumnFields) {
             ColumnObject joinColumn = ColumnObject.columnFieldToColumnObject(joinColumnField);
-            if (columns.contains(joinColumn)) throw new KaolDBException("Column " + joinColumn.name + " already defined");
+            if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
             columns.add(joinColumn);
         }
 
@@ -254,7 +288,7 @@ class EntityObject {
             List<ColumnObject> joinColumns = ColumnObject.joinColumnsFieldToColumnObjects(joinColumnsField);
 
             for (ColumnObject joinColumn : joinColumns) {
-                if (columns.contains(joinColumn)) throw new KaolDBException("Column " + joinColumn.name + " already defined");
+                if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
                 columns.add(joinColumn);
             }
         }
@@ -266,7 +300,7 @@ class EntityObject {
             List<ColumnObject> joinColumns = ColumnObject.joinTableFieldToColumnObjects(joinTableField);
 
             for (ColumnObject joinColumn : joinColumns) {
-                if (columns.contains(joinColumn)) throw new KaolDBException("Column " + joinColumn.name + " already defined");
+                if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
                 columns.add(joinColumn);
             }
         }
@@ -276,7 +310,7 @@ class EntityObject {
             List<ColumnObject> parentColumns = parent.getColumns();
 
             for (ColumnObject column : parentColumns) {
-                if (columns.contains(column)) throw new KaolDBException("Column " + column.name + " already defined");
+                if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
                 columns.add(column);
             }
         }
@@ -286,7 +320,7 @@ class EntityObject {
             List<ColumnObject> parentPrimaryKeys = parent.getPrimaryKeys();
 
             for (ColumnObject column : parentPrimaryKeys) {
-                if (columns.contains(column)) throw new KaolDBException("Column " + column.name + " already defined");
+                if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
                 columns.add(column);
             }
         }
@@ -297,7 +331,7 @@ class EntityObject {
                 List<ColumnObject> childColumns = child.getColumns();
 
                 for (ColumnObject column : childColumns) {
-                    if (columns.contains(column)) throw new KaolDBException("Column " + column.name + " already defined");
+                    if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
                     columns.add(column);
                 }
             }
@@ -335,7 +369,7 @@ class EntityObject {
         // Single unique column constraints
         List<ColumnObject> columns = getColumns();
 
-        // Multiple unique columns constraints
+        // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
         if (modelClass.isAnnotationPresent(Table.class)) {
             Table table = modelClass.getAnnotation(Table.class);
             UniqueConstraint[] uniqueConstraints = table.uniqueConstraints();
@@ -344,9 +378,18 @@ class EntityObject {
                 List<ColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
 
                 for (String columnName : uniqueConstraint.columnNames()) {
-                    ColumnObject column = getColumnGivenName(columns, columnName);
+                    ColumnObject column = null;
+
+                    for (ColumnObject co : columns) {
+                        if (columnName.equals(co.name)) {
+                            column = co;
+                            break;
+                        }
+                    }
+
                     if (column == null)
-                        throw new KaolDBException("Unique constraint: column " + columnName + " not found");
+                        throw new InvalidConfigException("Unique constraint: column " + columnName + " not found");
+
                     multipleUniqueColumns.add(column);
                 }
 
@@ -373,20 +416,86 @@ class EntityObject {
 
 
     /**
-     * Search column by name given the full columns list
+     * Search column by name (search n class, parent and children)
      *
-     * @param   columns     List        columns list
-     * @param   name        String      column name to search
+     * @param   name                String      column name to search
+     * @param   recursiveSearch     boolean     whether to search up in entity hierarchy
      *
      * @return  column object (null if not found)
      */
-    private static ColumnObject getColumnGivenName(List<ColumnObject> columns, String name) {
+    @Nullable
+    ColumnObject searchColumn(String name, boolean recursiveSearch) {
+        // Entity
+        List<ColumnObject> columns = getColumns();
+
         for (ColumnObject column : columns) {
-            if (name.equals(column.name))
+            if (column.name.equals(name))
                 return column;
         }
 
+        if (recursiveSearch) {
+            // Parent
+            if (parent != null) {
+                return parent.searchColumn(name, true);
+            }
+        }
+
         return null;
+    }
+
+
+    /**
+     * Check entity consistence and complete relationships configuration
+     *
+     * @param   entities    List    list of all entities
+     * @throws  KaolDBException if the configuration is invalid
+     */
+    void checkConsistence(List<EntityObject> entities) {
+        // Table name
+        if (isRealTable() && tableName == null) {
+            throw new InvalidConfigException("Entity " + modelClass.getSimpleName() + " can't have empty table name");
+        }
+
+        // JoinColumns consistence
+        List<ColumnObject> columns = getColumns();
+
+        for (ColumnObject column : columns) {
+            column.checkConsistence(entities);
+        }
+
+        // Inheritance and discriminator column
+        if (children.size() != 0) {
+            if (!modelClass.isAnnotationPresent(Inheritance.class))
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @Inheritance annotation");
+
+            if (inheritanceType != InheritanceType.TABLE_PER_CLASS) {
+                if (!modelClass.isAnnotationPresent(DiscriminatorColumn.class))
+                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+
+                DiscriminatorColumn discriminatorColumnAnnotation = modelClass.getAnnotation(DiscriminatorColumn.class);
+                if (discriminatorColumnAnnotation.name().isEmpty())
+                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + ": empty discriminator column");
+
+                discriminatorColumn = searchColumn(discriminatorColumnAnnotation.name(), false);
+
+                if (discriminatorColumn == null) {
+                    throw new InvalidConfigException(modelClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+                } else {
+                    discriminatorColumn.nullable = false;
+                }
+            }
+        }
+
+        // Discriminator value
+        if (parent != null && parent.inheritanceType != InheritanceType.TABLE_PER_CLASS) {
+            if (!modelClass.isAnnotationPresent(DiscriminatorValue.class))
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
+
+            DiscriminatorValue discriminatorValueAnnotation = modelClass.getAnnotation(DiscriminatorValue.class);
+            discriminatorValue = discriminatorValueAnnotation.value();
+        }
+
+
     }
 
 }

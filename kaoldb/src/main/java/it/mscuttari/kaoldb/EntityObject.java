@@ -190,9 +190,6 @@ class EntityObject {
         }
 
         switch (inheritanceType) {
-            case TABLE_PER_CLASS:
-                return false;
-
             case SINGLE_TABLE:
             case JOINED:
                 Class<?> parentClass = modelClass.getSuperclass();
@@ -305,16 +302,6 @@ class EntityObject {
             }
         }
 
-        // Parent inherited columns (in case of TABLE_PER_CLASS inheritance strategy)
-        if (parent != null && parent.inheritanceType == InheritanceType.TABLE_PER_CLASS) {
-            List<ColumnObject> parentColumns = parent.getColumns();
-
-            for (ColumnObject column : parentColumns) {
-                if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-                columns.add(column);
-            }
-        }
-
         // Parent inherited primary keys (in case of JOINED inheritance strategy)
         if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
             List<ColumnObject> parentPrimaryKeys = parent.getPrimaryKeys();
@@ -397,12 +384,6 @@ class EntityObject {
             }
         }
 
-        // Parent inherited constraints (in case of TABLE_PER_CLASS inheritance strategy)
-        if (parent != null && parent.inheritanceType == InheritanceType.TABLE_PER_CLASS) {
-            List<List<ColumnObject>> parentConstraints = parent.getMultipleUniqueColumns();
-            result.addAll(parentConstraints);
-        }
-
         // Children constraints (in case of SINGLE_TABLE inheritance strategy)
         if (inheritanceType == InheritanceType.SINGLE_TABLE) {
             for (EntityObject child : children) {
@@ -468,34 +449,30 @@ class EntityObject {
             if (!modelClass.isAnnotationPresent(Inheritance.class))
                 throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @Inheritance annotation");
 
-            if (inheritanceType != InheritanceType.TABLE_PER_CLASS) {
-                if (!modelClass.isAnnotationPresent(DiscriminatorColumn.class))
-                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+            if (!modelClass.isAnnotationPresent(DiscriminatorColumn.class))
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
 
-                DiscriminatorColumn discriminatorColumnAnnotation = modelClass.getAnnotation(DiscriminatorColumn.class);
-                if (discriminatorColumnAnnotation.name().isEmpty())
-                    throw new InvalidConfigException("Class " + modelClass.getSimpleName() + ": empty discriminator column");
+            DiscriminatorColumn discriminatorColumnAnnotation = modelClass.getAnnotation(DiscriminatorColumn.class);
+            if (discriminatorColumnAnnotation.name().isEmpty())
+                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + ": empty discriminator column");
 
-                discriminatorColumn = searchColumn(discriminatorColumnAnnotation.name(), false);
+            discriminatorColumn = searchColumn(discriminatorColumnAnnotation.name(), false);
 
-                if (discriminatorColumn == null) {
-                    throw new InvalidConfigException(modelClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
-                } else {
-                    discriminatorColumn.nullable = false;
-                }
+            if (discriminatorColumn == null) {
+                throw new InvalidConfigException(modelClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+            } else {
+                discriminatorColumn.nullable = false;
             }
         }
 
         // Discriminator value
-        if (parent != null && parent.inheritanceType != InheritanceType.TABLE_PER_CLASS) {
+        if (parent != null) {
             if (!modelClass.isAnnotationPresent(DiscriminatorValue.class))
                 throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
 
             DiscriminatorValue discriminatorValueAnnotation = modelClass.getAnnotation(DiscriminatorValue.class);
             discriminatorValue = discriminatorValueAnnotation.value();
         }
-
-
     }
 
 }

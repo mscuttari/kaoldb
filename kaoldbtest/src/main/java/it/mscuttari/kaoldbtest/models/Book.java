@@ -17,7 +17,7 @@ import it.mscuttari.kaoldb.annotations.UniqueConstraint;
         @UniqueConstraint(columnNames = {"author_first_name", "author_last_name", "year"})
 })
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.INTEGER)
+@DiscriminatorColumn(name = "genre", discriminatorType = DiscriminatorType.STRING)
 public class Book {
 
     @Id

@@ -5,7 +5,7 @@ public enum DiscriminatorType {
     CHAR,
     INTEGER;
 
-    private DiscriminatorType() {
+    DiscriminatorType() {
 
     }
 }

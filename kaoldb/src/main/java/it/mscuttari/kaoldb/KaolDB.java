@@ -12,8 +12,12 @@ import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 public final class KaolDB {
 
     private static KaolDB instance;
-    private Config config;
+    Config config;
 
+
+    /**
+     * Constructor
+     */
     private KaolDB() {
         this.config = new Config();
     }
@@ -38,7 +42,7 @@ public final class KaolDB {
      * @param   enabled     boolean     whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
-        config.debug = true;
+        config.debug = enabled;
     }
 
 
@@ -59,7 +63,6 @@ public final class KaolDB {
 
         try {
             config.parseConfigFile(xml);
-            config.check();
         } catch (Exception e) {
             throw new ConfigParseException(e.getMessage());
         } finally {
@@ -67,28 +70,10 @@ public final class KaolDB {
                 xml.close();
         }
 
-        config.entities = TableManager.createEntities(config.classes);
-
-        // TODO: remove
-        for (EntityObject entity : config.entities) {
-            Log.e(LOG_TAG, entity.toString());
-            Log.e(LOG_TAG, "Create table SQL: " + TableManager.getCreateTableSql(entity));
+        for (String dbName : config.mapping.keySet()) {
+            DatabaseObject database = config.mapping.get(dbName);
+            database.entities = TableUtils.createEntities(database.classes);
         }
-    }
-
-
-    public synchronized long create(Object obj) throws Exception {
-        throw new Exception("Not implemented");
-    }
-
-
-    public synchronized long update(Object obj) throws Exception {
-        throw new Exception("Not implemented");
-    }
-
-
-    public synchronized boolean delete(Object obj) throws Exception {
-        throw new Exception("Not implemented");
     }
 
 }

@@ -1,0 +1,67 @@
+package it.mscuttari.kaoldb;
+
+import android.content.Context;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
+
+public final class EntityManagerFactory {
+
+    private static EntityManagerFactory instance;
+    private Map<String, EntityManager> entityManagers;
+
+
+    /**
+     * Constructor
+     */
+    private EntityManagerFactory() {
+        entityManagers = new HashMap<>();
+    }
+
+
+    /**
+     * Get instance
+     *
+     * @return  singleton instance
+     */
+    public static EntityManagerFactory getInstance() {
+        if (instance == null)
+            instance = new EntityManagerFactory();
+
+        return instance;
+    }
+
+
+    /**
+     * Get entity manager for a specific database
+     *
+     * @param   context         Context     context
+     * @param   databaseName    String      database name
+     *
+     * @return  entity manager
+     */
+    public EntityManager getEntityManager(Context context, String databaseName) {
+        context = context.getApplicationContext();
+
+        if (databaseName == null || databaseName.isEmpty())
+            throw new KaolDBException("Empty database name");
+
+        if (entityManagers.containsKey(databaseName)) {
+            EntityManager em = entityManagers.get(databaseName);
+            if (em != null) return em;
+        }
+
+        Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.mapping;
+        DatabaseObject database = mapping.get(databaseName);
+
+        if (database == null)
+            throw new KaolDBException("Database " + databaseName + " not found");
+
+        EntityManager em = new EntityManager(context, database);
+        entityManagers.put(databaseName, em);
+        return em;
+    }
+
+}

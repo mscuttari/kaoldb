@@ -8,17 +8,12 @@ import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.Table;
-import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 
-@Table(name = "books", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"author_first_name", "author_last_name", "year"})
-})
+@Table(name = "books")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "genre", discriminatorType = DiscriminatorType.STRING)
-public class Book {
+public abstract class Book {
 
     @Id
     @JoinColumns(value = {
@@ -29,15 +24,20 @@ public class Book {
 
     @Id
     @Column(name = "title")
-    private String title;
+    public String title;
 
-    @JoinColumn(name = "genre", referencedColumnName = "name")
-    private Genre genre;
+    @Column(name = "genre")
+    public String genre;
 
     @Column(name = "year")
-    private int year;
+    public int year;
 
     @Column(name = "cost")
-    private float cost;
+    public Float cost;
+
+    @Override
+    public String toString() {
+        return title;
+    }
 
 }

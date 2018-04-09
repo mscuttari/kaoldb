@@ -37,8 +37,8 @@ public final class EntityManagerFactory {
     /**
      * Get entity manager for a specific database
      *
-     * @param   context         Context     context
-     * @param   databaseName    String      database name
+     * @param   context         context
+     * @param   databaseName    database name
      *
      * @return  entity manager
      */

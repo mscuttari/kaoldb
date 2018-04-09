@@ -3,12 +3,14 @@ package it.mscuttari.kaoldb;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-class TableUtils {
+class EntityUtils {
 
-    private TableUtils() {
+    private EntityUtils() {
 
     }
 
@@ -16,47 +18,43 @@ class TableUtils {
     /**
      * Create entities
      *
-     * @param   classes     List    models
+     * @param   classes     collection of all classes
      * @return  list of entities
      */
-    static List<EntityObject> createEntities(List<Class<?>> classes) {
-        List<EntityObject> entities = new ArrayList<>();
+    static Map<Class<?>, EntityObject> createEntities(Collection<Class<?>> classes) {
+        Map<Class<?>, EntityObject> result = new HashMap<>();
 
         // First scan to get basic data
-        for (Class<?> modelClass : classes) {
-            EntityObject entity = EntityObject.modelClassToTableObject(modelClass);
-            entities.add(entity);
+        for (Class<?> entityClass : classes) {
+            if (result.containsKey(entityClass)) continue;
+            EntityObject entity = EntityObject.entityClassToTableObject(entityClass, classes, result);
+            result.put(entityClass, entity);
         }
 
-        // Second scan to create inheritance relationships
-        for (EntityObject entity : entities) {
-            entity.searchParentAndChildren(entities);
-        }
-
-        // Third scan to assign columns
-        for (EntityObject entity : entities) {
-            entity.columns = entity.getColumns();
+        // Second scan to assign static data
+        for (EntityObject entity : result.values()) {
+            entity.setupColumns();
         }
 
         // Fourth scan to check consistence
-        for (EntityObject entity : entities) {
-            entity.checkConsistence(entities);
+        for (EntityObject entity : result.values()) {
+            entity.checkConsistence(result);
         }
 
-        return entities;
+        return result;
     }
 
 
     /**
      * Get the SQL query to create a model table
      *
-     * @param   entity      EntityObject         entity
+     * @param   entity      entity object
      * @return  SQL query (null if no table should be created)
      */
     @Nullable
     static String getCreateTableSql(EntityObject entity) {
         // Skip entity if doesn't require a real table
-        if (!entity.isRealTable()) return null;
+        if (!entity.realTable) return null;
 
         StringBuilder result = new StringBuilder();
 
@@ -64,10 +62,10 @@ class TableUtils {
         result.append("CREATE TABLE IF NOT EXISTS ").append(entity.tableName).append(" (");
 
         // Columns
-        result.append(getColumnsSql(entity.getColumns()));
+        result.append(getColumnsSql(entity.columns));
 
         // Primary keys
-        String primaryKeysSql = getPrimaryKeysSql(entity.getPrimaryKeys());
+        String primaryKeysSql = getPrimaryKeysSql(entity.primaryKeys);
 
         if (!primaryKeysSql.isEmpty())
             result.append(", ").append(primaryKeysSql);
@@ -79,6 +77,7 @@ class TableUtils {
             result.append(", ").append(uniqueKeysSql);
 
         result.append(");");
+        //result.append(") WITHOUT ROWID;");
 
         return result.toString();
     }
@@ -89,11 +88,11 @@ class TableUtils {
      *
      * Example: (column 1 INTEGER, column 2 REAL NOT NULL)
      *
-     * @param   columns     List    columns
+     * @param   columns     collection of all columns
      * @return  SQL query
      */
     @NonNull
-    private static String getColumnsSql(List<ColumnObject> columns) {
+    private static String getColumnsSql(Collection<ColumnObject> columns) {
         StringBuilder result = new StringBuilder();
         String prefix = "";
 
@@ -143,11 +142,11 @@ class TableUtils {
      *
      * Example: PRIMARY KEY(column_1, column_2, column_3)
      *
-     * @param   primaryKeys     List    primary keys
+     * @param   primaryKeys     collection of primary keys
      * @return  SQL query
      */
     @NonNull
-    private static String getPrimaryKeysSql(List<ColumnObject> primaryKeys) {
+    private static String getPrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
         StringBuilder result = new StringBuilder();
         boolean empty = true;
         String prefix = "PRIMARY KEY(";
@@ -171,7 +170,7 @@ class TableUtils {
      *
      * Example: UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
      *
-     * @param   uniqueColumns       List        list of unique columns
+     * @param   uniqueColumns       list of unique columns
      * @return  SQL query
      */
     @NonNull

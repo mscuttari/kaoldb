@@ -1,14 +1,22 @@
 package it.mscuttari.kaoldb;
 
+import android.content.ContentValues;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.util.Pair;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
@@ -25,51 +33,65 @@ import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
-class EntityObject {
+public class EntityObject {
 
-    // Model class
-    public Class<?> modelClass;
+    // Entity class
+    public Class<?> entityClass;
 
     // Table name
     @Nullable
     public String tableName;
 
-    // Table columns
-    public List<ColumnObject> columns;
+    // Real table
+    public boolean realTable;
+
+    // Columns
+    public Collection<ColumnObject> columns;            // All columns
+    public Map<String, ColumnObject> columnsNameMap;    // Mapped by column name (all columns)
+    public Map<String, ColumnObject> columnsFieldMap;   // Mapped by field name (only current entity columns)
+
+    // Primary keys
+    public Collection<ColumnObject> primaryKeys;
 
     // Inheritance type
     @Nullable
     public InheritanceType inheritanceType;
 
     // Discriminator column
-    // This is null until the entities relationships has not been checked yet
+    // This is null until the entities relationships has not been checked
     public ColumnObject discriminatorColumn;
 
     // Discriminator value
-    public String discriminatorValue;
+    public Object discriminatorValue;
 
     // Parent
     @Nullable
     public EntityObject parent;
 
     // Children
-    public List<EntityObject> children;
+    public Collection<EntityObject> children;
 
 
     /**
      * Constructor
      *
-     * @param   modelClass      model class
+     * @param   entityClass     entity class
+     * @param   classes         collection of all classes
+     * @param   entitesMap      map between entity classes and objects
      */
-    private EntityObject(Class<?> modelClass) {
-        this.modelClass = modelClass;
-        this.tableName = getTableName(modelClass);
+    private EntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitesMap) {
+        this.entityClass = entityClass;
+        this.tableName = getTableName(entityClass, classes);
+        this.realTable = isRealTable(entityClass, classes);
         this.columns = null;
-        this.inheritanceType = getInheritanceType(modelClass);
-        this.discriminatorColumn  = null;
-        this.discriminatorValue = modelClass.isAnnotationPresent(DiscriminatorValue.class) ? modelClass.getAnnotation(DiscriminatorValue.class).value() : null;
+        this.columnsNameMap = null;
+        this.columnsFieldMap = null;
+        this.inheritanceType = getInheritanceType(entityClass);
         this.parent = null;
-        this.children = new ArrayList<>();
+        this.children = new HashSet<>();
+        searchParentAndChildren(this, classes, entitesMap);
+        this.discriminatorColumn  = null;
+        this.discriminatorValue = entityClass.isAnnotationPresent(DiscriminatorValue.class) ? entityClass.getAnnotation(DiscriminatorValue.class).value() : null;
     }
 
 
@@ -77,14 +99,20 @@ class EntityObject {
     public String toString() {
         String result = "";
 
-        result += "Class: " + modelClass.getSimpleName() + ", ";
+        result += "Class: " + this.entityClass.getSimpleName() + ", ";
 
-        if (parent != null)
-            result += "Parent: " + parent.modelClass.getSimpleName() + ", ";
+        if (this.parent != null)
+            result += "Parent: " + this.parent.entityClass.getSimpleName() + ", ";
 
-        //result += "Children: " + children.toString() + ", ";
-        result += "Columns: " + getColumns() + ", ";
-        result += "Primary keys: " + getPrimaryKeys();
+        result += "Children: [";
+        for (EntityObject child : this.children) {
+            //noinspection StringConcatenationInLoop
+            result += child.entityClass.getSimpleName() + ", ";
+        }
+        result += "], ";
+
+        result += "Columns: " + this.columns + ", ";
+        result += "Primary keys: " + this.primaryKeys;
 
         return result;
     }
@@ -94,34 +122,29 @@ class EntityObject {
     public boolean equals(Object obj) {
         if (obj == null || !(obj instanceof EntityObject)) return false;
         EntityObject columnObject = (EntityObject)obj;
-        if (modelClass == null && columnObject.modelClass == null) return true;
-        if (modelClass != null) return modelClass.equals(columnObject.modelClass);
+        if (entityClass == null && columnObject.entityClass == null) return true;
+        if (entityClass != null) return entityClass.equals(columnObject.entityClass);
         return false;
     }
 
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        String modelName = modelClass.getSimpleName();
-        int strlen = modelName == null ? 0 : modelName.length();
-
-        for (int i = 0; i < strlen; i++) {
-            hash = hash*31 + modelName.charAt(i);
-        }
-
-        return hash;
+        return this.entityClass.getSimpleName().hashCode();
     }
 
 
     /**
-     * Get table object given model class
+     * Get entity object given entity class
      *
-     * @param   modelClass      Class       model class
+     * @param   entityClass     model class
+     * @param   classes         collection of all classes
+     * @param   entitiesMap     map between entity classes and objects
+     *
      * @return  table object
      */
-    static EntityObject modelClassToTableObject(Class<?> modelClass) {
-        return new EntityObject(modelClass);
+    static EntityObject entityClassToTableObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+        return new EntityObject(entityClass, classes, entitiesMap);
     }
 
 
@@ -133,26 +156,29 @@ class EntityObject {
      * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
      * Example: ModelClassName => model_class_name
      *
-     * @param   modelClass      Class       model class
+     * @param   entityClass     entity class
+     * @param   classes         collection of all classes
+     *
      * @return  table tableName (null if the class doesn't need a real table)
+     *
      * @throws  InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
      */
-    private String getTableName(Class<?> modelClass) {
-        if (!modelClass.isAnnotationPresent(Table.class)) {
-            if (isRealTable()) {
-                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have the @Table annotation");
+    private static String getTableName(Class<?> entityClass, Collection<Class<?>> classes) {
+        if (!entityClass.isAnnotationPresent(Table.class)) {
+            if (isRealTable(entityClass, classes)) {
+                throw new InvalidConfigException("Class " + entityClass.getSimpleName() + " doesn't have the @Table annotation");
             } else {
                 return null;
             }
         }
 
         // Get specified table tableName
-        Table table = modelClass.getAnnotation(Table.class);
+        Table table = entityClass.getAnnotation(Table.class);
         if (!table.name().isEmpty()) return table.name();
-        Log.i(LOG_TAG, modelClass.getSimpleName() + ": table tableName not specified, using the default one based on class tableName");
+        Log.i(LOG_TAG, entityClass.getSimpleName() + ": table tableName not specified, using the default one based on class tableName");
 
         // Default table tableName
-        String className = modelClass.getSimpleName();
+        String className = entityClass.getSimpleName();
         char c[] = className.toCharArray();
         c[0] = Character.toLowerCase(c[0]);
         className = new String(c);
@@ -163,15 +189,15 @@ class EntityObject {
     /**
      * Get inheritance type
      *
-     * @param   modelClass      Class       model class
+     * @param   entityClass     entity class
      * @return  inheritance type
      */
     @Nullable
-    private static InheritanceType getInheritanceType(Class<?> modelClass) {
-        if (!modelClass.isAnnotationPresent(Inheritance.class))
+    private static InheritanceType getInheritanceType(Class<?> entityClass) {
+        if (!entityClass.isAnnotationPresent(Inheritance.class))
             return null;
 
-        Inheritance inheritance = modelClass.getAnnotation(Inheritance.class);
+        Inheritance inheritance = entityClass.getAnnotation(Inheritance.class);
         return inheritance.strategy();
     }
 
@@ -179,20 +205,33 @@ class EntityObject {
     /**
      * Determine if the class is linked to a real table
      *
-     * @return  boolean     true if a table should exists for this class; false if not
+     * @param   entityClass     model class
+     * @param   classes         collection of all classes
+     *
+     * @return  true if a table should exists for this class; false if not
+     *
      * @throws  KaolDBException if a newly implemented inheritance type is not taken into consideration
      */
-    boolean isRealTable() {
-        InheritanceType inheritanceType = getInheritanceType(modelClass);
+    private static boolean isRealTable(Class<?> entityClass, Collection<Class<?>> classes) {
+        InheritanceType inheritanceType = getInheritanceType(entityClass);
 
         if (inheritanceType == null) {
-            return parent == null || parent.inheritanceType != InheritanceType.SINGLE_TABLE;
+            Class<?> superClass = entityClass.getSuperclass();
+
+            while (superClass != Object.class) {
+                if (classes.contains(superClass))
+                    return getInheritanceType(superClass) != InheritanceType.SINGLE_TABLE;
+
+                superClass = superClass.getSuperclass();
+            }
+
+            return true;
         }
 
         switch (inheritanceType) {
             case SINGLE_TABLE:
             case JOINED:
-                Class<?> parentClass = modelClass.getSuperclass();
+                Class<?> parentClass = entityClass.getSuperclass();
                 InheritanceType parentInheritancetype = getInheritanceType(parentClass);
                 return parentInheritancetype != InheritanceType.SINGLE_TABLE;
         }
@@ -204,20 +243,17 @@ class EntityObject {
     /**
      * Get the fields with a specific annotation
      *
-     * @param   fields              List        fields list to search in
-     * @param   annotationClass     Class       desired annotation class
+     * @param   fields              fields array to search in
+     * @param   annotationClass     desired annotation class
      *
-     * @return  list of fields with the annotation specified
+     * @return  collection of fields with the annotation specified
      */
-    private static List<Field> getFieldsWithAnnotation(List<Field> fields, Class<? extends Annotation> annotationClass) {
-        List<Field> result = new ArrayList<>(fields);
+    private static Collection<Field> getFieldsWithAnnotation(Field[] fields, Class<? extends Annotation> annotationClass) {
+        Collection<Field> result = new ArrayList<>();
 
-        for (Iterator<Field> it = result.iterator(); it.hasNext(); ) {
-            Field field = it.next();
-            field.setAccessible(true);
-
-            if (!field.isAnnotationPresent(annotationClass))
-                it.remove();
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(annotationClass))
+                result.add(field);
         }
 
         return result;
@@ -227,19 +263,31 @@ class EntityObject {
     /**
      * Search and assign parent and children
      *
-     * @param   entities    List    list of all entities
+     * @param   entity          entity to search for parent and children
+     * @param   classes         collection of all classes
+     * @param   entitiesMap     map between entity classes and objects
      */
-    void searchParentAndChildren(List<EntityObject> entities) {
-        for (EntityObject entity : entities) {
-            // Parent
-            if (this.modelClass.getSuperclass().equals(entity.modelClass)) {
-                parent = entity;
+    private static void searchParentAndChildren(EntityObject entity, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+        // Parent
+        Class<?> superClass = entity.entityClass.getSuperclass();
+        EntityObject parent = null;
+
+        while (superClass != Object.class && parent == null) {
+            parent = entitiesMap.get(superClass);
+
+            if (parent == null && classes.contains(superClass)) {
+                parent = entityClassToTableObject(superClass, classes, entitiesMap);
+                entitiesMap.put(parent.entityClass, parent);
             }
 
-            // Children
-            if (this.modelClass.equals(entity.modelClass.getSuperclass())) {
-                children.add(entity);
-            }
+            superClass = superClass.getSuperclass();
+        }
+
+        entity.parent = parent;
+
+        // Children
+        if (entity.parent != null) {
+            entity.parent.children.add(entity);
         }
     }
 
@@ -247,98 +295,128 @@ class EntityObject {
     /**
      * Load columns
      *
-     * @return  list of columns
+     * @return  collection of all columns
      * @throws  InvalidConfigException in case of multiple column declaration
      */
-    List<ColumnObject> getColumns() {
-        // Check if the columns have already been assigned
-        if (this.columns != null)
-            return this.columns;
+    private Collection<ColumnObject> getColumns() {
+        Field[] allFields = this.entityClass.getDeclaredFields();
 
-        // Determine columns for the first time
-        List<ColumnObject> columns = new ArrayList<>();
-        List<Field> allFields = Arrays.asList(modelClass.getDeclaredFields());
+        // Normal columns
+        Collection<ColumnObject> normalColumns = getNormalColumns(allFields);
+        Collection<ColumnObject> result = new HashSet<>(normalColumns);
 
-        // @Column
-        List<Field> columnFields = getFieldsWithAnnotation(allFields, Column.class);
+        // Join columns
+        Collection<ColumnObject> joinColumns = getJoinColumns(allFields);
 
-        for (Field columnField : columnFields) {
-            ColumnObject column = ColumnObject.columnFieldToColumnObject(columnField);
-            if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-            columns.add(column);
+        if (!Collections.disjoint(result, joinColumns))
+            throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns are defined more than once");
+
+        result.addAll(joinColumns);
+
+        // Parent inherited primary keys (in case of JOINED inheritance strategy)
+        if (this.parent != null && this.parent.inheritanceType == InheritanceType.JOINED) {
+            Collection<ColumnObject> parentPrimaryKeys = this.parent.getPrimaryKeys();
+
+            if (!Collections.disjoint(result, parentPrimaryKeys))
+                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns clash with inherited primary keys");
+
+            result.addAll(parentPrimaryKeys);
         }
 
+        // Children columns (in case of SINGLE_TABLE inheritance strategy)
+        if (this.inheritanceType == InheritanceType.SINGLE_TABLE) {
+            for (EntityObject child : children) {
+                Collection<ColumnObject> childColumns = child.getColumns();
+
+                if (!Collections.disjoint(result, childColumns))
+                    throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns clash with included columns from " + child.entityClass.getSimpleName());
+
+                result.addAll(childColumns);
+            }
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get normal columns (only of the current class)
+     *
+     * @param   allFields       collection of all class fields
+     * @return  collection of columns
+     */
+    private static Collection<ColumnObject> getNormalColumns(Field[] allFields) {
+        Collection<Field> fields = getFieldsWithAnnotation(allFields, Column.class);
+        Collection<ColumnObject> result = new HashSet<>(fields.size());
+
+        for (Field field : fields) {
+            ColumnObject column = ColumnObject.columnFieldToColumnObject(field);
+            if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
+            result.add(column);
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get From columns (only of the current class)
+     *
+     * @param   allFields       collection of all class fields
+     * @return  collection of From columns
+     */
+    private static Collection<ColumnObject> getJoinColumns(Field[] allFields) {
+        Collection<ColumnObject> result = new HashSet<>();
 
         // @JoinColumn
-        List<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
+        Collection<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
 
-        for (Field joinColumnField : joinColumnFields) {
-            ColumnObject joinColumn = ColumnObject.columnFieldToColumnObject(joinColumnField);
-            if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
-            columns.add(joinColumn);
+        for (Field field : joinColumnFields) {
+            ColumnObject column = ColumnObject.columnFieldToColumnObject(field);
+            if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
+            result.add(column);
         }
 
         // @JoinColumns
-        List<Field> joinColumnsFields = getFieldsWithAnnotation(allFields, JoinColumns.class);
+        Collection<Field> joinColumnsFields = getFieldsWithAnnotation(allFields, JoinColumns.class);
 
-        for (Field joinColumnsField : joinColumnsFields) {
-            List<ColumnObject> joinColumns = ColumnObject.joinColumnsFieldToColumnObjects(joinColumnsField);
+        for (Field field : joinColumnsFields) {
+            List<ColumnObject> joinColumns = ColumnObject.joinColumnsFieldToColumnObjects(field);
 
-            for (ColumnObject joinColumn : joinColumns) {
-                if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
-                columns.add(joinColumn);
+            for (ColumnObject column : joinColumns) {
+                if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
+                result.add(column);
             }
         }
 
         // @JoinTable
-        List<Field> joinTableFields = getFieldsWithAnnotation(allFields, JoinTable.class);
+        Collection<Field> joinTableFields = getFieldsWithAnnotation(allFields, JoinTable.class);
 
-        for (Field joinTableField : joinTableFields) {
-            List<ColumnObject> joinColumns = ColumnObject.joinTableFieldToColumnObjects(joinTableField);
+        for (Field field : joinTableFields) {
+            List<ColumnObject> columns = ColumnObject.joinTableFieldToColumnObjects(field);
 
-            for (ColumnObject joinColumn : joinColumns) {
-                if (columns.contains(joinColumn)) throw new InvalidConfigException("Column " + joinColumn.name + " already defined");
-                columns.add(joinColumn);
+            for (ColumnObject column : columns) {
+                if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
+                result.add(column);
             }
         }
 
-        // Parent inherited primary keys (in case of JOINED inheritance strategy)
-        if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
-            List<ColumnObject> parentPrimaryKeys = parent.getPrimaryKeys();
-
-            for (ColumnObject column : parentPrimaryKeys) {
-                if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-                columns.add(column);
-            }
-        }
-
-        // Children columns (in case of SINGLE_TABLE inheritance strategy)
-        if (inheritanceType == InheritanceType.SINGLE_TABLE) {
-            for (EntityObject child : children) {
-                List<ColumnObject> childColumns = child.getColumns();
-
-                for (ColumnObject column : childColumns) {
-                    if (columns.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-                    columns.add(column);
-                }
-            }
-        }
-
-        return columns;
+        return result;
     }
 
 
     /**
      * Get primary keys
      *
-     * @return  list of primary keys
+     * @return  collection of primary keys
      */
-    List<ColumnObject> getPrimaryKeys() {
-        List<ColumnObject> result = new ArrayList<>(getColumns());
+    private Collection<ColumnObject> getPrimaryKeys() {
+        Collection<ColumnObject> result = new HashSet<>();
+        Collection<ColumnObject> columns = getColumns();
 
-        for (Iterator<ColumnObject> it = result.iterator(); it.hasNext();) {
-            ColumnObject column = it.next();
-            if (!column.primaryKey) it.remove();
+        for (ColumnObject column : columns) {
+            if (column.primaryKey)
+                result.add(column);
         }
 
         return result;
@@ -354,11 +432,11 @@ class EntityObject {
         List<List<ColumnObject>> result = new ArrayList<>();
 
         // Single unique column constraints
-        List<ColumnObject> columns = getColumns();
+        Collection<ColumnObject> columns = getColumns();
 
         // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
-        if (modelClass.isAnnotationPresent(Table.class)) {
-            Table table = modelClass.getAnnotation(Table.class);
+        if (entityClass.isAnnotationPresent(Table.class)) {
+            Table table = entityClass.getAnnotation(Table.class);
             UniqueConstraint[] uniqueConstraints = table.uniqueConstraints();
 
             for (UniqueConstraint uniqueConstraint : uniqueConstraints) {
@@ -397,81 +475,84 @@ class EntityObject {
 
 
     /**
-     * Search column by name (search n class, parent and children)
-     *
-     * @param   name                String      column name to search
-     * @param   recursiveSearch     boolean     whether to search up in entity hierarchy
-     *
-     * @return  column object (null if not found)
+     * Setup entity columns
      */
-    @Nullable
-    ColumnObject searchColumn(String name, boolean recursiveSearch) {
-        // Entity
-        List<ColumnObject> columns = getColumns();
+    void setupColumns() {
+        // Columns
+        this.columns = getColumns();
 
-        for (ColumnObject column : columns) {
-            if (column.name.equals(name))
-                return column;
+        // Map between field name and column object
+        Collection<ColumnObject> classNormalColumns = getNormalColumns(this.entityClass.getDeclaredFields());
+        columnsFieldMap = new HashMap<>();
+
+        for (ColumnObject column : classNormalColumns) {
+            columnsFieldMap.put(column.field.getName(), column);
         }
 
-        if (recursiveSearch) {
-            // Parent
-            if (parent != null) {
-                return parent.searchColumn(name, true);
-            }
+        // Map between column name and column object
+        columnsNameMap = new HashMap<>(this.columns.size());
+
+        for (ColumnObject column : this.columns) {
+            columnsNameMap.put(column.name, column);
         }
 
-        return null;
+        // Primary keys
+        this.primaryKeys = getPrimaryKeys();
+
+        // Discriminator column
+        if (this.children.size() != 0) {
+            if (!this.entityClass.isAnnotationPresent(Inheritance.class))
+                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " doesn't have @Inheritance annotation");
+
+            if (!this.entityClass.isAnnotationPresent(DiscriminatorColumn.class))
+                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+
+            DiscriminatorColumn discriminatorColumnAnnotation = this.entityClass.getAnnotation(DiscriminatorColumn.class);
+            if (discriminatorColumnAnnotation.name().isEmpty())
+                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": empty discriminator column");
+
+            this.discriminatorColumn = this.columnsNameMap.get(discriminatorColumnAnnotation.name());
+
+            if (discriminatorColumn == null)
+                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+
+            discriminatorColumn.nullable = false;
+        }
+
+        // Discriminator value
+        if (this.parent != null && discriminatorValue == null) {
+            throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
+        }
     }
 
 
     /**
-     * Check entity consistence and complete relationships configuration
+     * Check entity consistence
      *
-     * @param   entities    List    list of all entities
+     * @param   entities        map of all entities
      * @throws  KaolDBException if the configuration is invalid
      */
-    void checkConsistence(List<EntityObject> entities) {
+    void checkConsistence(Map<Class<?>, EntityObject> entities) {
         // Table name
-        if (isRealTable() && tableName == null) {
-            throw new InvalidConfigException("Entity " + modelClass.getSimpleName() + " can't have empty table name");
-        }
+        if (this.realTable && this.tableName == null)
+            throw new InvalidConfigException("Entity " + this.entityClass.getSimpleName() + " can't have empty table name");
 
-        // JoinColumns consistence
-        List<ColumnObject> columns = getColumns();
-
-        for (ColumnObject column : columns) {
+        // Join columns consistence
+        for (ColumnObject column : this.columns) {
             column.checkConsistence(entities);
         }
 
-        // Inheritance and discriminator column
-        if (children.size() != 0) {
-            if (!modelClass.isAnnotationPresent(Inheritance.class))
-                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @Inheritance annotation");
+        // Fix discriminator value type
+        if (this.discriminatorColumn != null) {
+            DiscriminatorColumn discriminatorColumnAnnotation = this.entityClass.getAnnotation(DiscriminatorColumn.class);
 
-            if (!modelClass.isAnnotationPresent(DiscriminatorColumn.class))
-                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
-
-            DiscriminatorColumn discriminatorColumnAnnotation = modelClass.getAnnotation(DiscriminatorColumn.class);
-            if (discriminatorColumnAnnotation.name().isEmpty())
-                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + ": empty discriminator column");
-
-            discriminatorColumn = searchColumn(discriminatorColumnAnnotation.name(), false);
-
-            if (discriminatorColumn == null) {
-                throw new InvalidConfigException(modelClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
-            } else {
-                discriminatorColumn.nullable = false;
+            for (EntityObject child : this.children) {
+                switch (discriminatorColumnAnnotation.discriminatorType()) {
+                    case INTEGER:
+                        child.discriminatorValue = Integer.valueOf((String)child.discriminatorValue);
+                        break;
+                }
             }
-        }
-
-        // Discriminator value
-        if (parent != null) {
-            if (!modelClass.isAnnotationPresent(DiscriminatorValue.class))
-                throw new InvalidConfigException("Class " + modelClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
-
-            DiscriminatorValue discriminatorValueAnnotation = modelClass.getAnnotation(DiscriminatorValue.class);
-            discriminatorValue = discriminatorValueAnnotation.value();
         }
     }
 

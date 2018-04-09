@@ -11,19 +11,19 @@ public class Library {
 
     @Id
     @Column(name = "name")
-    private String name;
+    public String name;
 
     @Id
     @Column(name = "place")
-    private String place;
+    public String place;
 
     @Column(name = "ticket_price")
-    private float ticketPrice;
+    public float ticketPrice;
 
     @JoinColumns(value = {
             @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
             @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
     })
-    private Person director;
+    public Person director;
 
 }

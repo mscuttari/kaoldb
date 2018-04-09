@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class Config {
 
@@ -26,7 +27,7 @@ class Config {
     /**
      * Parse the XML configuration file
      *
-     * @param   xml     XmlResourceParser   the XmlResourceParser instance used to read the configuration file
+     * @param   xml     the XmlResourceParser instance used to read the configuration file
      *
      * @throws  XmlPullParserException      in case of parsing error
      * @throws  IOException                 in case of general i/o error
@@ -46,7 +47,7 @@ class Config {
     /**
      * Iterate through databases list
      *
-     * @param   xml     XmlResourceParser   the XmlResourceParser instance used to read the configuration file
+     * @param   xml     the XmlResourceParser instance used to read the configuration file
      *
      * @throws  XmlPullParserException      in case of parsing error
      * @throws  IOException                 in case of general i/o error
@@ -66,7 +67,7 @@ class Config {
     /**
      * Parse single database section
      *
-     * @param   xml     XmlResourceParser   the XmlResourceParser instance used to read the configuration file
+     * @param   xml     the XmlResourceParser instance used to read the configuration file
      *
      * @throws  XmlPullParserException      in case of parsing error
      * @throws  IOException                 in case of general i/o error

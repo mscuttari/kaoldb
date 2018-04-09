@@ -39,7 +39,7 @@ public final class KaolDB {
     /**
      * Set the framework in debug mode or not (default = false)
      *
-     * @param   enabled     boolean     whether to enable or not debug logs
+     * @param   enabled     whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
         config.debug = enabled;
@@ -49,7 +49,7 @@ public final class KaolDB {
     /**
      * Set configuration
      *
-     * @param   resId   int     resource ID of the XML configuration file
+     * @param   resId           resource ID of the XML configuration file
      * @throws  KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
      */
     public void setConfig(Context context, int resId) {
@@ -72,7 +72,7 @@ public final class KaolDB {
 
         for (String dbName : config.mapping.keySet()) {
             DatabaseObject database = config.mapping.get(dbName);
-            database.entities = TableUtils.createEntities(database.classes);
+            database.entities = EntityUtils.createEntities(database.classes);
         }
     }
 

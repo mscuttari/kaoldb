@@ -1,13 +1,17 @@
 package it.mscuttari.kaoldb;
 
 import java.util.List;
+import java.util.Map;
 
-class DatabaseObject {
+import it.mscuttari.kaoldb.exceptions.QueryException;
+import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
-    String name;
-    Integer version;
-    Class<? extends DatabaseSchemaMigrator> migrator;
-    List<Class<?>> classes;
-    List<EntityObject> entities;
+public class DatabaseObject {
+
+    public String name;
+    public Integer version;
+    public Class<? extends DatabaseSchemaMigrator> migrator;
+    public List<Class<?>> classes;
+    public Map<Class<?>, EntityObject> entities;
 
 }

@@ -6,9 +6,12 @@ import android.util.Log;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -17,9 +20,10 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
-class ColumnObject {
+public class ColumnObject {
 
     // Class column field
+    // Null if the discriminator column is not a class field
     public Field field;
 
     // Annotation
@@ -29,7 +33,7 @@ class ColumnObject {
     public String name;
 
     // Column type
-    // This is null until the entities relationships has not been checked yet
+    // This is null until the entities relationships has not been checked
     public Class<?> type;
 
     // Nullable
@@ -41,8 +45,8 @@ class ColumnObject {
     // Unique
     public boolean unique;
 
-    // Referenced column name (if join column)
-    // Null if the column is not a join column
+    // Referenced column name (if From column)
+    // Null if the column is not a From column
     @Nullable
     public String referencedColumnName;
 
@@ -50,7 +54,7 @@ class ColumnObject {
     /**
      * Constructor
      *
-     * @param   field       Field       column field (must be annotated with @Column or @JoinColumn)
+     * @param   field       column field (must be annotated with @Column or @JoinColumn)
      */
     private ColumnObject(Field field) {
         this.field = field;
@@ -77,8 +81,8 @@ class ColumnObject {
     /**
      * Constructor
      *
-     * @param   joinColumnAnnotation    JoinColumn      join column annotation (@JoinColumn)
-     * @param   field                   Field           field which has the above annotation
+     * @param   joinColumnAnnotation    From column annotation (@JoinColumn)
+     * @param   field                   field which has the above annotation
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
         this.field = field;
@@ -89,6 +93,33 @@ class ColumnObject {
         this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
         this.referencedColumnName = joinColumnAnnotation.referencedColumnName();
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param    discriminatorColumnAnnotation      discriminator column annotation
+     */
+    private ColumnObject(DiscriminatorColumn discriminatorColumnAnnotation) {
+        this.field = null;
+        this.annotation = discriminatorColumnAnnotation;
+        this.name = discriminatorColumnAnnotation.name();
+
+        switch (discriminatorColumnAnnotation.discriminatorType()) {
+            case STRING:
+                this.type = String.class;
+                break;
+
+            case INTEGER:
+                this.type = Integer.class;
+                break;
+        }
+
+        this.nullable = false;
+        this.primaryKey = false;
+        this.unique = false;
+        this.referencedColumnName = null;
     }
 
 
@@ -110,21 +141,14 @@ class ColumnObject {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        int strlen = name == null ? 0 : name.length();
-
-        for (int i = 0; i < strlen; i++) {
-            hash = hash*31 + name.charAt(i);
-        }
-
-        return hash;
+        return this.name.hashCode();
     }
 
 
     /**
      * Convert column field to column object
      *
-     * @param   field       Field       column field
+     * @param   field           column field
      * @return  column object
      */
     static ColumnObject columnFieldToColumnObject(Field field) {
@@ -133,9 +157,9 @@ class ColumnObject {
 
 
     /**
-     * Convert multiple join column field to a list of column objects
+     * Convert multiple From column field to a list of column objects
      *
-     * @param   field       Field       multiple join columns field
+     * @param   field       multiple From columns field
      * @return  list of column objects
      * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
      */
@@ -156,9 +180,9 @@ class ColumnObject {
 
 
     /**
-     * Convert join table field to a list of column objects
+     * Convert From table field to a list of column objects
      *
-     * @param   field       Field       multiple join columns field
+     * @param   field       multiple From columns field
      * @return  list of column objects
      * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
      */
@@ -179,6 +203,18 @@ class ColumnObject {
 
 
     /**
+     * Convert discriminator column annotation to column object
+     *
+     * @param   entity      entity object containing the annotation
+     * @return  column object
+     */
+    static ColumnObject discriminatorColumnToColumnObject(EntityObject entity) {
+        DiscriminatorColumn discriminatorColumnAnnotation = entity.entityClass.getAnnotation(DiscriminatorColumn.class);
+        return new ColumnObject(discriminatorColumnAnnotation);
+    }
+
+
+    /**
      * Get column tableName
      *
      * If the table is not specified, the following policy is applied:
@@ -186,8 +222,8 @@ class ColumnObject {
      * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
      * Example: columnFieldName => column_field_name
      *
-     * @param   field       Field       column field
-     * @return  table tableName
+     * @param   field       column field
+     * @return  table name
      * @throws  InvalidConfigException if the field doesn't have @Column or @JoinColumn annotations
      */
     private static String getColumnName(Field field) {
@@ -220,50 +256,50 @@ class ColumnObject {
     /**
      * Check column consistence
      *
-     * @param   entities    List    list of all entities
+     * @param   entities        map of all entities
      * @throws  InvalidConfigException if the configuration is invalid
      */
-    void checkConsistence(List<EntityObject> entities) {
+    void checkConsistence(Map<Class<?>, EntityObject> entities) {
+        // Class doesn't have column field
+        if (this.field == null)
+            return;
+
         // Check annotation count
         int annotationCount = 0;
 
-        if (field.isAnnotationPresent(Column.class)) annotationCount++;
-        if (field.isAnnotationPresent(JoinColumn.class)) annotationCount++;
-        if (field.isAnnotationPresent(JoinColumns.class)) annotationCount++;
-        if (field.isAnnotationPresent(JoinTable.class)) annotationCount++;
+        if (this.field.isAnnotationPresent(Column.class)) annotationCount++;
+        if (this.field.isAnnotationPresent(JoinColumn.class)) annotationCount++;
+        if (this.field.isAnnotationPresent(JoinColumns.class)) annotationCount++;
+        if (this.field.isAnnotationPresent(JoinTable.class)) annotationCount++;
 
         if (annotationCount == 0) {
-            throw new InvalidConfigException("Field " + field.getName() + " has no column annotation");
+            throw new InvalidConfigException("Field " + this.field.getName() + " has no column annotation");
         } else if (annotationCount > 1) {
-            throw new InvalidConfigException("Field " + field.getName() + " has too much column annotations");
+            throw new InvalidConfigException("Field " + this.field.getName() + " has too much column annotations");
         }
 
-
-        // Check reference
-        if (annotation instanceof JoinColumn) {
+        // Check references
+        if (this.annotation instanceof JoinColumn) {
             // @JoinColumn
-            Class<?> referencedClass = field.getType();
-            EntityObject referencedEntity = null;
-
-            for (EntityObject entity : entities) {
-                if (entity.modelClass.equals(referencedClass)) {
-                    referencedEntity = entity;
-                    break;
-                }
-            }
+            Class<?> referencedClass = this.field.getType();
+            EntityObject referencedEntity = entities.get(referencedClass);
 
             if (referencedEntity == null)
-                throw new InvalidConfigException("Field " + field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
+                throw new InvalidConfigException("Field " + this.field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
 
-            String referencedColumnName = ((JoinColumn)annotation).referencedColumnName();
-            ColumnObject referencedColumn = referencedEntity.searchColumn(referencedColumnName, true);
+            String referencedColumnName = ((JoinColumn)this.annotation).referencedColumnName();
+            ColumnObject referencedColumn = null;
+
+            while (referencedEntity != null && referencedColumn == null) {
+                referencedColumn = referencedEntity.columnsNameMap.get(referencedColumnName);
+                referencedEntity = referencedEntity.parent;
+            }
 
             if (referencedColumn == null)
                 throw new InvalidConfigException("Field " + field.getName() + ": referenced column " + referencedColumnName + " not found");
 
-            type = referencedColumn.type;
+            this.type = referencedColumn.type;
         }
-
     }
 
 }

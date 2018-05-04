@@ -22,10 +22,14 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Entity")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
@@ -69,20 +73,36 @@ public final class EntityProcessor extends AbstractProcessor {
                 Set<Modifier> classModifiers = classElement.getModifiers();
                 entityClass.addModifiers(classModifiers.toArray(new Modifier[classModifiers.size()]));
 
+                // Superclass
+                TypeElement typeClassElement = (TypeElement)classElement;
+                TypeMirror parent = typeClassElement.getSuperclass();
+
+                if (!ClassName.get(parent).equals(ClassName.OBJECT)) {
+                    entityClass.superclass(ClassName.get(packageName, ClassName.get(parent).toString() + ENTITY_SUFFIX));
+                }
+
                 // Columns
                 List<? extends Element> internalElements = classElement.getEnclosedElements();
 
                 for (Element internalElement : internalElements) {
                     if (internalElement.getKind() != ElementKind.FIELD) continue;
-                    Column columnAnnotation = internalElement.getAnnotation(Column.class);
-                    if (columnAnnotation == null) continue;
 
+                    // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
+                    Column columnAnnotation = internalElement.getAnnotation(Column.class);
+                    JoinColumn joinColumnAnnotation = internalElement.getAnnotation(JoinColumn.class);
+                    JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
+                    JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
+
+                    if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
+                        continue;
+
+                    // Create property
                     String fieldName = internalElement.getSimpleName().toString();
 
                     entityClass.addField(
                             FieldSpec.builder(propertyClass, fieldName)
                                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                                    .initializer("new $T($L.class, $S)", propertyClass, classElement.getSimpleName().toString(), columnAnnotation.name())
+                                    .initializer("new $T($L.class, $S)", propertyClass, classElement.getSimpleName().toString(), fieldName)
                                     .build()
                     );
                 }

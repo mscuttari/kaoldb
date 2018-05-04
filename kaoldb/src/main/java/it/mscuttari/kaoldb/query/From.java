@@ -41,7 +41,7 @@ public class From {
      *
      * @param   entityClass     entity class
      * @return  entity object
-     * @throws QueryException if the class is not an entity
+     * @throws  QueryException  if the class is not an entity
      */
     private EntityObject getEntity(Class<?> entityClass) {
         EntityObject entity = db.entities.get(entityClass);
@@ -52,8 +52,31 @@ public class From {
         return entity;
     }
 
+
+    /**
+     * Get column name prefixed by the alias
+     *
+     * @param   columnName      column name
+     * @return  alias.column
+     */
     protected String columnWithAlias(String columnName) {
         return alias + "." + columnName;
+    }
+
+    
+    public Expression eq(Property field, Object value) {
+        Variable a = new Variable(db, alias, field);
+        Variable b = new Variable(value);
+
+        return Predicate.eq(a, b);
+    }
+
+
+    public Expression eq(Property x, Property y) {
+        Variable a = new Variable(db, alias, x);
+        Variable b = new Variable(db, alias, y);
+
+        return Predicate.eq(a, b);
     }
 
 }

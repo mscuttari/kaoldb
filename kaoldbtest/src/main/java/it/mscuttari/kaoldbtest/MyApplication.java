@@ -6,6 +6,7 @@ import android.util.TimingLogger;
 
 import com.facebook.stetho.Stetho;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import it.mscuttari.kaoldb.EntityManagerFactory;
@@ -15,8 +16,10 @@ import it.mscuttari.kaoldb.query.From;
 import it.mscuttari.kaoldb.query.Join;
 import it.mscuttari.kaoldb.query.QueryBuilder;
 import it.mscuttari.kaoldbtest.models.Book;
+import it.mscuttari.kaoldbtest.models.Book_;
 import it.mscuttari.kaoldbtest.models.FantasyBook;
 import it.mscuttari.kaoldbtest.models.Genre;
+import it.mscuttari.kaoldbtest.models.Genre_;
 import it.mscuttari.kaoldbtest.models.Person;
 import it.mscuttari.kaoldbtest.models.ThrillerBook;
 
@@ -26,11 +29,12 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        int cycles = 1;
-        float avg = 0;
-
         // Stetho
         Stetho.initializeWithDefaults(this);
+
+        // Measure performance
+        int cycles = 1;
+        float avg = 0;
 
         for (int i = 0; i< cycles; i++) {
             long time = System.nanoTime();
@@ -49,6 +53,7 @@ public class MyApplication extends Application {
 
         Log.e("KaolDB", "Time: " + avg + "ms");
 
+        // Test
         EntityManager em = EntityManagerFactory.getInstance().getEntityManager(getApplicationContext(), "test");
         em.deleteDatabase();
 
@@ -72,6 +77,16 @@ public class MyApplication extends Application {
         QueryBuilder qb = em.getQueryBuilder();
         From from = qb.from(Book.class, "b");
         //Join join = from.join(Person.class, "p");
+        qb.where(from.eq(Book_.title, "Vita di PI"));
+
+        try {
+            Field.class.newInstance();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
         Log.e("KaolDB", from.toString());
 
     }

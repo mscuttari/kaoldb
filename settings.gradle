@@ -1,1 +1,1 @@
-include ':kaoldb', ':kaoldbtest'
+include ':annotations', ':kaoldb', ':processor', ':kaoldbtest'

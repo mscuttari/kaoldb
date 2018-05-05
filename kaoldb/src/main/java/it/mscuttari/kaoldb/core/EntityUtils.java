@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;

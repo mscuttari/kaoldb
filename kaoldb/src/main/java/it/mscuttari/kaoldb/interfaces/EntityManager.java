@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.interfaces;
 
+import java.util.List;
+
 public interface EntityManager {
 
     /**
@@ -11,9 +13,15 @@ public interface EntityManager {
 
 
     /**
-     * Get criteria builder
+     * Get query builder
      *
-     * @return  criteria builder
+     * @param   resultClass     result objects type
+     * @return  query builder
      */
+    <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass);
+
+    public int getRowCount(String table);
+    <T> List<T> getAll(Class<T> entityClass);
+    void persist(Object obj);
 
 }

@@ -1,22 +1,17 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
-import android.content.ContentValues;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.util.Pair;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
@@ -31,9 +26,9 @@ import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
+import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
 
-public class EntityObject {
+class EntityObject {
 
     // Entity class
     public Class<?> entityClass;

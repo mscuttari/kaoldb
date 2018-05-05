@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.content.Context;
 
@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
 
 public final class EntityManagerFactory {
 
@@ -59,7 +60,7 @@ public final class EntityManagerFactory {
         if (database == null)
             throw new KaolDBException("Database " + databaseName + " not found");
 
-        EntityManager em = new EntityManager(context, database);
+        EntityManager em = new EntityManagerImpl(context, database);
         entityManagers.put(databaseName, em);
         return em;
     }

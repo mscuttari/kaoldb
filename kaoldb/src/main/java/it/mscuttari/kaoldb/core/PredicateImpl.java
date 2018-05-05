@@ -1,8 +1,8 @@
-package it.mscuttari.kaoldb.query;
+package it.mscuttari.kaoldb.core;
 
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
-public class Predicate extends Expression {
+class PredicateImpl extends ExpressionImpl {
 
     private enum PredicateType {
         EQUAL,
@@ -24,7 +24,7 @@ public class Predicate extends Expression {
      * @param   x           first variable
      * @param   y           second variable
      */
-    private Predicate(PredicateType operation, Variable x, Variable y) {
+    private PredicateImpl(PredicateType operation, Variable x, Variable y) {
         super(null, null, null);
 
         this.operation = operation;
@@ -43,11 +43,11 @@ public class Predicate extends Expression {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static Predicate eq(Variable x, Variable y) {
+    public static PredicateImpl eq(Variable x, Variable y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
-        return new Predicate(PredicateType.EQUAL, x, y);
+        return new PredicateImpl(PredicateType.EQUAL, x, y);
     }
 
 
@@ -61,11 +61,11 @@ public class Predicate extends Expression {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static Predicate gt(Variable x, Variable y) {
+    public static PredicateImpl gt(Variable x, Variable y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
-        return new Predicate(PredicateType.GT, x, y);
+        return new PredicateImpl(PredicateType.GT, x, y);
     }
 
 
@@ -79,11 +79,11 @@ public class Predicate extends Expression {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static Predicate ge(Variable x, Variable y) {
+    public static PredicateImpl ge(Variable x, Variable y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
-        return new Predicate(PredicateType.GE, x, y);
+        return new PredicateImpl(PredicateType.GE, x, y);
     }
 
 
@@ -97,11 +97,11 @@ public class Predicate extends Expression {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static Predicate lt(Variable x, Variable y) {
+    public static PredicateImpl lt(Variable x, Variable y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
-        return new Predicate(PredicateType.LT, x, y);
+        return new PredicateImpl(PredicateType.LT, x, y);
     }
 
 
@@ -115,11 +115,11 @@ public class Predicate extends Expression {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static Predicate le(Variable x, Variable y) {
+    public static PredicateImpl le(Variable x, Variable y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
-        return new Predicate(PredicateType.LE, x, y);
+        return new PredicateImpl(PredicateType.LE, x, y);
     }
 
 

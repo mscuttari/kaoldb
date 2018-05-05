@@ -1,14 +1,11 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
-
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
 
 class PojoAdapter {
 
@@ -28,7 +25,7 @@ class PojoAdapter {
      * @throws  PojoException   in case of error
      */
     @Nullable
-    static <T> T cursorToObject(Cursor c, Class<T> entityClass, EntityObject entity) {
+    public static <T> T cursorToObject(Cursor c, Class<T> entityClass, EntityObject entity) {
         if (entity.children.size() != 0) {
             // Go down to child class
             int columnIndex = c.getColumnIndex(entity.discriminatorColumn.name);

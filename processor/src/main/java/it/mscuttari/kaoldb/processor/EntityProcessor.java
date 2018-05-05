@@ -53,7 +53,7 @@ public final class EntityProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        ClassName propertyClass = ClassName.get("it.mscuttari.kaoldb.query", "Property");
+        ClassName propertyClass = ClassName.get("it.mscuttari.kaoldb.core", "Property");
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             if (classElement.getKind() != ElementKind.CLASS)

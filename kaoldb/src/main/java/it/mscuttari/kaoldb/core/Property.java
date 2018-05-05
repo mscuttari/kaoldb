@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb.query;
+package it.mscuttari.kaoldb.core;
 
 public class Property {
 
@@ -6,6 +6,7 @@ public class Property {
     private String fieldName;
 
     public Property(Class<?> entityClass, String fieldName) {
+        this.entityClass = entityClass;
         this.fieldName = fieldName;
     }
 

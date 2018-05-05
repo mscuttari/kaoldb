@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -6,7 +6,6 @@ import android.util.Log;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -18,12 +17,13 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
+import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
 
-public class ColumnObject {
+class ColumnObject {
 
     // Class column field
     // Null if the discriminator column is not a class field
+    @Nullable
     public Field field;
 
     // Annotation

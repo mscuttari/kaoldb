@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -15,13 +15,14 @@ import java.util.Map;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
-import it.mscuttari.kaoldb.query.QueryBuilder;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
+import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
-import static it.mscuttari.kaoldb.PojoAdapter.cursorToObject;
-import static it.mscuttari.kaoldb.PojoAdapter.objectToContentValues;
+import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
+import static it.mscuttari.kaoldb.core.PojoAdapter.cursorToObject;
+import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
 
-public class EntityManager extends SQLiteOpenHelper {
+class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     private DatabaseObject database;
     private Context context;
@@ -33,7 +34,7 @@ public class EntityManager extends SQLiteOpenHelper {
      * @param   context     context
      * @param   database    database mapping object
      */
-    EntityManager(Context context, DatabaseObject database) {
+    EntityManagerImpl(Context context, DatabaseObject database) {
         super(context, database.name, null, database.version);
         this.database = database;
         this.context = context;
@@ -88,13 +89,16 @@ public class EntityManager extends SQLiteOpenHelper {
 
 
     /** {@inheritDoc} */
+    @Override
     public boolean deleteDatabase() {
         return context.deleteDatabase(database.name);
     }
 
 
-    public QueryBuilder getQueryBuilder() {
-        return new QueryBuilder(database);
+    /** {@inheritDoc} */
+    @Override
+    public <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass) {
+        return new QueryBuilderImpl<>(database, resultClass, this);
     }
 
 

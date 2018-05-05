@@ -13,4 +13,8 @@ public class ThrillerBook extends Book {
     @Column(name = "prova")
     public String prova;
 
+    @Override
+    public String toString() {
+        return super.toString() + " -" + prova + "-";
+    }
 }

@@ -1,12 +1,11 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import java.util.List;
 import java.util.Map;
 
-import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
-public class DatabaseObject {
+class DatabaseObject {
 
     public String name;
     public Integer version;

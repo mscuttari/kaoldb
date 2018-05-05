@@ -17,12 +17,12 @@ import it.mscuttari.kaoldb.annotations.Table;
 @DiscriminatorColumn(name = "genre", discriminatorType = DiscriminatorType.STRING)
 public abstract class Book {
 
-    @Id
+    /*@Id
     @JoinColumns(value = {
             @JoinColumn(name = "author_first_name", referencedColumnName = "first_name"),
             @JoinColumn(name = "author_last_name", referencedColumnName = "last_name")
     })
-    private Person author;
+    private Person author;*/
 
     @Id
     @Column(name = "title")

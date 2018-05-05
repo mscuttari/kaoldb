@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldb;
+package it.mscuttari.kaoldb.core;
 
 import android.content.Context;
 import android.content.res.XmlResourceParser;
@@ -7,12 +7,12 @@ import android.util.Log;
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
-import static it.mscuttari.kaoldb.Constants.LOG_TAG;
+import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
 
 public final class KaolDB {
 
     private static KaolDB instance;
-    Config config;
+    public Config config;
 
 
     /**

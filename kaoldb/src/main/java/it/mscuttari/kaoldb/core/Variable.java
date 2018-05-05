@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 import it.mscuttari.kaoldb.annotations.Column;
@@ -9,14 +10,6 @@ import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
 class Variable {
-
-    public enum VariableType {
-        SIMPLE,         // Just a value
-        SINGLE,         // Single column
-        COMPOSITE       // Multiple columns
-    }
-
-    public VariableType type;
 
     private DatabaseObject db;
     private EntityObject entity;
@@ -31,7 +24,7 @@ class Variable {
         this.tableAlias = tableAlias;
         this.property = property;
 
-        try {
+        /*try {
             Field field = entity.entityClass.getField(property.getFieldName());
 
             if (field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class)) {
@@ -42,18 +35,34 @@ class Variable {
 
         } catch (NoSuchFieldException e) {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + entity.entityClass.getSimpleName());
-        }
+        }*/
     }
 
     Variable(Object value) {
         this.value = value;
-        this.type = VariableType.SIMPLE;
     }
 
-    @Override
+    public EntityObject getEntity() {
+        return entity;
+    }
+
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    public Object getData() {
+        if (property != null) {
+            return property;
+        } else {
+            return value;
+        }
+    }
+
+    /*@Override
     public String toString() {
         if (value == null) {
             return tableAlias + "." + property.getFieldName();
+
         } else {
             if (value instanceof String) {
                 return "\"" + value + "\"";
@@ -61,6 +70,6 @@ class Variable {
                 return String.valueOf(value);
             }
         }
-    }
+    }*/
 
 }

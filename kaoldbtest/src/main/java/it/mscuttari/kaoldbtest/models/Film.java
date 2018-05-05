@@ -12,29 +12,25 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
-@Table(name = "books")
+@Table(name = "films")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "genre", discriminatorType = DiscriminatorType.STRING)
-public abstract class Book {
-
-    @Id
-    @JoinColumns(value = {
-            @JoinColumn(name = "author_first_name", referencedColumnName = "first_name"),
-            @JoinColumn(name = "author_last_name", referencedColumnName = "last_name")
-    })
-    private Person author;
+public abstract class Film {
 
     @Id
     @Column(name = "title")
     public String title;
 
-    @Column(name = "genre")
-    public String genre;
-
     @Column(name = "year")
-    public int year;
+    public Integer year;
 
-    @Column(name = "cost")
-    public Float cost;
+    @JoinColumn(name = "genre", referencedColumnName = "name")
+    public Genre genre;
+
+    @JoinColumns(value = {
+            @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
+            @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
+    })
+    public Person director;
 
 }

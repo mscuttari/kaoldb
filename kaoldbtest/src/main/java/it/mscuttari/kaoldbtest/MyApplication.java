@@ -5,8 +5,6 @@ import android.util.Log;
 
 import com.facebook.stetho.Stetho;
 
-import java.util.List;
-
 import it.mscuttari.kaoldb.core.EntityManagerFactory;
 import it.mscuttari.kaoldb.core.KaolDB;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -14,10 +12,11 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
-import it.mscuttari.kaoldbtest.models.Book;
-import it.mscuttari.kaoldbtest.models.Book_;
+import it.mscuttari.kaoldbtest.models.FantasyFilm;
+import it.mscuttari.kaoldbtest.models.Film;
+import it.mscuttari.kaoldbtest.models.Film_;
+import it.mscuttari.kaoldbtest.models.Genre;
 import it.mscuttari.kaoldbtest.models.Person;
-import it.mscuttari.kaoldbtest.models.ThrillerBook;
 
 public class MyApplication extends Application {
 
@@ -49,6 +48,34 @@ public class MyApplication extends Application {
 
         Log.e("KaolDB", "Time: " + avg + "ms");
 
+
+        // Test
+        EntityManagerFactory emf = EntityManagerFactory.getInstance();
+        EntityManager em = emf.getEntityManager(getApplicationContext(), "films");
+        em.deleteDatabase();
+
+        // Create fantasy genre
+        Genre genre = new Genre();
+        genre.name = "Fantasy";
+        em.persist(genre);
+
+        // Create film
+        FantasyFilm film = new FantasyFilm();
+        film.title = "Avengers - Infinity War";
+        film.year = 2018;
+        em.persist(film);
+
+        // Get film
+        Person director = new Person();
+        director.firstName = "Mario";
+        director.lastName = "Rossi";
+
+        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
+        Root<Film> root = qb.getRoot(Film.class, "f");
+        Expression where = root.eq(Film_.genre, genre).and(root.eq(Film_.director, director));
+        Query<Film> query =  qb.from(root).build("f");
+        Log.e("KaolDB", "Query: " + query);
+        Film queryResult = query.getSingleResult();
     }
 
 }

@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,14 +44,15 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     /** {@inheritDoc} */
     @Override
-    public void from(Root<?> from) {
+    public QueryBuilder<T> from(Root<?> from) {
         this.from = from;
+        return this;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public QueryBuilder where(Expression expression) {
+    public QueryBuilder<T> where(Expression expression) {
         where.add(expression);
         return this;
     }
@@ -78,7 +81,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
                         Variable a = new Variable(db, entity, alias, new Property(entity.entityClass, primaryKey.field.getName()));
                         Variable b = new Variable(db, child, childAlias, new Property(child.entityClass, primaryKey.field.getName()));
-                        Expression onChild = PredicateImpl.eq(a, b);
+                        Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }
 

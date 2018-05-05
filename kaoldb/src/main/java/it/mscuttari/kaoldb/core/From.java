@@ -70,7 +70,7 @@ class From<X> implements Root<X> {
         Variable a = new Variable(db, entity, alias, field);
         Variable b = new Variable(value);
 
-        return PredicateImpl.eq(a, b);
+        return PredicateImpl.eq(db, a, b);
     }
 
 
@@ -80,7 +80,7 @@ class From<X> implements Root<X> {
         Variable a = new Variable(db, entity, alias, x);
         Variable b = new Variable(db, entity, alias, y);
 
-        return PredicateImpl.eq(a, b);
+        return PredicateImpl.eq(db, a, b);
     }
 
 

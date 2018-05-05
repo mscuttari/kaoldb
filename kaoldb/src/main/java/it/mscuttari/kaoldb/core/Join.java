@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 
 import it.mscuttari.kaoldb.interfaces.Expression;
 
@@ -23,10 +23,9 @@ abstract class Join<X, Y> extends From<X> {
         }
     }
 
+
     private JoinType type;
     private From<Y> from;
-
-    @Nullable
     private Expression on;
 
 
@@ -40,7 +39,7 @@ abstract class Join<X, Y> extends From<X> {
      * @param   alias           second joined entity alias
      * @param   on              "on" expression
      */
-    Join(DatabaseObject db, JoinType type, From<Y> from, Class<X> entityClass, String alias, @Nullable Expression on) {
+    Join(DatabaseObject db, @NonNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Expression on) {
         super(db, entityClass, alias);
 
         this.type = type;
@@ -58,7 +57,7 @@ abstract class Join<X, Y> extends From<X> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("(").append(from).append(" ").append(type).append(super.toString());
+        sb.append("(").append(from).append(" ").append(type).append(" ").append(super.toString());
         if (on != null) sb.append(" ON ").append(on);
         sb.append(")");
 

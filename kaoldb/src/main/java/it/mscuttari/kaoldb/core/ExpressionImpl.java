@@ -11,6 +11,7 @@ class ExpressionImpl implements Expression {
         OR
     }
 
+
     private ExpressionType operation;
     private Expression x;
     private Expression y;

@@ -45,8 +45,8 @@ class ColumnObject {
     // Unique
     public boolean unique;
 
-    // Referenced column name (if From column)
-    // Null if the column is not a From column
+    // Referenced column name (if join column)
+    // Null if the column is not a join column
     @Nullable
     public String referencedColumnName;
 

@@ -1,6 +1,14 @@
 package it.mscuttari.kaoldbtest;
 
+import android.content.Context;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.internal.runner.InstrumentationConnection;
+
 import org.junit.Test;
+
+import it.mscuttari.kaoldb.core.EntityManagerFactory;
+import it.mscuttari.kaoldb.core.KaolDB;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
 
 import static org.junit.Assert.*;
 

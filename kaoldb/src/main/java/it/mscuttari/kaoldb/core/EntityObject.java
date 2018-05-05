@@ -43,7 +43,6 @@ class EntityObject {
     // Columns
     public Collection<ColumnObject> columns;            // All columns
     public Map<String, ColumnObject> columnsNameMap;    // Mapped by column name (all columns)
-    public Map<String, ColumnObject> columnsFieldMap;   // Mapped by field name (only current entity columns)
 
     // Primary keys
     public Collection<ColumnObject> primaryKeys;
@@ -80,7 +79,6 @@ class EntityObject {
         this.realTable = isRealTable(entityClass, classes);
         this.columns = null;
         this.columnsNameMap = null;
-        this.columnsFieldMap = null;
         this.inheritanceType = getInheritanceType(entityClass);
         this.parent = null;
         this.children = new HashSet<>();
@@ -138,7 +136,7 @@ class EntityObject {
      *
      * @return  table object
      */
-    static EntityObject entityClassToTableObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+    static EntityObject entityClassToEntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
         return new EntityObject(entityClass, classes, entitiesMap);
     }
 
@@ -271,7 +269,7 @@ class EntityObject {
             parent = entitiesMap.get(superClass);
 
             if (parent == null && classes.contains(superClass)) {
-                parent = entityClassToTableObject(superClass, classes, entitiesMap);
+                parent = entityClassToEntityObject(superClass, classes, entitiesMap);
                 entitiesMap.put(parent.entityClass, parent);
             }
 
@@ -475,14 +473,6 @@ class EntityObject {
     void setupColumns() {
         // Columns
         this.columns = getColumns();
-
-        // Map between field name and column object
-        Collection<ColumnObject> classNormalColumns = getNormalColumns(this.entityClass.getDeclaredFields());
-        columnsFieldMap = new HashMap<>();
-
-        for (ColumnObject column : classNormalColumns) {
-            columnsFieldMap.put(column.field.getName(), column);
-        }
 
         // Map between column name and column object
         columnsNameMap = new HashMap<>(this.columns.size());

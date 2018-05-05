@@ -7,12 +7,12 @@ import it.mscuttari.kaoldb.interfaces.Root;
 class From<X> implements Root<X> {
 
     private DatabaseObject db;
-    protected EntityObject entity;
+    private EntityObject entity;
     private String alias;
 
 
     /**
-     * Contructor
+     * Constructor
      *
      * @param   db              database object
      * @param   entityClass     entity class
@@ -25,6 +25,11 @@ class From<X> implements Root<X> {
     }
 
 
+    /**
+     * Get string representation to be used in query
+     *
+     * @return  "from" clause
+     */
     @Override
     public String toString() {
         return entity.tableName + " AS " + alias;
@@ -49,6 +54,13 @@ class From<X> implements Root<X> {
     @Override
     public <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Expression on) {
         return new LeftJoin<>(db, this, entityClass, alias, on);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias) {
+        return new NaturalJoin<>(db, this, entityClass, alias);
     }
 
 

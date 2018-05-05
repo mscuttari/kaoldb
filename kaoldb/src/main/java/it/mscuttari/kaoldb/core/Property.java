@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
-public class Property {
+public final class Property {
 
     private Class<?> entityClass;
     private String fieldName;

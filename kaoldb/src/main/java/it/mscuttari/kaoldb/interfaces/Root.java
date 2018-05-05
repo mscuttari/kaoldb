@@ -35,6 +35,15 @@ public interface Root<X> {
 
 
     /**
+     * Get natural join root
+     *
+     * @param   entityClass     entity class to be joined
+     * @return  root
+     */
+    <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias);
+
+
+    /**
      * Get "equals" expression between a field and a value
      *
      * @param   field   entity field

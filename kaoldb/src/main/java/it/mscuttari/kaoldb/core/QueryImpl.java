@@ -50,7 +50,6 @@ class QueryImpl<M> implements Query<M> {
         SQLiteDatabase db = entityManager.getReadableDatabase();
 
         Cursor c = db.rawQuery(sql, null);
-        Log.e("KaolDb", "Query: " + sql);
         Log.e("KaolDb", DatabaseUtils.dumpCursorToString(c));
         List<M> result = new ArrayList<>(c.getCount());
         EntityObject entityObject = this.db.entities.get(resultClass);

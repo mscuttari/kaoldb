@@ -49,48 +49,6 @@ public class MyApplication extends Application {
 
         Log.e("KaolDB", "Time: " + avg + "ms");
 
-        // Test
-        EntityManager em = EntityManagerFactory.getInstance().getEntityManager(getApplicationContext(), "test");
-        em.deleteDatabase();
-
-        ThrillerBook book = new ThrillerBook();
-        book.title = "In viaggio con PI";
-        book.genre = "thriller";
-        book.year = 2016;
-        em.persist(book);
-        book.title = "Mosca";
-        em.persist(book);
-        book.year = 2017;
-        book.prova = "cipollina";
-        book.title = "CDP";
-        em.persist(book);
-
-        Log.e("KaolDB", "Count: " + em.getRowCount("books"));
-
-        List<Book> books = em.getAll(Book.class);
-        for (Book row : books) {
-            Log.e("KaolDB", "Book: " + row);
-        }
-
-        QueryBuilder<Book> qb = em.getQueryBuilder(Book.class);
-
-        Root<Book> booksRoot = qb.getRoot(Book.class, "b");
-        //Root<Person> join = booksRoot.innerJoin(Person.class, "p");
-
-        Expression expression = booksRoot.eq(Book_.title, "In viaggio con PI").or(booksRoot.eq(Book_.year, 2017));
-
-        qb.from(booksRoot);
-        qb.where(expression);
-
-        Query<Book> query = qb.build("b");
-        Log.e("KaolDB", "Query: " + query.toString());
-
-        List<Book> searchResult = query.getResultList();
-        for (Book row : searchResult) {
-            Log.e("KaolDB", "Result Book: " + row);
-        }
-
-
     }
 
 }

@@ -17,6 +17,7 @@ import it.mscuttari.kaoldbtest.models.Film;
 import it.mscuttari.kaoldbtest.models.Film_;
 import it.mscuttari.kaoldbtest.models.Genre;
 import it.mscuttari.kaoldbtest.models.Person;
+import it.mscuttari.kaoldbtest.models.Person_;
 
 public class MyApplication extends Application {
 
@@ -72,8 +73,9 @@ public class MyApplication extends Application {
 
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
         Root<Film> root = qb.getRoot(Film.class, "f");
+        Root<Person> rootJoin = root.innerJoin(Person.class, "p", Film_.director);
         Expression where = root.eq(Film_.genre, genre).and(root.eq(Film_.director, director));
-        Query<Film> query =  qb.from(root).build("f");
+        Query<Film> query =  qb.from(rootJoin).build();
         Log.e("KaolDB", "Query: " + query);
         Film queryResult = query.getSingleResult();
     }

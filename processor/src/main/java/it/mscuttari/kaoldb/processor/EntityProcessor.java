@@ -3,6 +3,8 @@ package it.mscuttari.kaoldb.processor;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
@@ -69,6 +71,7 @@ public final class EntityProcessor extends AbstractProcessor {
 
             try {
                 // Entity class
+                TypeName classType = ClassName.get(classElement.asType());
                 TypeSpec.Builder entityClass = TypeSpec.classBuilder(classElement.getSimpleName().toString() + ENTITY_SUFFIX);
                 Set<Modifier> classModifiers = classElement.getModifiers();
                 entityClass.addModifiers(classModifiers.toArray(new Modifier[classModifiers.size()]));
@@ -98,11 +101,13 @@ public final class EntityProcessor extends AbstractProcessor {
 
                     // Create property
                     String fieldName = internalElement.getSimpleName().toString();
+                    TypeName fieldType = ClassName.get(internalElement.asType());
+                    ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(propertyClass, classType, fieldType);
 
                     entityClass.addField(
-                            FieldSpec.builder(propertyClass, fieldName)
+                            FieldSpec.builder(parameterizedField, fieldName)
                                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                                    .initializer("new $T($L.class, $S)", propertyClass, classElement.getSimpleName().toString(), fieldName)
+                                    .initializer("new $T<>($L.class, $L.class, $S);", propertyClass, classElement.getSimpleName().toString(), fieldType, fieldName)
                                     .build()
                     );
                 }

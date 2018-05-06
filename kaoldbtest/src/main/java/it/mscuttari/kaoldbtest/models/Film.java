@@ -21,6 +21,7 @@ public abstract class Film {
     @Column(name = "title")
     public String title;
 
+    @Id
     @Column(name = "year")
     public Integer year;
 
@@ -32,5 +33,8 @@ public abstract class Film {
             @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
     })
     public Person director;
+    
+    @Column(name = "length")
+    public Integer length;
 
 }

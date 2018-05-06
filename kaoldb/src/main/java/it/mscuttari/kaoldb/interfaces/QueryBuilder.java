@@ -31,6 +31,11 @@ public interface QueryBuilder<T> {
     QueryBuilder<T> where(Expression expression);
 
 
-    Query<T> build(String alias);
+    /**
+     * Create the query
+     *
+     * @return  query object
+     */
+    Query<T> build();
 
 }

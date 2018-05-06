@@ -5,5 +5,6 @@
         <class>it.mscuttari.kaoldbtest.models.Film</class>
         <class>it.mscuttari.kaoldbtest.models.Genre</class>
         <class>it.mscuttari.kaoldbtest.models.Person</class>
+        <class>it.mscuttari.kaoldbtest.models.ThrillerFilm</class>
     </database>
 </databases>

@@ -14,6 +14,7 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 class PredicateImpl extends ExpressionImpl {
 
     private enum PredicateType {
+        IS_NULL("IS NULL"),
         EQUAL("="),
         GT(">"),
         GE(">="),
@@ -35,8 +36,8 @@ class PredicateImpl extends ExpressionImpl {
 
     private PredicateType operation;
     private DatabaseObject db;
-    private Variable x;
-    private Variable y;
+    private Variable<?, ?> x;
+    private Variable<?, ?> y;
 
 
     /**
@@ -47,13 +48,31 @@ class PredicateImpl extends ExpressionImpl {
      * @param   x           first variable
      * @param   y           second variable
      */
-    private PredicateImpl(PredicateType operation, DatabaseObject db, Variable x, Variable y) {
+    private PredicateImpl(PredicateType operation, DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         super(null, null, null);
 
         this.operation = operation;
         this.db = db;
         this.x = x;
         this.y = y;
+    }
+
+
+    /**
+     * Create "is null" predicate
+     *
+     * @param   db  database object
+     * @param   x   variable
+     *
+     * @return  predicate
+     *
+     * @throws  QueryException  if the variable is null
+     */
+    public static PredicateImpl isNull(DatabaseObject db, Variable<?, ?> x) {
+        if (x == null)
+            throw new QueryException("Variable can't be null");
+
+        return new PredicateImpl(PredicateType.IS_NULL, db, x, null);
     }
 
 
@@ -68,7 +87,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static PredicateImpl eq(DatabaseObject db, Variable x, Variable y) {
+    public static PredicateImpl eq(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
@@ -87,7 +106,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static PredicateImpl gt(DatabaseObject db, Variable x, Variable y) {
+    public static PredicateImpl gt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
@@ -106,7 +125,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static PredicateImpl ge(DatabaseObject db, Variable x, Variable y) {
+    public static PredicateImpl ge(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
@@ -125,7 +144,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static PredicateImpl lt(DatabaseObject db, Variable x, Variable y) {
+    public static PredicateImpl lt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
@@ -144,7 +163,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if any of the variables are null
      */
-    public static PredicateImpl le(DatabaseObject db, Variable x, Variable y) {
+    public static PredicateImpl le(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
             throw new QueryException("Variables can't be null");
 
@@ -156,17 +175,38 @@ class PredicateImpl extends ExpressionImpl {
      * Get string representation to be used in SQL query
      *
      * @return  string representation
+     * @throws  QueryException  if the requested configuration is invalid
      */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
+        // Single operand predicate
+        if (y == null) {
+            if (operation == PredicateType.IS_NULL) {
+                if (x.getData() instanceof Property) {
+                    List<String> columns = convertProperty((Property) x.getData(), x.getTableAlias());
+
+                    String separator = "";
+                    for (String column : columns) {
+                        sb.append(separator).append(column).append(" ").append(operation);
+                        separator = " AND ";
+                    }
+                } else {
+                    throw new QueryException("Invalid parameter");
+                }
+            }
+
+            return sb.toString();
+        }
+
+        // Double operand predicate
         Object xData = x.getData();
         Object yData = y.getData();
 
         if (xData instanceof Property && yData instanceof Property) {
             // Two properties
-            List<Pair<String, String>> pairs = bindProperties(db, (Property)xData, x.getTableAlias(), (Property)yData, y.getTableAlias());
+            List<Pair<String, String>> pairs = bindProperties((Property)xData, x.getTableAlias(), (Property)yData, y.getTableAlias());
 
             String separator = "";
             for (Pair<String, String> pair : pairs) {
@@ -196,17 +236,71 @@ class PredicateImpl extends ExpressionImpl {
     }
 
 
-    private String objectToString(Object value) {
-        if (value instanceof String) {
-            return "\"" + value + "\"";
-        } else {
-            return String.valueOf(value);
+    /**
+     * Get columns of a property
+     *
+     * @param   property    property
+     * @param   alias       table alias
+     *
+     * @return  list of columns
+     *
+     * @throws  QueryException  if the property is invalid
+     */
+    private List<String> convertProperty(Property property, String alias) {
+        List<String> result = new ArrayList<>();
+        Field field;
+
+        // Get field
+        try {
+            field = property.getEntityClass().getField(property.getFieldName());
+        } catch (NoSuchFieldException e) {
+            throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
         }
+
+        // @Column
+        if (field.isAnnotationPresent(Column.class)) {
+            Column annotation = field.getAnnotation(Column.class);
+            result.add(alias + "." + annotation.name());
+            return result;
+        }
+
+        // @JoinColumn
+        if (field.isAnnotationPresent(JoinColumn.class)) {
+            JoinColumn annotation = field.getAnnotation(JoinColumn.class);
+            result.add(alias + "." + annotation.name());
+            return result;
+        }
+
+        // @JoinColumns
+        if (field.isAnnotationPresent(JoinColumns.class)) {
+            JoinColumns annotation = field.getAnnotation(JoinColumns.class);
+
+            for (JoinColumn joinColumn : annotation.value()) {
+                EntityObject referencedEntity = db.entities.get(field.getType());
+                result.add(alias + "." + joinColumn.name());
+            }
+
+            return result;
+        }
+
+        throw new QueryException("Invalid parameter");
     }
 
 
-    private List<Pair<String, String>> bindProperties(DatabaseObject db, Property xProperty, String xAlias, Property yProperty, String yAlias) {
-        List<Pair<String, String>> result = new ArrayList<>(1);
+    /**
+     * Create property-property associations for the query
+     *
+     * @param   xProperty   first property
+     * @param   xAlias      first table alias
+     * @param   yProperty   second property
+     * @param   yAlias      second table alias
+     *
+     * @return  list of columns pairs
+     *
+     * @throws  QueryException  if the requested configuration is invalid
+     */
+    private List<Pair<String, String>> bindProperties(Property xProperty, String xAlias, Property yProperty, String yAlias) {
+        List<Pair<String, String>> result = new ArrayList<>();
         Field xField, yField;
 
         // Get fields
@@ -222,9 +316,8 @@ class PredicateImpl extends ExpressionImpl {
             throw new QueryException("Field " + yProperty.getFieldName() + " not found in entity " + yProperty.getEntityClass().getSimpleName());
         }
 
-        if (!xField.getType().isAssignableFrom(yField.getType()) && !yField.getType().isAssignableFrom(xField.getType())) {
-            throw new QueryException("Incompatible types");
-        }
+        if (!xField.getType().isAssignableFrom(yField.getType()) && !yField.getType().isAssignableFrom(xField.getType()))
+            throw new QueryException("Incompatible types: " + xField.getType().getSimpleName() + ", " + yField.getType().getSimpleName());
 
         // @Column
         if (xField.isAnnotationPresent(Column.class) && yField.isAnnotationPresent(Column.class)) {
@@ -266,8 +359,20 @@ class PredicateImpl extends ExpressionImpl {
     }
 
 
+    /**
+     * Create property-value associations for the query
+     *
+     * @param   db          database object
+     * @param   property    property
+     * @param   alias       table alias
+     * @param   obj         object value
+     *
+     * @return  list of column-value pairs
+     *
+     * @throws  QueryException  if the requested configuration is invalid
+     */
     private List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property property, String alias, Object obj) {
-        List<Pair<String, String>> result = new ArrayList<>(1);
+        List<Pair<String, String>> result = new ArrayList<>();
         Field field;
 
         // Get field
@@ -295,10 +400,11 @@ class PredicateImpl extends ExpressionImpl {
             ColumnObject referecedColumn = referencedEntity.columnsNameMap.get(annotation.referencedColumnName());
 
             try {
+                assert referecedColumn.field != null;
                 Object value = referecedColumn.field.get(obj);
                 result.add(new Pair<>(alias + "." + annotation.name(), objectToString(value)));
             } catch (IllegalAccessException e) {
-                throw new QueryException(e.getMessage());
+                throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
             }
         }
 
@@ -308,20 +414,36 @@ class PredicateImpl extends ExpressionImpl {
 
             for (JoinColumn joinColumn : annotation.value()) {
                 EntityObject referencedEntity = db.entities.get(field.getType());
-                ColumnObject referecedColumn = referencedEntity.columnsNameMap.get(joinColumn.referencedColumnName());
+                ColumnObject referencedColumn = referencedEntity.columnsNameMap.get(joinColumn.referencedColumnName());
 
                 try {
-                    Object value = referecedColumn.field.get(obj);
+                    assert referencedColumn.field != null;
+                    Object value = referencedColumn.field.get(obj);
                     result.add(new Pair<>(alias + "." + joinColumn.name(), objectToString(value)));
                 } catch (IllegalAccessException e) {
-                    throw new QueryException(e.getMessage());
+                    throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
                 }
             }
 
             return result;
         }
 
-        return result;
+        throw new QueryException("Invalid parameters");
+    }
+
+
+    /**
+     * Convert object to  string in order to be placed in the query
+     *
+     * @param   obj     object
+     * @return  string
+     */
+    private static String objectToString(Object obj) {
+        if (obj instanceof String) {
+            return "\"" + obj + "\"";
+        } else {
+            return String.valueOf(obj);
+        }
     }
 
 }

@@ -60,13 +60,14 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     /** {@inheritDoc} */
     @Override
-    public Query<T> build(String alias) {
+    public Query<T> build() {
         StringBuilder sb = new StringBuilder();
         String concat = "";
 
         sb.append("SELECT * FROM ");
 
         Root<?> from = this.from;
+        String alias = from.getTableAlias();
         EntityObject entity = db.entities.get(from.getEntityClass());
 
         if (entity.children.size() != 0) {
@@ -79,8 +80,8 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable a = new Variable(db, entity, alias, new Property(entity.entityClass, primaryKey.field.getName()));
-                        Variable b = new Variable(db, child, childAlias, new Property(child.entityClass, primaryKey.field.getName()));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> b = new Variable<>(db, child, childAlias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }

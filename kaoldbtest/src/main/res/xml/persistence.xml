@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <databases>
     <database name="films" version="1" migrator="it.mscuttari.kaoldbtest.database.TestDbMigrator">
+        <class>it.mscuttari.kaoldbtest.models.AbsurdFilm</class>
         <class>it.mscuttari.kaoldbtest.models.FantasyFilm</class>
         <class>it.mscuttari.kaoldbtest.models.Film</class>
         <class>it.mscuttari.kaoldbtest.models.Genre</class>

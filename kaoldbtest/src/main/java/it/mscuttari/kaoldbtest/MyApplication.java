@@ -13,6 +13,7 @@ import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 import it.mscuttari.kaoldbtest.models.FantasyFilm;
+import it.mscuttari.kaoldbtest.models.FantasyFilm_;
 import it.mscuttari.kaoldbtest.models.Film;
 import it.mscuttari.kaoldbtest.models.Film_;
 import it.mscuttari.kaoldbtest.models.Genre;
@@ -71,11 +72,11 @@ public class MyApplication extends Application {
         director.firstName = "Mario";
         director.lastName = "Rossi";
 
-        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
-        Root<Film> root = qb.getRoot(Film.class, "f");
-        Root<Person> rootJoin = root.innerJoin(Person.class, "p", Film_.director);
-        Expression where = root.eq(Film_.genre, genre).and(root.eq(Film_.director, director));
-        Query<Film> query =  qb.from(rootJoin).build();
+        QueryBuilder<FantasyFilm> qb = em.getQueryBuilder(FantasyFilm.class);
+        Root<FantasyFilm> root = qb.getRoot(FantasyFilm.class, "f");
+        Root<Person> rootJoin = root.innerJoin(Person.class, "p", FantasyFilm_.director);
+        Expression where = root.eq(FantasyFilm_.genre, genre).and(root.eq(FantasyFilm_.director, director));
+        Query<FantasyFilm> query =  qb.from(rootJoin).build();
         Log.e("KaolDB", "Query: " + query);
         Film queryResult = query.getSingleResult();
     }

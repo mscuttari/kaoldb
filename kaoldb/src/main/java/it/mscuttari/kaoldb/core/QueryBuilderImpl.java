@@ -66,7 +66,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         sb.append("SELECT * FROM ");
 
-        Root<?> from = this.from;
+        /*Root<?> from = this.from;
         String alias = from.getTableAlias();
         EntityObject entity = db.entities.get(from.getEntityClass());
 
@@ -92,7 +92,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
                     from = from.leftJoin(child.entityClass, childAlias, on);
                 }
             }
-        }
+        }*/
 
         sb.append(from);
 
@@ -107,5 +107,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         return new QueryImpl<>(entityManager, db, resultClass, sb.toString());
     }
+
+
 
 }

@@ -1,6 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.util.Pair;
 
 import java.lang.reflect.Field;
@@ -12,6 +13,7 @@ import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 abstract class Join<X, Y> extends From<X> {
 

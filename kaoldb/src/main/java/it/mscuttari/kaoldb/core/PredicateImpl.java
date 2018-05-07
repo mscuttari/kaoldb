@@ -9,6 +9,7 @@ import java.util.List;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
 class PredicateImpl extends ExpressionImpl {
@@ -250,6 +251,9 @@ class PredicateImpl extends ExpressionImpl {
         List<String> result = new ArrayList<>();
         Field field;
 
+        // Fully qualified alias
+        String fullAlias = alias + property.getFieldParentClass().getSimpleName();
+
         // Get field
         try {
             field = property.getEntityClass().getField(property.getFieldName());
@@ -260,14 +264,14 @@ class PredicateImpl extends ExpressionImpl {
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
             Column annotation = field.getAnnotation(Column.class);
-            result.add(alias + "." + annotation.name());
+            result.add(fullAlias + "." + annotation.name());
             return result;
         }
 
         // @JoinColumn
         if (field.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn annotation = field.getAnnotation(JoinColumn.class);
-            result.add(alias + "." + annotation.name());
+            result.add(fullAlias + "." + annotation.name());
             return result;
         }
 
@@ -276,8 +280,7 @@ class PredicateImpl extends ExpressionImpl {
             JoinColumns annotation = field.getAnnotation(JoinColumns.class);
 
             for (JoinColumn joinColumn : annotation.value()) {
-                EntityObject referencedEntity = db.entities.get(field.getType());
-                result.add(alias + "." + joinColumn.name());
+                result.add(fullAlias + "." + joinColumn.name());
             }
 
             return result;
@@ -303,6 +306,12 @@ class PredicateImpl extends ExpressionImpl {
         List<Pair<String, String>> result = new ArrayList<>();
         Field xField, yField;
 
+
+        // Fully qualified aliases
+        String xFullAlias = xAlias + xProperty.getFieldParentClass().getSimpleName();
+        String yFullAlias = yAlias + yProperty.getFieldParentClass().getSimpleName();
+
+
         // Get fields
         try {
             xField = xProperty.getEntityClass().getField(xProperty.getFieldName());
@@ -319,23 +328,32 @@ class PredicateImpl extends ExpressionImpl {
         if (!xField.getType().isAssignableFrom(yField.getType()) && !yField.getType().isAssignableFrom(xField.getType()))
             throw new QueryException("Incompatible types: " + xField.getType().getSimpleName() + ", " + yField.getType().getSimpleName());
 
+
         // @Column
         if (xField.isAnnotationPresent(Column.class) && yField.isAnnotationPresent(Column.class)) {
             Column xAnnotation = xField.getAnnotation(Column.class);
             Column yAnnotation = yField.getAnnotation(Column.class);
 
-            result.add(new Pair<>(xAlias + "." + xAnnotation.name(), yAlias + "." + yAnnotation.name()));
+            String xColumn = xFullAlias + "." + xAnnotation.name();
+            String yColumn = yFullAlias + "." + yAnnotation.name();
+
+            result.add(new Pair<>(xColumn, yColumn));
             return result;
         }
+
 
         // @JoinColumn
         if (xField.isAnnotationPresent(JoinColumn.class) && yField.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn xAnnotation = xField.getAnnotation(JoinColumn.class);
             JoinColumn yAnnotation = yField.getAnnotation(JoinColumn.class);
 
-            result.add(new Pair<>(xAlias + "." + xAnnotation.name(), yAlias + "." + yAnnotation.name()));
+            String xColumn = xFullAlias + "." + xAnnotation.name();
+            String yColumn = yFullAlias + "." + yAnnotation.name();
+
+            result.add(new Pair<>(xColumn, yColumn));
             return result;
         }
+
 
         // @JoinColumns
         if (xField.isAnnotationPresent(JoinColumns.class) && yField.isAnnotationPresent(JoinColumns.class)) {
@@ -346,7 +364,10 @@ class PredicateImpl extends ExpressionImpl {
             for (JoinColumn xJoinColumn : xAnnotation.value()) {
                 for (JoinColumn yJoinColumn : yAnnotation.value()) {
                     if (xJoinColumn.referencedColumnName().equals(yJoinColumn.referencedColumnName())) {
-                        result.add(new Pair<>(xAlias + "." + xJoinColumn.name(), yAlias + "." + yJoinColumn.name()));
+                        String xColumn = xFullAlias + "." + xJoinColumn.name();
+                        String yColumn = yFullAlias + "." + yJoinColumn.name();
+
+                        result.add(new Pair<>(xColumn, yColumn));
                         continue outer;
                     }
                 }
@@ -354,6 +375,7 @@ class PredicateImpl extends ExpressionImpl {
 
             return result;
         }
+
 
         throw new QueryException("Invalid parameters");
     }
@@ -375,6 +397,11 @@ class PredicateImpl extends ExpressionImpl {
         List<Pair<String, String>> result = new ArrayList<>();
         Field field;
 
+
+        // Fully qualified alias
+        String fullAlias = alias + property.getFieldParentClass().getSimpleName();
+
+
         // Get field
         try {
             field = property.getEntityClass().getField(property.getFieldName());
@@ -382,44 +409,51 @@ class PredicateImpl extends ExpressionImpl {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
         }
 
+
         // Object type must be compatible with the property
         if (!field.getType().isAssignableFrom(obj.getClass()))
             throw new QueryException("Invalid object class");
 
+
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
             Column annotation = field.getAnnotation(Column.class);
-            result.add(new Pair<>(alias + "." + annotation.name(), objectToString(obj)));
+            String column = fullAlias + "." + annotation.name();
+            result.add(new Pair<>(column, objectToString(obj)));
             return result;
         }
+
 
         // @JoinColumn
         if (field.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn annotation = field.getAnnotation(JoinColumn.class);
+            String column = fullAlias + "." + annotation.name();
             EntityObject referencedEntity = db.entities.get(field.getType());
             ColumnObject referecedColumn = referencedEntity.columnsNameMap.get(annotation.referencedColumnName());
 
             try {
                 assert referecedColumn.field != null;
                 Object value = referecedColumn.field.get(obj);
-                result.add(new Pair<>(alias + "." + annotation.name(), objectToString(value)));
+                result.add(new Pair<>(column, objectToString(value)));
             } catch (IllegalAccessException e) {
                 throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
             }
         }
+
 
         // @JoinColumns
         if (field.isAnnotationPresent(JoinColumns.class)) {
             JoinColumns annotation = field.getAnnotation(JoinColumns.class);
 
             for (JoinColumn joinColumn : annotation.value()) {
+                String column = fullAlias + "." + joinColumn.name();
                 EntityObject referencedEntity = db.entities.get(field.getType());
                 ColumnObject referencedColumn = referencedEntity.columnsNameMap.get(joinColumn.referencedColumnName());
 
                 try {
                     assert referencedColumn.field != null;
                     Object value = referencedColumn.field.get(obj);
-                    result.add(new Pair<>(alias + "." + joinColumn.name(), objectToString(value)));
+                    result.add(new Pair<>(column, objectToString(value)));
                 } catch (IllegalAccessException e) {
                     throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
                 }
@@ -427,6 +461,7 @@ class PredicateImpl extends ExpressionImpl {
 
             return result;
         }
+
 
         throw new QueryException("Invalid parameters");
     }

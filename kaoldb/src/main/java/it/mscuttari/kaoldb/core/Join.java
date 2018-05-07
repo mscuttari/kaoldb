@@ -11,6 +11,7 @@ import java.util.List;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
@@ -114,30 +115,68 @@ abstract class Join<X, Y> extends From<X> {
     }
 
 
-    private List<Pair<String, String>> decomposeJoinColumn(Field xField, String xAlias, String yAlias) {
+    /**
+     * Get left side root of the join
+     *
+     * @return  root
+     */
+    public From<Y> getLeftSideRoot() {
+        return from;
+    }
+
+
+    /**
+     * Get columns pairs to join two entities
+     *
+     * @param   xField      left side field
+     * @param   xAlias      left side table alias
+     * @param   yAlias      right side table alias
+     *
+     * @return  columns pairs
+     */
+    private static List<Pair<String, String>> decomposeJoinColumn(Field xField, String xAlias, String yAlias) {
         List<Pair<String, String>> result = new ArrayList<>();
 
-        if (xField.isAnnotationPresent(JoinColumn.class)) {
-            // @JoinColumn
-            JoinColumn annotation = xField.getAnnotation(JoinColumn.class);
-            result.add(new Pair<>(xAlias + "." + annotation.name(), yAlias + "." + annotation.referencedColumnName()));
-            return result;
+        // Joined classes
+        Class<?> xClass = xField.getDeclaringClass();
+        Class<?> yClass = xField.getType();
 
-        } else if (xField.isAnnotationPresent(JoinColumns.class)) {
-            // @JoinColumns
+        // Fully qualified aliases
+        String xFullAlias = xAlias + xClass.getSimpleName();
+        String yFullAlias = yAlias + yClass.getSimpleName();
+
+        // @JoinColumn
+        if (xField.isAnnotationPresent(JoinColumn.class)) {
+            JoinColumn annotation = xField.getAnnotation(JoinColumn.class);
+            result.add(new Pair<>(xFullAlias + "." + annotation.name(), yFullAlias + "." + annotation.referencedColumnName()));
+            return result;
+        }
+
+        // @JoinColumns
+        if (xField.isAnnotationPresent(JoinColumns.class)) {
             JoinColumns annotation = xField.getAnnotation(JoinColumns.class);
 
             for (JoinColumn joinColumn : annotation.value())
-                result.add(new Pair<>(xAlias + "." + joinColumn.name(), yAlias + "." + joinColumn.referencedColumnName()));
+                result.add(new Pair<>(xFullAlias + "." + joinColumn.name(), yFullAlias + "." + joinColumn.referencedColumnName()));
 
             return result;
+        }
+
+        // @JoinTable
+        if (xField.isAnnotationPresent(JoinTable.class)) {
+            // TODO: N:N relationship
+            throw new QueryException("Not implemented");
         }
 
         throw new QueryException("Invalid join field " + xField.getName());
     }
 
 
-    static class StringWrapper {
+    /**
+     * String wrapper class
+     * Used in the Variable class creation in order to avoid the quotation marks in the resulting query
+     */
+    private static class StringWrapper {
 
         private String value;
 

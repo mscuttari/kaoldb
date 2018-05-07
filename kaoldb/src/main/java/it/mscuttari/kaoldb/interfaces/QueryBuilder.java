@@ -34,8 +34,9 @@ public interface QueryBuilder<T> {
     /**
      * Create the query
      *
+     * @param   alias       the alias of the desired result entity
      * @return  query object
      */
-    Query<T> build();
+    Query<T> build(String alias);
 
 }

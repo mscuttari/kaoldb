@@ -46,7 +46,12 @@ class From<X> implements Root<X> {
             return root.toString();
         }
 
-        return entity.tableName + " AS " + alias;
+        try {
+            return entity.tableName + " AS " + alias + getEntityClass().getSimpleName();
+        } finally {
+            // Reset the status ot allow a second query build
+            hierarchyVisited = false;
+        }
     }
 
 
@@ -184,14 +189,13 @@ class From<X> implements Root<X> {
             while (parent != null) {
                 if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
                     Expression on = null;
-                    String parentAlias = alias + parent.entityClass.getSimpleName();
 
                     for (ColumnObject primaryKey : parent.primaryKeys) {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
                         Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, parent, parentAlias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> b = new Variable<>(db, parent, alias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field.getName()));
                         Expression onParent = PredicateImpl.eq(db, a, b);
                         on = on == null ? onParent : on.and(onParent);
                     }
@@ -199,7 +203,7 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new LeftJoin<>(db, root, parent.entityClass, parentAlias, on);
+                    root = new InnerJoin<>(db, root, parent.entityClass, alias, on);
                     root.hierarchyVisited = true;
                 }
 
@@ -227,14 +231,13 @@ class From<X> implements Root<X> {
             for (EntityObject child : entity.children) {
                 if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
                     Expression on = null;
-                    String childAlias = alias + child.entityClass.getSimpleName();
 
                     for (ColumnObject primaryKey : entity.primaryKeys) {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
                         Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, child, childAlias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> b = new Variable<>(db, child, alias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }
@@ -242,7 +245,7 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new LeftJoin<>(db, root, child.entityClass, childAlias, on);
+                    root = new LeftJoin<>(db, root, child.entityClass, alias, on);
                     root.hierarchyVisited = true;
                     root = resolveChildrenInheritance(root, db.entities.get(root.getEntityClass()), alias);
                 }

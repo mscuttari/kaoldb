@@ -74,8 +74,6 @@ public final class EntityProcessor extends AbstractProcessor {
                 // Entity class
                 TypeName classType = ClassName.get(classElement.asType());
                 TypeSpec.Builder entityClass = TypeSpec.classBuilder(classElement.getSimpleName().toString() + ENTITY_SUFFIX);
-                //Set<Modifier> classModifiers = classElement.getModifiers();
-                //entityClass.addModifiers(classModifiers.toArray(new Modifier[classModifiers.size()]));
                 entityClass.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
                 // Get all parents fields
@@ -105,7 +103,7 @@ public final class EntityProcessor extends AbstractProcessor {
                         entityClass.addField(
                                 FieldSpec.builder(parameterizedField, fieldName)
                                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                                        .initializer("new $T<>($L.class, $L.class, $L.class, $S);", propertyClass, classElement.getSimpleName().toString(), currentElement.getSimpleName().toString(), fieldType, fieldName)
+                                        .initializer("new $T<>($T.class, $T.class, $T.class, $S);", propertyClass, classElement, currentElement, fieldType, fieldName)
                                         .build()
                         );
                     }

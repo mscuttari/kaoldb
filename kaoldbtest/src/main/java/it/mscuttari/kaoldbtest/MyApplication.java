@@ -76,8 +76,10 @@ public class MyApplication extends Application {
         Root<FantasyFilm> root = qb.getRoot(FantasyFilm.class, "f");
         Root<Person> rootJoin = root.innerJoin(Person.class, "p", FantasyFilm_.director);
         Expression where = root.eq(FantasyFilm_.genre, genre).and(root.eq(FantasyFilm_.director, director));
-        Query<FantasyFilm> query =  qb.from(rootJoin).build();
+        Query<FantasyFilm> query =  qb.from(rootJoin).build("f");
+        //Query<FantasyFilm> query2 = qb.from(rootJoin).build("f");
         Log.e("KaolDB", "Query: " + query);
+        //Log.e("KaolDB", "Query2: " + query2);
         Film queryResult = query.getSingleResult();
     }
 

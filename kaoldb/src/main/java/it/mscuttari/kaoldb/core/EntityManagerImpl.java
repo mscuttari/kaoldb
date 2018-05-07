@@ -17,6 +17,7 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
 import static it.mscuttari.kaoldb.core.PojoAdapter.cursorToObject;
@@ -102,44 +103,14 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-
-    public int getRowCount(String table) {
-        SQLiteDatabase db = getWritableDatabase();
-        Cursor cursor = null;
-
-        try {
-            cursor = db.rawQuery("select count(*) from " + table, null);
-
-            if (cursor.moveToFirst())
-                return cursor.getInt(0);
-        } finally {
-            if (cursor != null) cursor.close();
-            db.close();
-        }
-
-        return -1;
-    }
-
-
+    /** {@inheritDoc} */
+    @Override
     public <T> List<T> getAll(Class<T> entityClass) {
-        EntityObject entity = database.entities.get(entityClass);
+        QueryBuilder<T> qb = getQueryBuilder(entityClass);
+        Root<T> root = qb.getRoot(entityClass, "c");
+        qb.from(root);
 
-        if (entity == null)
-            throw new QueryException("Class " + entityClass.getSimpleName() + " is not an entity");
-
-        SQLiteDatabase db = getWritableDatabase();
-        Cursor c = db.query(entity.tableName, null, null, null, null, null, null, null);
-        //Log.e(LOG_TAG, "Cursor: " + DatabaseUtils.dumpCursorToString(c));
-        List<T> result = new ArrayList<>(c.getCount());
-
-        for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            result.add(cursorToObject(c, entityClass, entity));
-        }
-
-        c.close();
-        db.close();
-
-        return result;
+        return qb.build("e").getResultList();
     }
 
 
@@ -195,6 +166,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
 
     /** {@inheritDoc} */
+    @Override
     public synchronized void persist(Object obj) {
         EntityObject entity = getObjectEntity(obj);
         persist(obj, entity, null, false);

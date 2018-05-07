@@ -64,38 +64,13 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         StringBuilder sb = new StringBuilder();
         String concat = "";
 
-        sb.append("SELECT * FROM ");
+        // Select
+        sb.append("SELECT *");
 
-        /*Root<?> from = this.from;
-        String alias = from.getTableAlias();
-        EntityObject entity = db.entities.get(from.getEntityClass());
+        // From
+        sb.append(" FROM ").append(from);
 
-        if (entity.children.size() != 0) {
-            for (EntityObject child : entity.children) {
-                if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
-                    Expression on = null;
-                    String childAlias = alias + child.entityClass.getSimpleName();
-
-                    for (ColumnObject primaryKey : entity.primaryKeys) {
-                        if (primaryKey.field == null)
-                            throw new InvalidConfigException("Primary key field not found");
-
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, child, childAlias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Expression onChild = PredicateImpl.eq(db, a, b);
-                        on = on == null ? onChild : on.and(onChild);
-                    }
-
-                    if (on == null)
-                        throw new QueryException("Can't merge inherited tables");
-
-                    from = from.leftJoin(child.entityClass, childAlias, on);
-                }
-            }
-        }*/
-
-        sb.append(from);
-
+        // Where
         if (where.size() > 0) {
             sb.append(" WHERE ");
 

@@ -190,8 +190,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, parent, parentAlias, new Property<>(parent.entityClass, parent.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> b = new Variable<>(db, parent, parentAlias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field.getName()));
                         Expression onParent = PredicateImpl.eq(db, a, b);
                         on = on == null ? onParent : on.and(onParent);
                     }
@@ -233,8 +233,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, child, childAlias, new Property<>(child.entityClass, child.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> b = new Variable<>(db, child, childAlias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }

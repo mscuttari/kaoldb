@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -96,33 +95,6 @@ class ColumnObject {
     }
 
 
-    /**
-     * Constructor
-     *
-     * @param    discriminatorColumnAnnotation      discriminator column annotation
-     */
-    private ColumnObject(DiscriminatorColumn discriminatorColumnAnnotation) {
-        this.field = null;
-        this.annotation = discriminatorColumnAnnotation;
-        this.name = discriminatorColumnAnnotation.name();
-
-        switch (discriminatorColumnAnnotation.discriminatorType()) {
-            case STRING:
-                this.type = String.class;
-                break;
-
-            case INTEGER:
-                this.type = Integer.class;
-                break;
-        }
-
-        this.nullable = false;
-        this.primaryKey = false;
-        this.unique = false;
-        this.referencedColumnName = null;
-    }
-
-
     @Override
     public String toString() {
         return name;
@@ -199,18 +171,6 @@ class ColumnObject {
         }
 
         return columns;
-    }
-
-
-    /**
-     * Convert discriminator column annotation to column object
-     *
-     * @param   entity      entity object containing the annotation
-     * @return  column object
-     */
-    static ColumnObject discriminatorColumnToColumnObject(EntityObject entity) {
-        DiscriminatorColumn discriminatorColumnAnnotation = entity.entityClass.getAnnotation(DiscriminatorColumn.class);
-        return new ColumnObject(discriminatorColumnAnnotation);
     }
 
 

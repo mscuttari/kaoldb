@@ -3,9 +3,21 @@ package it.mscuttari.kaoldb.core;
 public final class Property<M, T> {
 
     private Class<M> entityClass;
-    private Class<?> fieldParentClass;
+    private Class<? super M> fieldParentClass;
     private Class<T> fieldType;
     private String fieldName;
+
+
+    /**
+     * Constructor
+     *
+     * @param   entityClass         current entity class (the parent class is set to the set of the current class)
+     * @param   fieldType           field type
+     * @param   fieldName           field name
+     */
+    public Property(Class<M> entityClass, Class<T> fieldType, String fieldName) {
+        this(entityClass, entityClass, fieldType, fieldName);
+    }
 
 
     /**
@@ -16,7 +28,7 @@ public final class Property<M, T> {
      * @param   fieldType           field type
      * @param   fieldName           field name
      */
-    public Property(Class<M> entityClass, Class<?> fieldParentClass, Class<T> fieldType, String fieldName) {
+    public Property(Class<M> entityClass, Class<? super M> fieldParentClass, Class<T> fieldType, String fieldName) {
         this.entityClass = entityClass;
         this.fieldParentClass = fieldParentClass;
         this.fieldType = fieldType;
@@ -39,7 +51,7 @@ public final class Property<M, T> {
      *
      * @return  parent class the property originally belonged to
      */
-    public Class<?> getFieldParentClass() {
+    public Class<? super M> getFieldParentClass() {
         return fieldParentClass;
     }
 

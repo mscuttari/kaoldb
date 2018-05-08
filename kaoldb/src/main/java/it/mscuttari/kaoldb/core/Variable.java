@@ -1,65 +1,74 @@
 package it.mscuttari.kaoldb.core;
 
-import java.lang.reflect.Field;
-
-import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.exceptions.QueryException;
-
-class Variable {
-
-    public enum VariableType {
-        SIMPLE,         // Just a value
-        SINGLE,         // Single column
-        COMPOSITE       // Multiple columns
-    }
-
-    public VariableType type;
+class Variable<M, T> {
 
     private DatabaseObject db;
     private EntityObject entity;
     private String tableAlias;
-    private Property property;
-    private Object value;
+    private Property<M, T> property;
+    private T value;
 
-
-    Variable(DatabaseObject db, EntityObject entity, String tableAlias, Property property) {
+    /**
+     * Constructor
+     *
+     * @param   db          database object
+     * @param   entity      entity object
+     * @param   tableAlias  table alias
+     * @param   property    entity property
+     */
+    Variable(DatabaseObject db, EntityObject entity, String tableAlias, Property<M, T> property) {
         this.db = db;
         this.entity = entity;
         this.tableAlias = tableAlias;
         this.property = property;
-
-        try {
-            Field field = entity.entityClass.getField(property.getFieldName());
-
-            if (field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class)) {
-                this.type = VariableType.SINGLE;
-            } else if (field.isAnnotationPresent(JoinColumns.class) || field.isAnnotationPresent(JoinTable.class)) {
-                this.type = VariableType.COMPOSITE;
-            }
-
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + property.getFieldName() + " not found in entity " + entity.entityClass.getSimpleName());
-        }
     }
 
-    Variable(Object value) {
+
+    /**
+     * Constructor
+     *
+     * @param   value       simple object value
+     */
+    Variable(T value) {
         this.value = value;
-        this.type = VariableType.SIMPLE;
     }
 
-    @Override
-    public String toString() {
-        if (value == null) {
-            return tableAlias + "." + property.getFieldName();
+
+    /**
+     * Get database object
+     *
+     * @return  database object
+     */
+    public DatabaseObject getDatabase() {
+        return db;
+    }
+
+
+    /**
+     * Get entity object
+     *
+     * @return  entity object
+     */
+    public EntityObject getEntity() {
+        return entity;
+    }
+
+
+    /**
+     * Get table alias
+     *
+     * @return  table alias
+     */
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+
+    public Object getData() {
+        if (property != null) {
+            return property;
         } else {
-            if (value instanceof String) {
-                return "\"" + value + "\"";
-            } else {
-                return String.valueOf(value);
-            }
+            return value;
         }
     }
 

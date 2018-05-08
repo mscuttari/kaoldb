@@ -2,7 +2,6 @@ apply plugin: 'java-library'
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation project(':annotations')
     implementation 'com.squareup:javapoet:1.10.0'
 }
 

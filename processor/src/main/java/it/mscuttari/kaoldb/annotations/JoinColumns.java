@@ -5,11 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Table {
-
-    String name() default "";
-    UniqueConstraint[] uniqueConstraints() default {};
+public @interface JoinColumns {
 
 }

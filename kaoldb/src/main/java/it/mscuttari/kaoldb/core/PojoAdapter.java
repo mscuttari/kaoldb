@@ -25,7 +25,7 @@ class PojoAdapter {
      * @throws  PojoException   in case of error
      */
     @Nullable
-    public static <T> T cursorToObject(Cursor c, Class<T> entityClass, EntityObject entity) {
+    public static <T> T cursorToObject(Cursor c, Class<T> entityClass, EntityObject entity, String alias) {
         if (entity.children.size() != 0) {
             // Go down to child class
             int columnIndex = c.getColumnIndex(entity.discriminatorColumn.name);
@@ -39,7 +39,7 @@ class PojoAdapter {
 
             for (EntityObject child : entity.children) {
                 if (child.discriminatorValue.equals(discriminatorValue)) {
-                    return cursorToObject(c, entityClass, child);
+                    return cursorToObject(c, entityClass, child, alias);
                 }
             }
 
@@ -121,10 +121,10 @@ class PojoAdapter {
         }
 
         // Discriminator column
-        if (childEntity != null) {
+        /*if (childEntity != null) {
             Object value = childEntity.discriminatorValue;
             insertDataIntoContentValues(cv, currentEntity.discriminatorColumn.name, value);
-        }
+        }*/
 
         return cv;
     }

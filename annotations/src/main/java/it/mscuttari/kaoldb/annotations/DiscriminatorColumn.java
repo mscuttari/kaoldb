@@ -1,16 +1,15 @@
 package it.mscuttari.kaoldb.annotations;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Table {
+public @interface DiscriminatorColumn {
 
-    String name() default "";
-    UniqueConstraint[] uniqueConstraints() default {};
+    String name();
+    DiscriminatorType discriminatorType() default DiscriminatorType.STRING;
 
 }

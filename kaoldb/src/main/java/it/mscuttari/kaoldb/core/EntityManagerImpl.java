@@ -173,6 +173,14 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
+    /**
+     * Persist object in the database
+     *
+     * @param   obj                 object to be persisted
+     * @param   currentEntity       current entity
+     * @param   childEntity
+     * @param   isInTransaction
+     */
     private synchronized void persist(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
         if (!isInTransaction)
             prePersist(obj);

@@ -15,6 +15,7 @@ class QueryImpl<M> implements Query<M> {
     private EntityManagerImpl entityManager;
     private DatabaseObject db;
     private Class<M> resultClass;
+    private String alias;
     private String sql;
 
 
@@ -25,10 +26,11 @@ class QueryImpl<M> implements Query<M> {
      * @param   resultClass     result objects type
      * @param   sql             SQL statement to be run
      */
-    QueryImpl(EntityManagerImpl entityManager, DatabaseObject db, Class<M> resultClass, String sql) {
+    QueryImpl(EntityManagerImpl entityManager, DatabaseObject db, Class<M> resultClass, String alias, String sql) {
         this.entityManager = entityManager;
         this.db = db;
         this.resultClass = resultClass;
+        this.alias = alias;
         this.sql = sql;
     }
 
@@ -55,7 +57,7 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entityObject = this.db.entities.get(resultClass);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            result.add(PojoAdapter.cursorToObject(c, resultClass, entityObject));
+            result.add(PojoAdapter.cursorToObject(c, resultClass, entityObject, alias));
         }
 
         c.close();

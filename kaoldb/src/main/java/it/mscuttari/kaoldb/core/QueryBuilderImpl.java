@@ -82,7 +82,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             }
         }
 
-        return new QueryImpl<>(entityManager, db, resultClass, sb.toString());
+        return new QueryImpl<>(entityManager, db, resultClass, alias, sb.toString());
     }
 
 

@@ -5,8 +5,7 @@ import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
-@Table(name = "fantasy_books")
-@DiscriminatorValue(value = "fantasy")
-public class FantasyBook extends Book {
-
+@Table(name = "absurd_film")
+@DiscriminatorValue(value = "Absurd")
+public class AbsurdFilm extends FantasyFilm {
 }

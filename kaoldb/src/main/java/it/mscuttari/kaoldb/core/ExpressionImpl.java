@@ -11,6 +11,7 @@ class ExpressionImpl implements Expression {
         OR
     }
 
+
     private ExpressionType operation;
     private Expression x;
     private Expression y;
@@ -33,6 +34,10 @@ class ExpressionImpl implements Expression {
     /** {@inheritDoc} */
     @Override
     public Expression not() {
+        // Double negation: NOT(NOT(expression)) = expression
+        if (operation == ExpressionType.NOT && x != null)
+            return x;
+
         return new ExpressionImpl(ExpressionType.NOT, this, null);
     }
 

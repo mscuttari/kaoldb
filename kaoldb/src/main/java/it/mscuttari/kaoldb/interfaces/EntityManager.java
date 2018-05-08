@@ -20,8 +20,16 @@ public interface EntityManager {
      */
     <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass);
 
-    public int getRowCount(String table);
+
+    /**
+     * Get all the entity elements
+     *
+     * @param   entityClass     entity class
+     * @return  elements list
+     */
     <T> List<T> getAll(Class<T> entityClass);
+
+
     void persist(Object obj);
 
 }

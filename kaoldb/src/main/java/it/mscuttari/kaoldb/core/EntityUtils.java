@@ -27,7 +27,7 @@ class EntityUtils {
         // First scan to get basic data
         for (Class<?> entityClass : classes) {
             if (result.containsKey(entityClass)) continue;
-            EntityObject entity = EntityObject.entityClassToTableObject(entityClass, classes, result);
+            EntityObject entity = EntityObject.entityClassToEntityObject(entityClass, classes, result);
             result.put(entityClass, entity);
         }
 

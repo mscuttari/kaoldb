@@ -3,6 +3,8 @@ package it.mscuttari.kaoldb.processor;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
@@ -22,6 +24,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
@@ -69,42 +72,45 @@ public final class EntityProcessor extends AbstractProcessor {
 
             try {
                 // Entity class
+                TypeName classType = ClassName.get(classElement.asType());
                 TypeSpec.Builder entityClass = TypeSpec.classBuilder(classElement.getSimpleName().toString() + ENTITY_SUFFIX);
-                Set<Modifier> classModifiers = classElement.getModifiers();
-                entityClass.addModifiers(classModifiers.toArray(new Modifier[classModifiers.size()]));
+                entityClass.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
-                // Superclass
-                TypeElement typeClassElement = (TypeElement)classElement;
-                TypeMirror parent = typeClassElement.getSuperclass();
+                // Get all parents fields
+                Element currentElement = classElement;
 
-                if (!ClassName.get(parent).equals(ClassName.OBJECT)) {
-                    entityClass.superclass(ClassName.get(packageName, ClassName.get(parent).toString() + ENTITY_SUFFIX));
-                }
+                while (!ClassName.get(currentElement.asType()).equals(ClassName.OBJECT)) {
+                    // Columns
+                    List<? extends Element> internalElements = currentElement.getEnclosedElements();
 
-                // Columns
-                List<? extends Element> internalElements = classElement.getEnclosedElements();
+                    for (Element internalElement : internalElements) {
+                        if (internalElement.getKind() != ElementKind.FIELD) continue;
 
-                for (Element internalElement : internalElements) {
-                    if (internalElement.getKind() != ElementKind.FIELD) continue;
+                        // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
+                        Column columnAnnotation = internalElement.getAnnotation(Column.class);
+                        JoinColumn joinColumnAnnotation = internalElement.getAnnotation(JoinColumn.class);
+                        JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
+                        JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
 
-                    // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
-                    Column columnAnnotation = internalElement.getAnnotation(Column.class);
-                    JoinColumn joinColumnAnnotation = internalElement.getAnnotation(JoinColumn.class);
-                    JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
-                    JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
+                        if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
+                            continue;
 
-                    if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
-                        continue;
+                        // Create property
+                        String fieldName = internalElement.getSimpleName().toString();
+                        TypeName fieldType = ClassName.get(internalElement.asType());
+                        ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(propertyClass, classType, fieldType);
 
-                    // Create property
-                    String fieldName = internalElement.getSimpleName().toString();
+                        entityClass.addField(
+                                FieldSpec.builder(parameterizedField, fieldName)
+                                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                                        .initializer("new $T<>($T.class, $T.class, $T.class, $S);", propertyClass, classElement, currentElement, fieldType, fieldName)
+                                        .build()
+                        );
+                    }
 
-                    entityClass.addField(
-                            FieldSpec.builder(propertyClass, fieldName)
-                                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                                    .initializer("new $T($L.class, $S)", propertyClass, classElement.getSimpleName().toString(), fieldName)
-                                    .build()
-                    );
+                    // Superclass
+                    TypeMirror superClassTypeMirror = ((TypeElement)currentElement).getSuperclass();
+                    currentElement = ((DeclaredType)superClassTypeMirror).asElement();
                 }
 
                 // Create class file

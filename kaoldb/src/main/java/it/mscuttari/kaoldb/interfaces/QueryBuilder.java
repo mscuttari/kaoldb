@@ -18,7 +18,7 @@ public interface QueryBuilder<T> {
      *
      * @param   from    entity root
      */
-    void from(Root<?> from);
+    QueryBuilder<T> from(Root<?> from);
 
 
     /**
@@ -28,9 +28,15 @@ public interface QueryBuilder<T> {
      * @param   expression      logic expression
      * @return  query builder
      */
-    QueryBuilder where(Expression expression);
+    QueryBuilder<T> where(Expression expression);
 
 
+    /**
+     * Create the query
+     *
+     * @param   alias       the alias of the desired result entity
+     * @return  query object
+     */
     Query<T> build(String alias);
 
 }

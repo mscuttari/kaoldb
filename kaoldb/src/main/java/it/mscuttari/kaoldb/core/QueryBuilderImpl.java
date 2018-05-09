@@ -17,7 +17,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     private Class<T> resultClass;
     private EntityManagerImpl entityManager;
     private Root<?> from;
-    private List<Expression> where;
+    private Expression where;
 
 
     /**
@@ -30,7 +30,6 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         this.db = db;
         this.resultClass = resultClass;
         this.entityManager = entityManager;
-        this.where = new ArrayList<>();
 
         if (!db.entities.containsKey(resultClass))
             throw new QueryException("Class " + resultClass.getSimpleName() + " is not an entity");
@@ -54,8 +53,8 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     /** {@inheritDoc} */
     @Override
-    public QueryBuilder<T> where(Expression expression) {
-        where.add(expression);
+    public QueryBuilder<T> where(Expression where) {
+        this.where = where;
         return this;
     }
 
@@ -63,26 +62,11 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     /** {@inheritDoc} */
     @Override
     public Query<T> build(String alias) {
-        StringBuilder sb = new StringBuilder();
-        String concat = "";
+        String sb = "SELECT " + getSelectClause(from, alias) + " " +
+                "FROM " + from + " " +
+                "WHERE " + where;
 
-        // Select
-        sb.append("SELECT ").append(getSelectClause(from, alias)).append(" ");
-
-        // From
-        sb.append(" FROM ").append(from);
-
-        // Where
-        if (where.size() > 0) {
-            sb.append(" WHERE ");
-
-            for (Expression expression : where) {
-                sb.append(concat).append(expression.toString());
-                concat = " AND ";
-            }
-        }
-
-        return new QueryImpl<>(entityManager, db, resultClass, alias, sb.toString());
+        return new QueryImpl<>(entityManager, db, resultClass, alias, sb);
     }
 
 

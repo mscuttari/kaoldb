@@ -69,17 +69,6 @@ public interface Root<X> {
      * Get natural join root
      *
      * @param   entityClass     entity class to be joined
-     * @param   property        property upon with base the "ON" expression
-     *
-     * @return  root
-     */
-    <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias, Property<X, Y> property);
-
-
-    /**
-     * Get natural join root
-     *
-     * @param   entityClass     entity class to be joined
      * @return  root
      */
     <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias);

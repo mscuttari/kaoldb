@@ -99,13 +99,6 @@ class From<X> implements Root<X> {
 
     /** {@inheritDoc} */
     @Override
-    public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
-        return new NaturalJoin<>(db, this, entityClass, alias, property);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias) {
         return new NaturalJoin<>(db, this, entityClass, alias);
     }

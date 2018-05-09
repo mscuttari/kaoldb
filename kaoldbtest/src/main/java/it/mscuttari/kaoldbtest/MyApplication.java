@@ -75,6 +75,7 @@ public class MyApplication extends Application {
         QueryBuilder<FantasyFilm> qb = em.getQueryBuilder(FantasyFilm.class);
         Root<FantasyFilm> root = qb.getRoot(FantasyFilm.class, "f");
         Root<Person> rootJoin = root.innerJoin(Person.class, "p", FantasyFilm_.director);
+        Expresion on = root.eq(FantasyFilm_.test, )
         Expression where = root.eq(FantasyFilm_.genre, genre).and(root.eq(FantasyFilm_.director, director));
         Query<FantasyFilm> query =  qb.from(rootJoin).build("f");
         //Query<FantasyFilm> query2 = qb.from(rootJoin).build("f");

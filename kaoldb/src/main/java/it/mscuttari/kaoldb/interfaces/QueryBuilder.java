@@ -22,13 +22,12 @@ public interface QueryBuilder<T> {
 
 
     /**
-     * Add "WHERE" clause
-     * Multiple calls will concatenate the expressions with the "and" logical operator
+     * Set "WHERE" clause
      *
-     * @param   expression      logic expression
+     * @param   where       logic expression
      * @return  query builder
      */
-    QueryBuilder<T> where(Expression expression);
+    QueryBuilder<T> where(Expression where);
 
 
     /**

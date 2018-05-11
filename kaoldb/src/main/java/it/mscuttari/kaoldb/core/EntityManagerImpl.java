@@ -11,11 +11,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
+import it.mscuttari.kaoldb.interfaces.PostPersistListener;
+import it.mscuttari.kaoldb.interfaces.PrePersistListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
@@ -160,16 +163,19 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
 
     /** {@inheritDoc} */
-    public synchronized void prePersist(Object obj) {
-
+    @Override
+    public synchronized void persist(Object obj) {
+        persist(obj, null, null);
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public synchronized void persist(Object obj) {
+    public synchronized <M> void persist(M obj, PrePersistListener<M> prePersist, PostPersistListener<M> postPersist) {
+        if (prePersist != null) prePersist.prePersist(obj);
         EntityObject entity = getObjectEntity(obj);
         persist(obj, entity, null, false);
+        if (postPersist != null) postPersist.postPersist(obj);
     }
 
 
@@ -178,32 +184,30 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      *
      * @param   obj                 object to be persisted
      * @param   currentEntity       current entity
-     * @param   childEntity
-     * @param   isInTransaction
+     * @param   childEntity         child entity (used to determine the discriminator value)
+     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
      */
     private synchronized void persist(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
-        if (!isInTransaction)
-            prePersist(obj);
+        // Extract the current entity data from the object to be persisted
+        ContentValues cv = objectToContentValues(context, database, currentEntity, childEntity, obj);
 
+        // Do the same for its parent
+        if (currentEntity.parent != null)
+            persist(obj, currentEntity.parent, currentEntity, true);
+
+        // Persist the object
         SQLiteDatabase db = getWritableDatabase();
-        if (!isInTransaction) db.beginTransaction();
 
         try {
-            ContentValues cv = objectToContentValues(currentEntity, childEntity, obj);
-            Long id = null;
-            if (cv != null) id = db.insert(currentEntity.tableName, null, cv);
-            if (cv != null) Log.e(LOG_TAG, "CV: " + cv.toString());
-            Log.e(LOG_TAG, "ID: " + id);
+            if (!isInTransaction) db.beginTransaction();
+            if (cv.size() != 0) db.insert(currentEntity.tableName, null, cv);
 
-            if (currentEntity.parent != null)
-                persist(obj, currentEntity.parent, currentEntity, true);
-
-            if (!isInTransaction) db.setTransactionSuccessful();
         } finally {
             if (!isInTransaction) {
+                // End the transaction and close the database
+                db.setTransactionSuccessful();
                 db.endTransaction();
                 if (db.isOpen()) db.close();
-                postPersist(obj);
             }
         }
     }

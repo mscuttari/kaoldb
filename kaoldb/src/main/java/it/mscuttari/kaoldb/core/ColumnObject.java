@@ -22,8 +22,6 @@ import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
 class ColumnObject {
 
     // Class column field
-    // Null if the discriminator column is not a class field
-    @Nullable
     public Field field;
 
     // Annotation
@@ -93,33 +91,6 @@ class ColumnObject {
         this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
         this.referencedColumnName = joinColumnAnnotation.referencedColumnName();
-    }
-
-
-    /**
-     * Constructor
-     *
-     * @param    discriminatorColumnAnnotation      discriminator column annotation
-     */
-    private ColumnObject(DiscriminatorColumn discriminatorColumnAnnotation) {
-        this.field = null;
-        this.annotation = discriminatorColumnAnnotation;
-        this.name = discriminatorColumnAnnotation.name();
-
-        switch (discriminatorColumnAnnotation.discriminatorType()) {
-            case STRING:
-                this.type = String.class;
-                break;
-
-            case INTEGER:
-                this.type = Integer.class;
-                break;
-        }
-
-        this.nullable = false;
-        this.primaryKey = false;
-        this.unique = false;
-        this.referencedColumnName = null;
     }
 
 
@@ -199,18 +170,6 @@ class ColumnObject {
         }
 
         return columns;
-    }
-
-
-    /**
-     * Convert discriminator column annotation to column object
-     *
-     * @param   entity      entity object containing the annotation
-     * @return  column object
-     */
-    static ColumnObject discriminatorColumnToColumnObject(EntityObject entity) {
-        DiscriminatorColumn discriminatorColumnAnnotation = entity.entityClass.getAnnotation(DiscriminatorColumn.class);
-        return new ColumnObject(discriminatorColumnAnnotation);
     }
 
 

@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.interfaces;
 
+import it.mscuttari.kaoldb.exceptions.QueryException;
+
 public interface QueryBuilder<T> {
 
     /**
@@ -35,6 +37,7 @@ public interface QueryBuilder<T> {
      *
      * @param   alias       the alias of the desired result entity
      * @return  query object
+     * @throws  QueryException  if the "from" clause is not set
      */
     Query<T> build(String alias);
 

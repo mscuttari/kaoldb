@@ -57,7 +57,7 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entityObject = this.db.entities.get(resultClass);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            result.add(PojoAdapter.cursorToObject(c, resultClass, entityObject, alias));
+            result.add(PojoAdapter.cursorToObject(this.db, c, resultClass, entityObject, alias));
         }
 
         c.close();

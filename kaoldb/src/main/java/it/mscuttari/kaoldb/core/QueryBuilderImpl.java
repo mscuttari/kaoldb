@@ -62,11 +62,15 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     /** {@inheritDoc} */
     @Override
     public Query<T> build(String alias) {
-        String sb = "SELECT " + getSelectClause(from, alias) + " " +
-                "FROM " + from + " " +
-                "WHERE " + where;
+        if (from == null)
+            throw new QueryException("\"From\" clause not set");
 
-        return new QueryImpl<>(entityManager, db, resultClass, alias, sb);
+        String sql = "SELECT " + getSelectClause(from, alias) + " FROM " + from;
+
+        if (where != null)
+            sql += " WHERE " + where;
+
+        return new QueryImpl<>(entityManager, db, resultClass, alias, sql);
     }
 
 

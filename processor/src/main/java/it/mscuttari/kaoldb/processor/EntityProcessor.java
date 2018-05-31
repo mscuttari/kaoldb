@@ -21,11 +21,13 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 
 import it.mscuttari.kaoldb.annotations.Column;
@@ -60,14 +62,17 @@ public final class EntityProcessor extends AbstractProcessor {
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             if (classElement.getKind() != ElementKind.CLASS)
-                messager.printMessage(Diagnostic.Kind.ERROR, "The element " + classElement.getSimpleName().toString() + " should not have @Entity annotation");
+                messager.printMessage(Diagnostic.Kind.ERROR, "The element " + classElement.getSimpleName() + " should not have @Entity annotation", classElement);
+
+            // Check the existence of a default constructor
+            checkForDefaultConstructor((TypeElement) classElement);
 
             // Get package name
             Element enclosing = classElement;
             while (enclosing.getKind() != ElementKind.PACKAGE)
                 enclosing = enclosing.getEnclosingElement();
 
-            PackageElement packageElement = (PackageElement)enclosing;
+            PackageElement packageElement = (PackageElement) enclosing;
             String packageName = packageElement.getQualifiedName().toString();
 
             try {
@@ -122,6 +127,22 @@ public final class EntityProcessor extends AbstractProcessor {
         }
 
         return true;
+    }
+
+
+    /**
+     * Check for default constructor existence
+     *
+     * @param   element     entity element
+     */
+    private void checkForDefaultConstructor(TypeElement element) {
+        for (ExecutableElement cons : ElementFilter.constructorsIn(element.getEnclosedElements())) {
+            if (cons.getParameters().isEmpty())
+                return;
+        }
+
+        // Couldn't find any default constructor here
+        messager.printMessage(Diagnostic.Kind.ERROR, "Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
     }
 
 }

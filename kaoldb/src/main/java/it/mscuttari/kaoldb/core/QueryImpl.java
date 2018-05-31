@@ -6,7 +6,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import it.mscuttari.kaoldb.interfaces.Query;
 
@@ -59,7 +61,8 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entityObject = this.db.entities.get(resultClass);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            result.add(PojoAdapter.cursorToObject(this.db, c, resultClass, entityObject, alias));
+            Map<String, Integer> cursorMap = getCursorColumnMap(c);
+            result.add(PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, entityObject, alias));
         }
 
         c.close();
@@ -73,6 +76,27 @@ class QueryImpl<M> implements Query<M> {
     public M getSingleResult() {
         List<M> resultList = getResultList();
         return resultList == null || resultList.size() == 0 ? null : resultList.get(0);
+    }
+
+
+    /**
+     * Map each cursor column name to its column index
+     *
+     * Required to work with column names containing a dot, such as tableName.columnName
+     * @link http://androidxref.com/5.1.0_r1/xref/frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java#165
+     *
+     * @param   c       cursor
+     * @return  map
+     */
+    private static Map<String, Integer> getCursorColumnMap(Cursor c) {
+        Map<String, Integer> map = new HashMap<>(c.getColumnCount(), 1);
+        String[] columnNames = c.getColumnNames();
+
+        for (int i=0; i < c.getColumnCount(); i++) {
+            map.put(columnNames[i], i);
+        }
+
+        return map;
     }
 
 }

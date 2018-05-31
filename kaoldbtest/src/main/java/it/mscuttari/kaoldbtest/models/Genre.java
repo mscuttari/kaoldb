@@ -13,4 +13,22 @@ public class Genre {
     @Column(name = "name")
     public String name;
 
+
+    /**
+     * Default constructor
+     */
+    public Genre() {
+        this(null);
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param   name    name
+     */
+    public Genre(String name) {
+        this.name = name;
+    }
+
 }

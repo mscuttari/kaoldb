@@ -1,7 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -16,6 +15,7 @@ import java.util.Map;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
+import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -26,43 +26,62 @@ import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
-import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
-
+/**
+ * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
+ * Mapping includes table columns, parent and children classes.
+ */
 class EntityObject {
 
-    // Entity class
+    /** Entity class */
     public Class<?> entityClass;
 
-    // Table name
+    /**
+     * Table name
+     * Null if the entity doesn't require a real table
+     */
     @Nullable
     public String tableName;
 
-    // Real table
+    /** Whether the entity has a real table or not */
     public boolean realTable;
 
-    // Columns
+    /** Columns */
     public Collection<ColumnObject> columns;            // All columns
-    public Map<String, ColumnObject> columnsNameMap;    // Mapped by column name (all columns)
+    public Map<String, ColumnObject> columnsNameMap;    // All columns mapped by column name
 
-    // Primary keys
+    /** Primary keys */
     public Collection<ColumnObject> primaryKeys;
 
-    // Inheritance type
+    /**
+     * Inheritance type
+     * Null if the entity has no children
+     */
     @Nullable
     public InheritanceType inheritanceType;
 
-    // Discriminator column
-    // This is null until the entities relationships has not been checked
+    /**
+     * Discriminator column name
+     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}
+     */
     public ColumnObject discriminatorColumn;
 
-    // Discriminator value
+    /**
+     * Discriminator value
+     * Null if the entity has no parent
+     */
+    @Nullable
     public Object discriminatorValue;
 
-    // Parent
+    /**
+     * Parent entity
+     * Null if the entity has no parent
+     */
     @Nullable
     public EntityObject parent;
 
-    // Children
+    /**
+     * Children entities
+     */
     public Collection<EntityObject> children;
 
 
@@ -114,9 +133,9 @@ class EntityObject {
     @Override
     public boolean equals(Object obj) {
         if (obj == null || !(obj instanceof EntityObject)) return false;
-        EntityObject columnObject = (EntityObject)obj;
-        if (entityClass == null && columnObject.entityClass == null) return true;
-        if (entityClass != null) return entityClass.equals(columnObject.entityClass);
+        EntityObject entityObject = (EntityObject)obj;
+        if (entityClass == null && entityObject.entityClass == null) return true;
+        if (entityClass != null) return entityClass.equals(entityObject.entityClass);
         return false;
     }
 
@@ -138,6 +157,16 @@ class EntityObject {
      */
     static EntityObject entityClassToEntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
         return new EntityObject(entityClass, classes, entitiesMap);
+    }
+
+
+    /**
+     * Get the simple name of the class associated to this entity
+     *
+     * @return  class name
+     */
+    public String getName() {
+        return this.entityClass.getSimpleName();
     }
 
 
@@ -168,7 +197,7 @@ class EntityObject {
         // Get specified table tableName
         Table table = entityClass.getAnnotation(Table.class);
         if (!table.name().isEmpty()) return table.name();
-        Log.i(LOG_TAG, entityClass.getSimpleName() + ": table tableName not specified, using the default one based on class tableName");
+        LogUtils.w(entityClass.getSimpleName() + ": table tableName not specified, using the default one based on class tableName");
 
         // Default table tableName
         String className = entityClass.getSimpleName();
@@ -338,17 +367,12 @@ class EntityObject {
      * @param   allFields       collection of all class fields
      * @return  collection of columns
      */
-    private static Collection<ColumnObject> getNormalColumns(Field[] allFields) {
+    private Collection<ColumnObject> getNormalColumns(Field[] allFields) {
         Collection<Field> fields = getFieldsWithAnnotation(allFields, Column.class);
-        Collection<ColumnObject> result = new HashSet<>(fields.size());
+        Collection<ColumnObject> columns = new HashSet<>(fields.size());
+        checkColumnUniqueness(columns);
 
-        for (Field field : fields) {
-            ColumnObject column = ColumnObject.columnFieldToColumnObject(field);
-            if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-            result.add(column);
-        }
-
-        return result;
+        return columns;
     }
 
 
@@ -358,43 +382,57 @@ class EntityObject {
      * @param   allFields       collection of all class fields
      * @return  collection of From columns
      */
-    private static Collection<ColumnObject> getJoinColumns(Field[] allFields) {
+    private Collection<ColumnObject> getJoinColumns(Field[] allFields) {
         Collection<ColumnObject> result = new HashSet<>();
 
         // @JoinColumn
         Collection<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
 
         for (Field field : joinColumnFields) {
-            ColumnObject column = ColumnObject.columnFieldToColumnObject(field);
-            if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-            result.add(column);
+            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
+            checkColumnUniqueness(columns);
+            result.addAll(columns);
         }
 
         // @JoinColumns
         Collection<Field> joinColumnsFields = getFieldsWithAnnotation(allFields, JoinColumns.class);
 
         for (Field field : joinColumnsFields) {
-            List<ColumnObject> joinColumns = ColumnObject.joinColumnsFieldToColumnObjects(field);
-
-            for (ColumnObject column : joinColumns) {
-                if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-                result.add(column);
-            }
+            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
+            checkColumnUniqueness(columns);
+            result.addAll(columns);
         }
 
         // @JoinTable
         Collection<Field> joinTableFields = getFieldsWithAnnotation(allFields, JoinTable.class);
 
         for (Field field : joinTableFields) {
-            List<ColumnObject> columns = ColumnObject.joinTableFieldToColumnObjects(field);
-
-            for (ColumnObject column : columns) {
-                if (result.contains(column)) throw new InvalidConfigException("Column " + column.name + " already defined");
-                result.add(column);
-            }
+            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
+            checkColumnUniqueness(columns);
+            result.addAll(columns);
         }
 
         return result;
+    }
+
+
+    /**
+     * Ensures that all the given columns are not already defined.
+     * Used during the columns mapping phase
+     *
+     * @see #getNormalColumns(Field[])
+     * @see #getJoinColumns(Field[])
+     *
+     * @throws InvalidConfigException if any column has already been defined
+     */
+    private void checkColumnUniqueness(Collection<ColumnObject> columns) {
+        if (Collections.disjoint(this.columns, columns))
+            return;
+
+        for (ColumnObject column : columns) {
+            if (this.columns.contains(column))
+                throw new InvalidConfigException("Column " + column.name + " already defined");
+        }
     }
 
 

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.mscuttari.kaoldb.annotations.Entity;
+
 class EntityUtils {
 
     private EntityUtils() {
@@ -16,15 +18,20 @@ class EntityUtils {
 
 
     /**
-     * Create entities
+     * Generate entities mapping
+     *
+     * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
+     * mapping consistence
      *
      * @param   classes     collection of all classes
-     * @return  list of entities
+     * @return  map between classes and entities objects
      */
     static Map<Class<?>, EntityObject> createEntities(Collection<Class<?>> classes) {
         Map<Class<?>, EntityObject> result = new HashMap<>();
 
         // First scan to get basic data
+        LogUtils.v("Entities mapping: first scan to get basic data");
+
         for (Class<?> entityClass : classes) {
             if (result.containsKey(entityClass)) continue;
             EntityObject entity = EntityObject.entityClassToEntityObject(entityClass, classes, result);
@@ -32,11 +39,15 @@ class EntityUtils {
         }
 
         // Second scan to assign static data
+        LogUtils.v("Entities mapping: second scan to assign static data");
+
         for (EntityObject entity : result.values()) {
             entity.setupColumns();
         }
 
-        // Fourth scan to check consistence
+        // Third scan to check consistence
+        LogUtils.v("Entities mapping: third scan to check data consistence");
+
         for (EntityObject entity : result.values()) {
             entity.checkConsistence(result);
         }
@@ -46,7 +57,7 @@ class EntityUtils {
 
 
     /**
-     * Get the SQL query to create a model table
+     * Get the SQL query to create an entity table
      *
      * @param   entity      entity object
      * @return  SQL query (null if no table should be created)

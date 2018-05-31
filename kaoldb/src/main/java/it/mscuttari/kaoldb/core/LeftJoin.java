@@ -3,6 +3,10 @@ package it.mscuttari.kaoldb.core;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
 
+/**
+ * @param   <X>     right side entity of the join
+ * @param   <Y>     left side entity of the join
+ */
 final class LeftJoin<X, Y> extends Join<X, Y> {
 
     /**

@@ -46,22 +46,29 @@ public final class EntityManagerFactory {
     public EntityManager getEntityManager(Context context, String databaseName) {
         context = context.getApplicationContext();
 
-        if (databaseName == null || databaseName.isEmpty())
+        if (databaseName == null || databaseName.isEmpty()) {
             throw new KaolDBException("Empty database name");
+        }
 
+        // Check if the entity manager for the specifid database already exists
         if (entityManagers.containsKey(databaseName)) {
             EntityManager em = entityManagers.get(databaseName);
             if (em != null) return em;
         }
 
+        // Create a new entity manager
+        LogUtils.d("Creating entity manager for database \"" + databaseName + "\"");
         Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.mapping;
         DatabaseObject database = mapping.get(databaseName);
 
-        if (database == null)
+        if (database == null) {
             throw new KaolDBException("Database " + databaseName + " not found");
+        }
 
         EntityManager em = new EntityManagerImpl(context, database);
         entityManagers.put(databaseName, em);
+        LogUtils.i("Entity manager for database \"" + databaseName + "\" has been created");
+
         return em;
     }
 

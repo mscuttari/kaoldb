@@ -3,6 +3,11 @@ package it.mscuttari.kaoldb.core;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 
+/**
+ * Expression implementation
+ *
+ * @see Expression
+ */
 class ExpressionImpl implements Expression {
 
     private enum ExpressionType {
@@ -31,7 +36,6 @@ class ExpressionImpl implements Expression {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Expression not() {
         // Double negation: NOT(NOT(expression)) = expression
@@ -42,7 +46,6 @@ class ExpressionImpl implements Expression {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Expression and(Expression expression) {
         if (expression == null)
@@ -52,7 +55,6 @@ class ExpressionImpl implements Expression {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Expression or(Expression expression) {
         if (expression == null)

@@ -5,10 +5,14 @@ import android.util.Log;
 
 import com.facebook.stetho.Stetho;
 
+import java.util.concurrent.Callable;
+
 import it.mscuttari.kaoldb.core.EntityManagerFactory;
 import it.mscuttari.kaoldb.core.KaolDB;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.PostPersistListener;
+import it.mscuttari.kaoldb.interfaces.PrePersistListener;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
@@ -62,16 +66,18 @@ public class MyApplication extends Application {
         em.persist(genre);
 
         // Create film
-        FantasyFilm film = new FantasyFilm();
-        film.title = "Avengers - Infinity War";
-        film.year = 2018;
-        em.persist(film);
-
-        // Get film
         Person director = new Person();
         director.firstName = "Mario";
         director.lastName = "Rossi";
+        em.persist(director);
 
+        FantasyFilm film = new FantasyFilm();
+        film.title = "Avengers - Infinity War";
+        film.year = 2018;
+        film.director = director;
+        em.persist(film);
+
+        // Get film
         QueryBuilder<FantasyFilm> qb = em.getQueryBuilder(FantasyFilm.class);
         Root<FantasyFilm> root = qb.getRoot(FantasyFilm.class, "f");
         Root<Person> rootJoin = root.innerJoin(Person.class, "p", FantasyFilm_.director);

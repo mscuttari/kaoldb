@@ -1,21 +1,22 @@
 package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.util.Pair;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
-import it.mscuttari.kaoldb.interfaces.Root;
 
+/**
+ * @param   <X>     right side entity of the join
+ * @param   <Y>     left side entity of the join
+ */
 abstract class Join<X, Y> extends From<X> {
 
     enum JoinType {
@@ -68,7 +69,7 @@ abstract class Join<X, Y> extends From<X> {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + entityClass.getSimpleName());
         }
 
-        List<Pair<String, String>> columnsPairs = decomposeJoinColumn(field, from.getTableAlias(), alias);
+        List<Pair<String, String>> columnsPairs = decomposeJoinColumn(field, from.getAlias(), alias);
 
         for (Pair<String, String> pair : columnsPairs) {
             Variable<Y, StringWrapper> a = new Variable<>(new StringWrapper(pair.first));

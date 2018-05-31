@@ -10,8 +10,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
 @Table(name = "fantasy_films")
-@Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "secondGenre")
 @DiscriminatorValue(value = "Fantasy")
 public class FantasyFilm extends Film {
 

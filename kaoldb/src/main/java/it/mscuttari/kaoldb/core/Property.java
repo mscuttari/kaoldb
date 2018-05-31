@@ -1,5 +1,9 @@
 package it.mscuttari.kaoldb.core;
 
+/**
+ * @param   <M>     entity class
+ * @param   <T>     data type
+ */
 public final class Property<M, T> {
 
     private Class<M> entityClass;

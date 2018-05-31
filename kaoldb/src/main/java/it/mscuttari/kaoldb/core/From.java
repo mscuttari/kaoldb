@@ -6,6 +6,9 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
 
+/**
+ * @param   <X>     entity root
+ */
 class From<X> implements Root<X> {
 
     protected DatabaseObject db;
@@ -55,63 +58,48 @@ class From<X> implements Root<X> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Class<?> getEntityClass() {
         return entity.entityClass;
     }
 
 
-    /** {@inheritDoc} */
     @Override
-    public String getTableAlias() {
+    public String getAlias() {
         return alias;
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
         return new InnerJoin<>(db, this, entityClass, alias, property);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Expression on) {
         return new InnerJoin<>(db, this, entityClass, alias, on);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
         return new LeftJoin<>(db, this, entityClass, alias, property);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Expression on) {
         return new LeftJoin<>(db, this, entityClass, alias, on);
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
-        return new NaturalJoin<>(db, this, entityClass, alias, property);
-    }
-
-
-    /** {@inheritDoc} */
     @Override
     public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias) {
         return new NaturalJoin<>(db, this, entityClass, alias);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Expression isNull(Property<X, ?> field) {
         Variable<X, ?> a = new Variable<>(db, entity, alias, field);
@@ -120,7 +108,6 @@ class From<X> implements Root<X> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <T> Expression eq(Property<X, T> field, T value) {
         Variable<X, T> a = new Variable<>(db, entity, alias, field);
@@ -130,7 +117,6 @@ class From<X> implements Root<X> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <T> Expression eq(Property<X, T> x, Property<X, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);
@@ -140,7 +126,6 @@ class From<X> implements Root<X> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <Y, T> Expression eq(Property<X, T> x, Class<Y> yClass, String yAlias, Property<Y, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);

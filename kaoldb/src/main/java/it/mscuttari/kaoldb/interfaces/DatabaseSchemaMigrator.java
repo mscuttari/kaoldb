@@ -2,6 +2,9 @@ package it.mscuttari.kaoldb.interfaces;
 
 import android.database.sqlite.SQLiteDatabase;
 
+/**
+ * Database schema migrator to be used in case of database version change
+ */
 public interface DatabaseSchemaMigrator {
 
     /**

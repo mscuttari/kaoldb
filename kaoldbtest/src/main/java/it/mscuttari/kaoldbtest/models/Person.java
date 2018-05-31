@@ -13,11 +13,11 @@ public class Person {
 
     @Id
     @Column(name = "first_name")
-    public String firstName;
+    private String firstName;
 
     @Id
     @Column(name = "last_name")
-    public String lastName;
+    private String lastName;
 
 
     /**
@@ -62,6 +62,26 @@ public class Person {
         if (lastName == null && o.lastName != null) return false;
 
         return true;
+    }
+
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+
+    public String getLastName() {
+        return lastName;
+    }
+
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
 }

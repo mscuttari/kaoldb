@@ -261,7 +261,7 @@ class PredicateImpl extends ExpressionImpl {
 
         // Get field
         try {
-            field = property.getEntityClass().getField(property.getFieldName());
+            field = property.getEntityClass().getDeclaredField(property.getFieldName());
         } catch (NoSuchFieldException e) {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
         }
@@ -319,13 +319,13 @@ class PredicateImpl extends ExpressionImpl {
 
         // Get fields
         try {
-            xField = xProperty.getEntityClass().getField(xProperty.getFieldName());
+            xField = xProperty.getEntityClass().getDeclaredField(xProperty.getFieldName());
         } catch (NoSuchFieldException e) {
             throw new QueryException("Field " + xProperty.getFieldName() + " not found in entity " + xProperty.getEntityClass().getSimpleName());
         }
 
         try {
-            yField = yProperty.getEntityClass().getField(yProperty.getFieldName());
+            yField = yProperty.getEntityClass().getDeclaredField(yProperty.getFieldName());
         } catch (NoSuchFieldException e) {
             throw new QueryException("Field " + yProperty.getFieldName() + " not found in entity " + yProperty.getEntityClass().getSimpleName());
         }
@@ -409,7 +409,7 @@ class PredicateImpl extends ExpressionImpl {
 
         // Get field
         try {
-            field = property.getEntityClass().getField(property.getFieldName());
+            field = property.getEntityClass().getDeclaredField(property.getFieldName());
         } catch (NoSuchFieldException e) {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
         }

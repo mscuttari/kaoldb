@@ -52,8 +52,8 @@ public class DbFilmsTest {
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot.eq(Person_.firstName, person.firstName)
-                .and(personRoot.eq(Person_.lastName, person.lastName));
+        Expression where = personRoot.eq(Person_.firstName, person.getFirstName())
+                .and(personRoot.eq(Person_.lastName, person.getLastName()));
 
         qb.from(personRoot).where(where);
 

@@ -10,6 +10,9 @@ import java.util.List;
 
 import it.mscuttari.kaoldb.interfaces.Query;
 
+/**
+ * @param   <M>     result objects class
+ */
 class QueryImpl<M> implements Query<M> {
 
     private EntityManagerImpl entityManager;
@@ -46,7 +49,6 @@ class QueryImpl<M> implements Query<M> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public List<M> getResultList() {
         SQLiteDatabase db = entityManager.getReadableDatabase();
@@ -67,7 +69,6 @@ class QueryImpl<M> implements Query<M> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public M getSingleResult() {
         List<M> resultList = getResultList();

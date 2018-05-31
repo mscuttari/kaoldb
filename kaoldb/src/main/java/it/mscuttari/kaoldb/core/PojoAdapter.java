@@ -28,6 +28,7 @@ class PojoAdapter {
 
     }
 
+
     /**
      * Convert cursor to POJO (plain old java object)
      *

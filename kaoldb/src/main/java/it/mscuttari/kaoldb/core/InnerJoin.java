@@ -2,6 +2,10 @@ package it.mscuttari.kaoldb.core;
 
 import it.mscuttari.kaoldb.interfaces.Expression;
 
+/**
+ * @param   <X>     right side entity of the join
+ * @param   <Y>     left side entity of the join
+ */
 final class InnerJoin<X, Y> extends Join<X, Y> {
 
     /**

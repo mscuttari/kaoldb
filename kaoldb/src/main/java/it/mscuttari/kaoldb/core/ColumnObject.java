@@ -1,86 +1,83 @@
 package it.mscuttari.kaoldb.core;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
-import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
-
+/**
+ * Each {@link ColumnObject} maps a field annotated with {@link Column}, {@link JoinColumn},
+ * {@link JoinColumns} or {@link JoinTable} annotations.
+ */
 class ColumnObject {
 
-    // Class column field
+    /** Class column field */
     public Field field;
 
-    // Annotation
+    /** Annotation of the field */
     public Annotation annotation;
 
-    // Column name
+    /** Column name */
     public String name;
 
-    // Column type
-    // This is null until the entities relationships has not been checked
+    /**
+     * Column type
+     *
+     * This is null until the entities relationships has not been checked with the
+     * {@link EntityObject#checkConsistence(Map)} method
+     */
     public Class<?> type;
 
-    // Nullable
+    /** Nullable column property */
     public boolean nullable;
 
-    // Primary key
+    /** Primary key column property */
     public boolean primaryKey;
 
-    // Unique
+    /** Unique column property */
     public boolean unique;
 
-    // Referenced column name (if From column)
-    // Null if the column is not a From column
+    /**
+     * Referenced column name (if the data is represented by another entity)
+     * Null if the column consist of basic data (string, integer, etc.)
+     */
     @Nullable
     public String referencedColumnName;
 
 
     /**
-     * Constructor
+     * Constructor for fields annotated with {@link Column}
      *
-     * @param   field       column field (must be annotated with @Column or @JoinColumn)
+     * @param   columnAnnotation    {@link Column} annotation
+     * @param   field               field which has the {@link Column} annotation
      */
-    private ColumnObject(Field field) {
+    private ColumnObject(Column columnAnnotation, Field field) {
         this.field = field;
         this.name = getColumnName(field);
         this.primaryKey = field.isAnnotationPresent(Id.class);
-
-        if (field.isAnnotationPresent(Column.class)) {
-            this.annotation = field.getAnnotation(Column.class);
-            this.type = field.getType();
-            this.nullable = ((Column)annotation).nullable();
-            this.unique = ((Column)annotation).unique();
-            this.referencedColumnName = null;
-
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            this.annotation = field.getAnnotation(JoinColumn.class);
-            this.type = null;
-            this.nullable = ((JoinColumn)annotation).nullable();
-            this.unique = ((JoinColumn)annotation).unique();
-            this.referencedColumnName = ((JoinColumn)annotation).referencedColumnName();
-        }
+        this.annotation = columnAnnotation;
+        this.type = field.getType();
+        this.nullable = columnAnnotation.nullable();
+        this.unique = columnAnnotation.unique();
+        this.referencedColumnName = null;
     }
 
 
     /**
-     * Constructor
+     * Constructor for fields annotated with {@link JoinColumn}
      *
-     * @param   joinColumnAnnotation    From column annotation (@JoinColumn)
-     * @param   field                   field which has the above annotation
+     * @param   joinColumnAnnotation    {@link JoinColumn} annotation
+     * @param   field                   field which has the {@link JoinColumn} annotation
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
         this.field = field;
@@ -117,64 +114,55 @@ class ColumnObject {
 
 
     /**
-     * Convert column field to column object
+     * Convert column field to single or multiple column objects
      *
-     * @param   field           column field
-     * @return  column object
-     */
-    static ColumnObject columnFieldToColumnObject(Field field) {
-        return new ColumnObject(field);
-    }
-
-
-    /**
-     * Convert multiple From column field to a list of column objects
+     * Fields annotated with {@link Column} or {@link JoinColumn} will lead to a
+     * {@link java.util.Collection} populated with just one element.
+     * Fields annotated with {@link JoinColumns} or {@link JoinTable} will lead to a
+     * {@link java.util.Collection} populated with multiple elements according to the join
+     * columns number
      *
-     * @param   field       multiple From columns field
-     * @return  list of column objects
-     * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
+     * @param   field           class field
+     * @return  column objects collection
+     * @throws  InvalidConfigException if there is no column annotation
      */
-    static List<ColumnObject> joinColumnsFieldToColumnObjects(Field field) {
-        List<ColumnObject> columns = new ArrayList<>();
+    public static Collection<ColumnObject> fieldToObject(Field field) {
+        Collection<ColumnObject> result = new HashSet<>();
 
-        if (!field.isAnnotationPresent(JoinColumns.class))
-            throw new InvalidConfigException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
+        if (field.isAnnotationPresent(Column.class)) {
+            // @Column
+            result.add(new ColumnObject(field.getAnnotation(Column.class), field));
 
-        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+        } else if (field.isAnnotationPresent(JoinColumn.class)) {
+            // @JoinColumn
+            result.add(new ColumnObject(field.getAnnotation(JoinColumn.class), field));
 
-        for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
-            columns.add(new ColumnObject(joinColumnAnnotation, field));
+        } else if (field.isAnnotationPresent(JoinColumns.class)) {
+            // @JoinColumns
+            JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+
+            for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
+                result.add(new ColumnObject(joinColumnAnnotation, field));
+            }
+
+        } else if (field.isAnnotationPresent(JoinTable.class)) {
+            // @JoinTable
+            JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+
+            for (JoinColumn joinColumnAnnotation : joinTableAnnotation.joinColumns()) {
+                result.add(new ColumnObject(joinColumnAnnotation, field));
+            }
+        } else {
+            // No annotation found
+            throw new InvalidConfigException("No column annotation found for field " + field.getName());
         }
 
-        return columns;
+        return result;
     }
 
 
     /**
-     * Convert From table field to a list of column objects
-     *
-     * @param   field       multiple From columns field
-     * @return  list of column objects
-     * @throws  InvalidConfigException if the field doesn't have the @JoinColumns annotation
-     */
-    static List<ColumnObject> joinTableFieldToColumnObjects(Field field) {
-        List<ColumnObject> columns = new ArrayList<>();
-
-        if (!field.isAnnotationPresent(JoinTable.class))
-            throw new InvalidConfigException("Field " + field.getName() + " doesn't have the @JoinColumns annotation");
-
-        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
-
-        for (JoinColumn joinColumnAnnotation : joinTableAnnotation.joinColumns()) {
-            columns.add(new ColumnObject(joinColumnAnnotation, field));
-        }
-
-        return columns;
-    }
-
-
-    /**
-     * Get column tableName
+     * Get column name
      *
      * If the table is not specified, the following policy is applied:
      * Uppercase characters are replaces with underscore followed by the same character converted to lowercase
@@ -201,7 +189,7 @@ class ColumnObject {
         }
 
         // Currently not reachable (column name is a required field)
-        Log.i(LOG_TAG, field.getName() + ": column tableName not specified, using the default one based on field tableName");
+        LogUtils.w(field.getName() + ": column tableName not specified, using the default one based on field tableName");
 
         // Default table tableName
         String fieldName = field.getName();
@@ -215,10 +203,13 @@ class ColumnObject {
     /**
      * Check column consistence
      *
+     * Method called during the mapping consistence check
+     * @see EntityObject#checkConsistence(Map)
+     *
      * @param   entities        map of all entities
      * @throws  InvalidConfigException if the configuration is invalid
      */
-    void checkConsistence(Map<Class<?>, EntityObject> entities) {
+    public void checkConsistence(Map<Class<?>, EntityObject> entities) {
         // Class doesn't have column field
         if (this.field == null)
             return;
@@ -232,7 +223,7 @@ class ColumnObject {
         if (this.field.isAnnotationPresent(JoinTable.class)) annotationCount++;
 
         if (annotationCount == 0) {
-            throw new InvalidConfigException("Field " + this.field.getName() + " has no column annotation");
+            throw new InvalidConfigException("Field " + this.field.getName() + " has no @Column annotation");
         } else if (annotationCount > 1) {
             throw new InvalidConfigException("Field " + this.field.getName() + " has too much column annotations");
         }
@@ -246,7 +237,7 @@ class ColumnObject {
             if (referencedEntity == null)
                 throw new InvalidConfigException("Field " + this.field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
 
-            String referencedColumnName = ((JoinColumn)this.annotation).referencedColumnName();
+            String referencedColumnName = ((JoinColumn) this.annotation).referencedColumnName();
             ColumnObject referencedColumn = null;
 
             while (referencedEntity != null && referencedColumn == null) {

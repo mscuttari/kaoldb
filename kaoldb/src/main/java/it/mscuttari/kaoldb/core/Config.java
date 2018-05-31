@@ -15,10 +15,18 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class Config {
 
-    Map<String, DatabaseObject> mapping;
-    boolean debug;
+    /** Maps each database name to its {@link DatabaseObject}*/
+    public Map<String, DatabaseObject> mapping;
 
-    Config() {
+
+    /** Whether the debug messages should be enabled or not */
+    public boolean debug;
+
+
+    /**
+     * Constructor
+     */
+    public Config() {
         mapping = new HashMap<>();
         debug = false;
     }
@@ -32,8 +40,9 @@ class Config {
      * @throws  XmlPullParserException      in case of parsing error
      * @throws  IOException                 in case of general i/o error
      */
-    void parseConfigFile(XmlResourceParser xml) throws XmlPullParserException, IOException {
+    public void parseConfigFile(XmlResourceParser xml) throws XmlPullParserException, IOException {
         int eventType = xml.getEventType();
+
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_TAG && xml.getName().equals("databases")) {
                 parseDatabasesList(xml);
@@ -54,6 +63,7 @@ class Config {
      */
     private void parseDatabasesList(XmlResourceParser xml) throws XmlPullParserException, IOException {
         int eventType = xml.getEventType();
+
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_TAG && xml.getName().equals("database")) {
                 parseDatabaseSection(xml);
@@ -73,13 +83,15 @@ class Config {
      * @throws  IOException                 in case of general i/o error
      */
     private void parseDatabaseSection(XmlResourceParser xml) throws XmlPullParserException, IOException {
+        LogUtils.v("Parsing database section");
         DatabaseObject database = new DatabaseObject();
 
         // Name
         database.name = xml.getAttributeValue(null, "name");
 
-        if (database.name == null || database.name.isEmpty())
+        if (database.name == null || database.name.isEmpty()) {
             throw new InvalidConfigException("Database name not specified");
+        }
 
         // Version
         String version = xml.getAttributeValue(null, "version");
@@ -111,6 +123,13 @@ class Config {
         }
 
 
+        LogUtils.i("Database found: [" +
+                "name = " + database.name + ", " +
+                "version = " + database.version + ", " +
+                "migrator = " + database.migrator.getSimpleName() + "]"
+        );
+
+
         // Classes
         database.classes = new ArrayList<>();
 
@@ -122,7 +141,10 @@ class Config {
                 eventType = xml.next();
 
                 try {
-                    database.classes.add(Class.forName(xml.getText()));
+                    Class<?> clazz = Class.forName(xml.getText());
+                    database.classes.add(clazz);
+                    LogUtils.i("Database " + database.name + ": found class " + clazz.getSimpleName());
+
                 } catch (ClassNotFoundException e) {
                     throw new InvalidConfigException("Database " + database.name + ": class " + xml.getText() + " not found");
                 }
@@ -131,6 +153,9 @@ class Config {
             eventType = xml.next();
         }
 
+        LogUtils.e("Database " + database.name + ": classes mapped");
+
+        // Add database to databases list
         mapping.put(database.name, database);
     }
 

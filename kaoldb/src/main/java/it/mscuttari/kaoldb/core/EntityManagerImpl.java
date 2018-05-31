@@ -2,16 +2,12 @@ package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
@@ -22,10 +18,13 @@ import it.mscuttari.kaoldb.interfaces.PrePersistListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
-import static it.mscuttari.kaoldb.core.Constants.LOG_TAG;
-import static it.mscuttari.kaoldb.core.PojoAdapter.cursorToObject;
 import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
 
+/**
+ * Entity manager implementation
+ *
+ * @see EntityManager
+ */
 class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     private DatabaseObject database;
@@ -40,6 +39,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      */
     EntityManagerImpl(Context context, DatabaseObject database) {
         super(context, database.name, null, database.version);
+
         this.database = database;
         this.context = context;
     }
@@ -49,15 +49,23 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.entities.values()) {
             String createSQL = EntityUtils.getCreateTableSql(entity);
-            if (createSQL != null) db.execSQL(createSQL);
+
+            if (createSQL != null) {
+                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
+                db.execSQL(createSQL);
+                LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
+            }
         }
     }
 
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (database.migrator == null)
-            throw new DatabaseManagementException("Database " + database.name + ": schema migrator not set");
+        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+
+        if (database.migrator == null) {
+            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
+        }
 
         DatabaseSchemaMigrator migrator;
 
@@ -70,47 +78,57 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         }
 
         migrator.onUpgrade(db, oldVersion, newVersion);
+
+        LogUtils.i("[Database \"" + database.name + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (database.migrator == null)
-            throw new DatabaseManagementException("Database " + database.name + ": schema migrator not set");
+        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+
+        if (database.migrator == null) {
+            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
+        }
 
         DatabaseSchemaMigrator migrator;
 
         try {
             migrator = database.migrator.newInstance();
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException  e) {
             throw new DatabaseManagementException(e.getMessage());
         } catch (InstantiationException e) {
             throw new DatabaseManagementException(e.getMessage());
         }
 
         migrator.onDowngrade(db, oldVersion, newVersion);
+
+        LogUtils.i("[Database \"" + database.name + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public boolean deleteDatabase() {
-        return context.deleteDatabase(database.name);
+        boolean result = context.deleteDatabase(database.name);
+
+        if (result) {
+            LogUtils.i("Database \"" + database.name + "\" deleted");
+        }
+
+        return result;
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass) {
         return new QueryBuilderImpl<>(database, resultClass, this);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <T> List<T> getAll(Class<T> entityClass) {
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
-        Root<T> root = qb.getRoot(entityClass, "c");
+        Root<T> root = qb.getRoot(entityClass, "e");
         qb.from(root);
 
         return qb.build("e").getResultList();
@@ -128,8 +146,9 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         Class<?> objectClass = obj.getClass();
         EntityObject entity = database.entities.get(objectClass);
 
-        if (entity == null)
+        if (entity == null) {
             throw new QueryException("Class " + objectClass.getSimpleName() + " is not an entity");
+        }
 
         return entity;
     }
@@ -162,16 +181,14 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public synchronized void persist(Object obj) {
         persist(obj, null, null);
     }
 
 
-    /** {@inheritDoc} */
     @Override
-    public synchronized <M> void persist(M obj, PrePersistListener<M> prePersist, PostPersistListener<M> postPersist) {
+    public synchronized <T> void persist(T obj, PrePersistListener<T> prePersist, PostPersistListener<T> postPersist) {
         if (prePersist != null) prePersist.prePersist(obj);
         EntityObject entity = getObjectEntity(obj);
         persist(obj, entity, null, false);
@@ -213,13 +230,6 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-    /** {@inheritDoc} */
-    public void postPersist(Object obj) {
-
-    }
-
-
-    /** {@inheritDoc} */
     public synchronized void delete(Object obj, boolean isInTransaction) {
         EntityObject entity = getObjectEntity(obj);
         SQLiteDatabase db = getWritableDatabase();

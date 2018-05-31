@@ -11,6 +11,9 @@ import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
+/**
+ * @param   <T>     result objects class
+ */
 class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     private DatabaseObject db;
@@ -36,14 +39,12 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public <M> Root<M> getRoot(Class<M> entityClass, String alias) {
         return new From<>(db, entityClass, alias);
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public QueryBuilder<T> from(Root<?> from) {
         this.from = from;
@@ -51,7 +52,6 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public QueryBuilder<T> where(Expression where) {
         this.where = where;
@@ -59,7 +59,6 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     }
 
 
-    /** {@inheritDoc} */
     @Override
     public Query<T> build(String alias) {
         if (from == null)
@@ -127,7 +126,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         if (root instanceof From<?>) {
             From<?> from = (From<?>)root;
 
-            if (from.getTableAlias().equals(alias)) {
+            if (from.getAlias().equals(alias)) {
                 if (from.getEntityClass().equals(resultClass)) {
                     return true;
                 } else {

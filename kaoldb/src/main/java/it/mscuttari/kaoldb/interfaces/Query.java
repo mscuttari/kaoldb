@@ -2,20 +2,23 @@ package it.mscuttari.kaoldb.interfaces;
 
 import java.util.List;
 
+/**
+ * @param   <M>     result objects class
+ */
 public interface Query<M> {
 
     /**
-     * Get query results list
+     * Run the query and get the results list
      *
-     * @return  list
+     * @return  results list
      */
     List<M> getResultList();
 
 
     /**
-     * Get the first query result element
+     * Run the query and get the first query result object
      *
-     * @return  fjrst result element
+     * @return  first result object
      */
     M getSingleResult();
 

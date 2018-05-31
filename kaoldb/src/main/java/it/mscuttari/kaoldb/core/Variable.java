@@ -1,5 +1,9 @@
 package it.mscuttari.kaoldb.core;
 
+/**
+ * @param   <M>     entity class
+ * @param   <T>     data type
+ */
 class Variable<M, T> {
 
     private DatabaseObject db;

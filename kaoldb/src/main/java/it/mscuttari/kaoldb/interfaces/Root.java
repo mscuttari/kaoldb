@@ -3,10 +3,13 @@ package it.mscuttari.kaoldb.interfaces;
 import it.mscuttari.kaoldb.core.Property;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
+/**
+ * @param   <X>     entity class
+ */
 public interface Root<X> {
 
     /**
-     * Get entity class
+     * Get the entity class the root is linked to
      *
      * @return  entity class
      */
@@ -14,11 +17,11 @@ public interface Root<X> {
 
 
     /**
-     * Get table alias
+     * Get the alias used in the query for the current root
      *
-     * @return  table alias
+     * @return  alias
      */
-    String getTableAlias();
+    String getAlias();
 
 
     /**
@@ -26,8 +29,9 @@ public interface Root<X> {
      *
      * @param   entityClass     entity class to be joined
      * @param   property        property upon with base the "ON" expression
+     * @param   <Y>             entity class to be joined (right side of join relationship)
      *
-     * @return  root
+     * @return  joined entity root
      */
     <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Property<X, Y> property);
 
@@ -36,9 +40,11 @@ public interface Root<X> {
      * Get inner join root
      *
      * @param   entityClass     entity class to be joined
+     * @param   alias           alias to be used for the joined entity
      * @param   on              ON expression
+     * @param   <Y>             entity class to be joined (right side of join relationship)
      *
-     * @return  root
+     * @return  joined entity root
      */
     <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Expression on);
 
@@ -47,9 +53,11 @@ public interface Root<X> {
      * Get left join root
      *
      * @param   entityClass     entity class to be joined
+     * @param   alias           alias to be used for the joined entity
      * @param   property        property upon with base the "ON" expression
+     * @param   <Y>             entity class to be joined (right side of join relationship)
      *
-     * @return  root
+     * @return  joined entity root
      */
     <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Property<X, Y> property);
 
@@ -58,9 +66,11 @@ public interface Root<X> {
      * Get left join root
      *
      * @param   entityClass     entity class to be joined
+     * @param   alias           alias to be used for the joined entity
      * @param   on              ON expression
+     * @param   <Y>             entity class to be joined (right side of join relationship)
      *
-     * @return  root
+     * @return  joined entity root
      */
     <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Expression on);
 
@@ -69,7 +79,10 @@ public interface Root<X> {
      * Get natural join root
      *
      * @param   entityClass     entity class to be joined
-     * @return  root
+     * @param   alias           alias to be used for the joined entity
+     * @param   <Y>             entity class to be joined (right side of join relationship)
+     *
+     * @return  joined entity root
      */
     <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias);
 
@@ -77,7 +90,8 @@ public interface Root<X> {
     /**
      * Get "is null" expression for a field
      *
-     * @param   field   entity field
+     * @param   field       entity field
+     *
      * @return  expression
      */
     Expression isNull(Property<X, ?> field);
@@ -86,8 +100,9 @@ public interface Root<X> {
     /**
      * Get "equals" expression between a field and a value
      *
-     * @param   field   entity field
-     * @param   value   value
+     * @param   field       entity field
+     * @param   value       value
+     * @param   <T>         data type
      *
      * @return  expression
      */
@@ -97,8 +112,9 @@ public interface Root<X> {
     /**
      * Get "equals" expression between two fields
      *
-     * @param   x   first field
-     * @param   y   second field
+     * @param   x       first field
+     * @param   y       second field
+     * @param   <T>     data type
      *
      * @return  expression
      */
@@ -108,10 +124,12 @@ public interface Root<X> {
     /**
      * Get "equals" expression between two fields
      *
-     * @param   x       first field
-     * @param   yClass  class of the second entity
-     * @param   yAlias  alias of the second entity
-     * @param   y       second field
+     * @param   x           first field
+     * @param   yClass      class of the second entity
+     * @param   yAlias      alias of the second entity
+     * @param   y           second field
+     * @param   <Y>         second field belonging class
+     * @param   <T>         second field data type
      *
      * @return  expression
      *

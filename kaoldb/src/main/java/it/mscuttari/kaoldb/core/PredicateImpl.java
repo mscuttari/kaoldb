@@ -9,9 +9,14 @@ import java.util.List;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
+import it.mscuttari.kaoldb.interfaces.Expression;
 
+/**
+ * Predicate implementation
+ *
+ * @see Expression
+ */
 class PredicateImpl extends ExpressionImpl {
 
     private enum PredicateType {

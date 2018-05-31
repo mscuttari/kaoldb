@@ -1,5 +1,8 @@
 package it.mscuttari.kaoldb.interfaces;
 
+/**
+ * @param   <M>     object class
+ */
 public interface PrePersistListener<M> {
 
     /**

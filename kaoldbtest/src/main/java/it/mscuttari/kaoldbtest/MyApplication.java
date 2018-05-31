@@ -11,6 +11,8 @@ import it.mscuttari.kaoldb.core.EntityManagerFactory;
 import it.mscuttari.kaoldb.core.KaolDB;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.PostPersistListener;
+import it.mscuttari.kaoldb.interfaces.PrePersistListener;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;

@@ -1,8 +1,10 @@
 package it.mscuttari.kaoldb.interfaces;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
+/**
+ * Entity manager gives access to all entity related operations, such as querying or persisting objects
+ */
 public interface EntityManager {
 
     /**
@@ -16,7 +18,9 @@ public interface EntityManager {
     /**
      * Get query builder
      *
-     * @param   resultClass     result objects type
+     * @param   resultClass     result objects class
+     * @param   <T>             result objects class
+     *
      * @return  query builder
      */
     <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass);
@@ -26,6 +30,8 @@ public interface EntityManager {
      * Get all the entity elements
      *
      * @param   entityClass     entity class
+     * @param   <T>             entity class
+     *
      * @return  elements list
      */
     <T> List<T> getAll(Class<T> entityClass);
@@ -45,7 +51,8 @@ public interface EntityManager {
      * @param   obj             object to be persisted
      * @param   prePersist      pre-persist listener
      * @param   postPersist     post-persist listener
+     * @param   <T>             object class
      */
-    <M> void persist(M obj, PrePersistListener<M> prePersist, PostPersistListener<M> postPersist);
+    <T> void persist(T obj, PrePersistListener<T> prePersist, PostPersistListener<T> postPersist);
 
 }

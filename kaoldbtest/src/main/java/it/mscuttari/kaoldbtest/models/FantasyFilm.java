@@ -11,9 +11,27 @@ import it.mscuttari.kaoldb.annotations.Table;
 @Entity
 @Table(name = "fantasy_films")
 @DiscriminatorValue(value = "Fantasy")
-public class FantasyFilm extends Film {
+public final class FantasyFilm extends Film {
 
-    @Column(name = "secondGenre")
-    public String test;
+    /**
+     * Default constructor
+     */
+    public FantasyFilm() {
+        this(null, null, null, null, null);
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param   title       title
+     * @param   year        year
+     * @param   genre       genre
+     * @param   director    director
+     * @param   length      length
+     */
+    public FantasyFilm(String title, Integer year, Genre genre, Person director, Integer length) {
+        super(title, year, genre, director, length);
+    }
 
 }

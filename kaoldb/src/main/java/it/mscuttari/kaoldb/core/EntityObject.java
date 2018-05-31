@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -338,10 +338,7 @@ class EntityObject {
         // Parent inherited primary keys (in case of JOINED inheritance strategy)
         if (this.parent != null && this.parent.inheritanceType == InheritanceType.JOINED) {
             Collection<ColumnObject> parentPrimaryKeys = this.parent.getPrimaryKeys();
-
-            if (!Collections.disjoint(result, parentPrimaryKeys))
-                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns clash with inherited primary keys");
-
+            checkColumnUniqueness(result, parentPrimaryKeys);
             result.addAll(parentPrimaryKeys);
         }
 
@@ -349,10 +346,7 @@ class EntityObject {
         if (this.inheritanceType == InheritanceType.SINGLE_TABLE) {
             for (EntityObject child : children) {
                 Collection<ColumnObject> childColumns = child.getColumns();
-
-                if (!Collections.disjoint(result, childColumns))
-                    throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns clash with included columns from " + child.entityClass.getSimpleName());
-
+                checkColumnUniqueness(result, childColumns);
                 result.addAll(childColumns);
             }
         }
@@ -369,10 +363,15 @@ class EntityObject {
      */
     private Collection<ColumnObject> getNormalColumns(Field[] allFields) {
         Collection<Field> fields = getFieldsWithAnnotation(allFields, Column.class);
-        Collection<ColumnObject> columns = new HashSet<>(fields.size());
-        checkColumnUniqueness(columns);
+        Collection<ColumnObject> result = new HashSet<>(fields.size());
 
-        return columns;
+        for (Field field : fields) {
+            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
+            checkColumnUniqueness(result, columns);
+            result.addAll(columns);
+        }
+
+        return result;
     }
 
 
@@ -390,7 +389,7 @@ class EntityObject {
 
         for (Field field : joinColumnFields) {
             Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(columns);
+            checkColumnUniqueness(result, columns);
             result.addAll(columns);
         }
 
@@ -399,7 +398,7 @@ class EntityObject {
 
         for (Field field : joinColumnsFields) {
             Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(columns);
+            checkColumnUniqueness(result, columns);
             result.addAll(columns);
         }
 
@@ -408,7 +407,7 @@ class EntityObject {
 
         for (Field field : joinTableFields) {
             Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(columns);
+            checkColumnUniqueness(result, columns);
             result.addAll(columns);
         }
 
@@ -423,14 +422,17 @@ class EntityObject {
      * @see #getNormalColumns(Field[])
      * @see #getJoinColumns(Field[])
      *
+     * @param   startingColumns     collection where the columns have to be searched
+     * @param   columnsToBeAdded    collection of the columns to be added
+     *
      * @throws InvalidConfigException if any column has already been defined
      */
-    private void checkColumnUniqueness(Collection<ColumnObject> columns) {
-        if (Collections.disjoint(this.columns, columns))
+    private void checkColumnUniqueness(Collection<ColumnObject> startingColumns, Collection<ColumnObject> columnsToBeAdded) {
+        if (Collections.disjoint(startingColumns, columnsToBeAdded))
             return;
 
-        for (ColumnObject column : columns) {
-            if (this.columns.contains(column))
+        for (ColumnObject column : columnsToBeAdded) {
+            if (startingColumns.contains(column))
                 throw new InvalidConfigException("Column " + column.name + " already defined");
         }
     }

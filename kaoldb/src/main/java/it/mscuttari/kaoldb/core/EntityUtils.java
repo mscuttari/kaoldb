@@ -1,7 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -102,7 +102,7 @@ class EntityUtils {
      * @param   columns     collection of all columns
      * @return  SQL query
      */
-    @NonNull
+    @NotNull
     private static String getColumnsSql(Collection<ColumnObject> columns) {
         StringBuilder result = new StringBuilder();
         String prefix = "";
@@ -156,7 +156,7 @@ class EntityUtils {
      * @param   primaryKeys     collection of primary keys
      * @return  SQL query
      */
-    @NonNull
+    @NotNull
     private static String getPrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
         StringBuilder result = new StringBuilder();
         boolean empty = true;
@@ -184,7 +184,7 @@ class EntityUtils {
      * @param   uniqueColumns       list of unique columns
      * @return  SQL query
      */
-    @NonNull
+    @NotNull
     private static String getUniquesSql(List<List<ColumnObject>> uniqueColumns) {
         StringBuilder result = new StringBuilder();
         String prefixExternal = "";

@@ -37,4 +37,30 @@ public abstract class Film {
     @Column(name = "length")
     public Integer length;
 
+
+    /**
+     * Default constructor
+     */
+    public Film() {
+        this(null, null, null, null, null);
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param   title       title
+     * @param   year        year
+     * @param   genre       genre
+     * @param   director    director
+     * @param   length      length
+     */
+    public Film(String title, Integer year, Genre genre, Person director, Integer length) {
+        this.title = title;
+        this.year = year;
+        this.genre = genre;
+        this.director = director;
+        this.length = length;
+    }
+
 }

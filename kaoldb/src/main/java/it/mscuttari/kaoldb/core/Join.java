@@ -1,7 +1,8 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.NonNull;
 import android.util.Pair;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ abstract class Join<X, Y> extends From<X> {
      *
      * @throws  QueryException  if the property field is not found in the first entity class
      */
-    Join(DatabaseObject db, @NonNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Property<Y, X> property) {
+    Join(DatabaseObject db, @NotNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Property<Y, X> property) {
         super(db, entityClass, alias);
 
         this.type = type;
@@ -90,7 +91,7 @@ abstract class Join<X, Y> extends From<X> {
      * @param   alias           second joined entity alias
      * @param   on              "on" expression
      */
-    Join(DatabaseObject db, @NonNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Expression on) {
+    Join(DatabaseObject db, @NotNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Expression on) {
         super(db, entityClass, alias);
 
         this.type = type;

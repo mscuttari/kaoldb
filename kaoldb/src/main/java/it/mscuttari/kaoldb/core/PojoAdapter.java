@@ -3,12 +3,16 @@ package it.mscuttari.kaoldb.core;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.support.annotation.Nullable;
+import android.database.DatabaseUtils;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -34,6 +38,7 @@ class PojoAdapter {
      *
      * @param   db              database object
      * @param   c               cursor
+     * @param   cursorMap       map between cursor column names and column indexes
      * @param   entityClass     entity class of the POJO (just for return type)
      * @param   entity          entity representing the POJO
      *
@@ -42,7 +47,7 @@ class PojoAdapter {
      * @throws  PojoException   in case of error
      */
     @Nullable
-    public static <T> T cursorToObject(DatabaseObject db, Cursor c, Class<T> entityClass, EntityObject entity, String alias) {
+    public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> entityClass, EntityObject entity, String alias) {
         if (entity.children.size() != 0) {
             // Go down to child class
             int columnIndex = c.getColumnIndex(entity.discriminatorColumn.name);
@@ -56,7 +61,7 @@ class PojoAdapter {
 
             for (EntityObject child : entity.children) {
                 if (child.discriminatorValue.equals(discriminatorValue)) {
-                    return cursorToObject(db, c, entityClass, child, alias);
+                    return cursorToObject(db, c, cursorMap, entityClass, child, alias);
                 }
             }
 
@@ -72,8 +77,10 @@ class PojoAdapter {
                         for (ColumnObject column : entity.columns) {
                             if (column.field == null) continue;
 
-                            int columnIndex = c.getColumnIndex(column.name);
+                            String columnName = alias + entity.getName() + "." + column.name;
+                            int columnIndex = cursorMap.get(columnName);
                             int columnType = c.getType(columnIndex);
+
                             Object value = null;
 
                             if (columnType == Cursor.FIELD_TYPE_INTEGER) {
@@ -95,8 +102,11 @@ class PojoAdapter {
                 return result;
 
             } catch (InstantiationException e) {
+                e.printStackTrace();
                 throw new PojoException(e.getMessage());
+
             } catch (IllegalAccessException e) {
+                e.printStackTrace();
                 throw new PojoException(e.getMessage());
             }
         }
@@ -257,8 +267,7 @@ class PojoAdapter {
             Object destinationValue = field.get(obj);
             EntityObject destinationEntity =  db.entities.get(destinationValue.getClass());
 
-            EntityManagerFactory emf = EntityManagerFactory.getInstance();
-            EntityManager em = emf.getEntityManager(context, db.name);
+            EntityManager em = KaolDB.getInstance().getEntityManager(context, db.name);
             QueryBuilder<?> qb = em.getQueryBuilder(destinationEntity.entityClass);
             Root<?> root = qb.getRoot(destinationEntity.entityClass, "de");
 

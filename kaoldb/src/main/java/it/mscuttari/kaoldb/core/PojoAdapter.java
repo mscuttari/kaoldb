@@ -3,14 +3,15 @@ package it.mscuttari.kaoldb.core;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
+import android.database.sqlite.SQLiteDatabase;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -78,18 +79,7 @@ class PojoAdapter {
                             if (column.field == null) continue;
 
                             String columnName = alias + entity.getName() + "." + column.name;
-                            int columnIndex = cursorMap.get(columnName);
-                            int columnType = c.getType(columnIndex);
-
-                            Object value = null;
-
-                            if (columnType == Cursor.FIELD_TYPE_INTEGER) {
-                                value = c.getInt(columnIndex);
-                            } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
-                                value = c.getFloat(columnIndex);
-                            } else if (columnType == Cursor.FIELD_TYPE_STRING) {
-                                value = c.getString(columnIndex);
-                            }
+                            Object value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
 
                             column.field.setAccessible(true);
                             column.field.set(result, value);
@@ -114,7 +104,68 @@ class PojoAdapter {
 
 
     /**
-     * Prepare the data to be saved in a particular entity
+     * Convert {@link Cursor} field to object
+     *
+     * @param   c               cursor
+     * @param   cursorMap       map between cursor column names and column indexes
+     * @param   columnName      column name
+     *
+     * @return  column value
+     */
+    private static Object cursorFieldToObject(Cursor c, Map<String, Integer> cursorMap, String columnName, Class<?> dataType) {
+        int columnIndex = cursorMap.get(columnName);
+        int columnType = c.getType(columnIndex);
+
+        // Get value from cursor
+        Object value = null;
+
+        if (columnType == Cursor.FIELD_TYPE_INTEGER) {
+            if (!(dataType.equals(Integer.class) || dataType.equals(int.class) || !dataType.equals(Date.class) || !dataType.equals(Calendar.class)))
+                throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found Integer");
+
+            if (dataType.equals(Long.class) || dataType.equals(long.class)) {
+                value = c.getLong(columnIndex);
+
+            } else if (dataType.equals(Date.class)) {
+                value = new Date();
+                ((Date) value).setTime(c.getLong(columnIndex));
+
+            } else if (dataType.equals(Calendar.class)) {
+                value = Calendar.getInstance();
+                ((Calendar) value).setTimeInMillis(c.getLong(columnIndex));
+
+            } else {
+                value = c.getInt(columnIndex);
+            }
+
+        } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
+            if (!(dataType.equals(Float.class) || dataType.equals(float.class) || dataType.equals(Double.class) || dataType.equals(double.class)))
+                throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found Float");
+
+            if (dataType.equals(Double.class) || dataType.equals(double.class)) {
+                value = c.getDouble(columnIndex);
+
+            } else {
+                value = c.getFloat(columnIndex);
+            }
+
+        } else if (columnType == Cursor.FIELD_TYPE_STRING) {
+            if (!(dataType.equals(String.class)))
+                throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found String");
+
+            value = c.getString(columnIndex);
+        }
+
+        return value;
+    }
+
+
+    /**
+     * Prepare the data to be saved in a particular entity table
+     *
+     *{@link ContentValues#size()} must be checked before saving the data in the database.
+     * If zero, no data needs to be saved and, if not skipped, the
+     * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.
      *
      * @param   context         context
      * @param   db              database object
@@ -122,9 +173,12 @@ class PojoAdapter {
      * @param   childEntity     child entity object
      * @param   obj             object to be persisted
      *
-     * @return  data ready to be saved in the database (null if the entity doesn't have a real table)
+     * @return  data ready to be saved in the database
+     *
+     * @throws  QueryException  if the discriminator value has been manually set but is not
+     *                          compatible with the child entity class
      */
-    static ContentValues objectToContentValues(Context context, DatabaseObject db, EntityObject currentEntity, EntityObject childEntity, Object obj) {
+    public static ContentValues objectToContentValues(Context context, DatabaseObject db, EntityObject currentEntity, EntityObject childEntity, Object obj) {
         ContentValues cv = new ContentValues();
 
         // Skip the entity if it doesn't have its own dedicated table
@@ -234,14 +288,16 @@ class PojoAdapter {
 
 
     /**
-     * Check if the element already exists in the database
+     * Check if the object already exists in the database
      *
-     * @param   obj         object to be persisted
-     * @param   context     context
-     * @param   db          database object
-     * @param   field       object field to be checked
+     * @param   obj         {@link Object} to be persisted whose class contains the {@code field}
+     * @param   context     application {@link Context}
+     * @param   db          {@link DatabaseObject} of the database the entity belongs to
+     * @param   field       {@link Field} to be checked. In case of basic field type (Integer,
+     *                      String, etc.) the check will be successful; in case of complex type
+     *                      (custom classes), a query searching for the object is run
      *
-     * @return  boolean     true if the data exits; false otherwise
+     * @return  true if the data exits; false otherwise
      */
     private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db, Field field) {
         // Primitive data
@@ -259,15 +315,17 @@ class PojoAdapter {
             return true;
         } else if (fieldClass.equals(Boolean.class) || fieldClass.equals(boolean.class)) {
             return true;
+        } else if (fieldClass.equals(Date.class) || fieldClass.equals(Calendar.class)) {
+            return true;
         }
 
         // Non-primitive data
         try {
             field.setAccessible(true);
             Object destinationValue = field.get(obj);
-            EntityObject destinationEntity =  db.entities.get(destinationValue.getClass());
+            EntityObject destinationEntity = db.getEntityObject(destinationValue.getClass());
 
-            EntityManager em = KaolDB.getInstance().getEntityManager(context, db.name);
+            EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
             QueryBuilder<?> qb = em.getQueryBuilder(destinationEntity.entityClass);
             Root<?> root = qb.getRoot(destinationEntity.entityClass, "de");
 
@@ -293,12 +351,12 @@ class PojoAdapter {
 
 
     /**
-     * Insert field into content values
+     * Insert field into {@link ContentValues}
      *
-     * @param   cv      content values
-     * @param   obj     object containing the date
-     * @param   db      database object
-     * @param   field   column field
+     * @param   cv      {@link ContentValues} to be populated
+     * @param   obj     {@link Object} to be persisted whose class contains the {@code field}
+     * @param   db      {@link DatabaseObject} of the database the entity belongs to
+     * @param   field   {@link Field} linked to the table column to be populated
      */
     private static void insertFieldIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field) {
         if (field.isAnnotationPresent(Column.class)) {
@@ -317,11 +375,11 @@ class PojoAdapter {
 
 
     /**
-     * Insert column field into content values
+     * Insert {@link Column} field into {@link ContentValues}
      *
-     * @param   cv      content values
-     * @param   obj     object containing the date
-     * @param   field   column field
+     * @param   cv      {@link ContentValues} to be populated
+     * @param   obj     {@link Object} to be persisted which contains the field
+     * @param   field   {@link Field} linked to the table column to be populated
      */
     private static void insertColumnIntoContentValues(ContentValues cv, Object obj, Field field, Column annotation) {
         try {
@@ -336,12 +394,12 @@ class PojoAdapter {
 
 
     /**
-     * Insert join column field into content values
+     * Insert {@link JoinColumn} field into {@link ContentValues}
      *
-     * @param   cv      content values
-     * @param   obj     object containing the date
-     * @param   db      database object
-     * @param   field   column field
+     * @param   cv      {@link ContentValues} to be populated
+     * @param   obj     {@link Object} to be persisted which contains the field
+     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   field   {@link Field} linked to the table column to be populated
      */
     private static void insertJoinColumnIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumn annotation) {
         try {
@@ -351,7 +409,7 @@ class PojoAdapter {
             if (sourceObject == null) {
                 insertDataIntoContentValues(cv, annotation.name(), null);
             } else {
-                EntityObject destinationEntity = db.entities.get(sourceObject.getClass());
+                EntityObject destinationEntity = db.getEntityObject(sourceObject.getClass());
                 ColumnObject destinationColumn = destinationEntity.columnsNameMap.get(annotation.referencedColumnName());
 
                 if (destinationColumn.field == null) return;
@@ -368,10 +426,10 @@ class PojoAdapter {
 
 
     /**
-     * Insert join columns field into content values
+     * Insert join columns field into {@link ContentValues}
      *
-     * @param   cv      content values
-     * @param   obj     object containing the date
+     * @param   cv      {@link ContentValues} to be populated
+     * @param   obj     object containing the data
      * @param   db      database object
      * @param   field   column field
      */
@@ -383,7 +441,7 @@ class PojoAdapter {
 
 
     /**
-     * Insert value into ContentValues
+     * Insert value into {@link ContentValues}
      *
      * @param   cv          content values
      * @param   columnName  column name
@@ -394,17 +452,28 @@ class PojoAdapter {
             cv.putNull(columnName);
         } else {
             if (value instanceof Integer || value.getClass().equals(int.class)) {
-                cv.put(columnName, (int)value);
+                cv.put(columnName, (int) value);
+
             } else if (value instanceof Long || value.getClass().equals(long.class)) {
-                cv.put(columnName, (long)value);
+                cv.put(columnName, (long) value);
+
             } else if (value instanceof Float || value.getClass().equals(float.class)) {
-                cv.put(columnName, (float)value);
+                cv.put(columnName, (float) value);
+
             } else if (value instanceof Double || value.getClass().equals(double.class)) {
-                cv.put(columnName, (double)value);
+                cv.put(columnName, (double) value);
+
             } else if (value instanceof String) {
-                cv.put(columnName, (String)value);
+                cv.put(columnName, (String) value);
+
             } else if (value instanceof Boolean || value.getClass().equals(boolean.class)) {
-                cv.put(columnName, ((boolean)value) ? 1 : 0);
+                cv.put(columnName, ((boolean) value) ? 1 : 0);
+
+            } else if (value instanceof Date) {
+                cv.put(columnName, ((Date) value).getTime());
+
+            } else if (value instanceof Calendar) {
+                cv.put(columnName, ((Calendar) value).getTimeInMillis());
             }
         }
     }

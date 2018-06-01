@@ -56,9 +56,9 @@ class QueryImpl<M> implements Query<M> {
         SQLiteDatabase db = entityManager.getReadableDatabase();
 
         Cursor c = db.rawQuery(sql, null);
-        Log.e("KaolDb", DatabaseUtils.dumpCursorToString(c));
+
         List<M> result = new ArrayList<>(c.getCount());
-        EntityObject entityObject = this.db.entities.get(resultClass);
+        EntityObject entityObject = this.db.getEntityObject(resultClass);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             Map<String, Integer> cursorMap = getCursorColumnMap(c);

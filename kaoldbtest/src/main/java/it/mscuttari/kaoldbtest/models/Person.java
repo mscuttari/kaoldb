@@ -1,10 +1,12 @@
 package it.mscuttari.kaoldbtest.models;
 
 import java.util.Arrays;
+import java.util.Calendar;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -19,12 +21,18 @@ public class Person {
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(name = "birth_date")
+    private Calendar birthDate;
+
+    @JoinColumn(name = "country", referencedColumnName = "name")
+    private Country country;
+
 
     /**
      * Default constructor
      */
     public Person() {
-        this(null, null);
+        this(null, null, null, null);
     }
 
 
@@ -33,10 +41,14 @@ public class Person {
      *
      * @param   firstName       first name
      * @param   lastName        last name
+     * @param   birthDate       birth date
+     * @param   country         country
      */
-    public Person(String firstName, String lastName) {
+    public Person(String firstName, String lastName, Calendar birthDate, Country country) {
         this.firstName = firstName;
         this.lastName = lastName;
+        this.birthDate = birthDate;
+        this.country = country;
     }
 
 
@@ -61,7 +73,19 @@ public class Person {
         if (lastName != null && !lastName.equals(o.lastName)) return false;
         if (lastName == null && o.lastName != null) return false;
 
+        if (birthDate != null && birthDate.compareTo(o.birthDate) != 0) return false;
+        if (birthDate == null && o.birthDate != null) return false;
+
+        if (country != null && !country.equals(o.country)) return false;
+        if (country == null && o.country != null) return false;
+
         return true;
+    }
+
+
+    @Override
+    public String toString() {
+        return "[first name: " + firstName + ", last name: " + lastName + ", birth date: " + birthDate.getTimeInMillis() + "]";
     }
 
 
@@ -82,6 +106,26 @@ public class Person {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+
+    public Calendar getBirthDate() {
+        return birthDate;
+    }
+
+
+    public void setBirthDate(Calendar birthDate) {
+        this.birthDate = birthDate;
+    }
+
+
+    public Country getCountry() {
+        return country;
+    }
+
+
+    public void setCountry(Country country) {
+        this.country = country;
     }
 
 }

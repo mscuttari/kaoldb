@@ -3,7 +3,9 @@ package it.mscuttari.kaoldb.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +127,8 @@ class EntityUtils {
                 result.append(" REAL");
             } else if (fieldType.equals(String.class)) {
                 result.append(" TEXT");
+            } else if (fieldType.equals(Date.class) || fieldType.equals(Calendar.class)) {
+                result.append(" INETGER");
             } else {
                 result.append(" BLOB");
             }

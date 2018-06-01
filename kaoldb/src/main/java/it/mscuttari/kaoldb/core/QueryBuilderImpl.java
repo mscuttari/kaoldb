@@ -33,9 +33,6 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         this.db = db;
         this.resultClass = resultClass;
         this.entityManager = entityManager;
-
-        if (!db.entities.containsKey(resultClass))
-            throw new QueryException("Class " + resultClass.getSimpleName() + " is not an entity");
     }
 
 
@@ -89,7 +86,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         List<String> selectColumns = new ArrayList<>();
 
         // Current entity
-        EntityObject entity = db.entities.get(resultClass);
+        EntityObject entity = db.getEntityObject(resultClass);
         for (ColumnObject column : entity.columns) {
             selectColumns.add(alias + entity.entityClass.getSimpleName() + "." + column.name + " AS \"" + alias + entity.entityClass.getSimpleName() + "." + column.name + "\"");
         }

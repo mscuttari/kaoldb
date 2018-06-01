@@ -38,7 +38,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      * @param   database    database mapping object
      */
     EntityManagerImpl(Context context, DatabaseObject database) {
-        super(context, database.name, null, database.version);
+        super(context, database.getName(), null, database.getVersion());
 
         this.database = database;
         this.context = context;
@@ -47,7 +47,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        for (EntityObject entity : database.entities.values()) {
+        for (EntityObject entity : database.getEntities()) {
             String createSQL = EntityUtils.getCreateTableSql(entity);
 
             if (createSQL != null) {
@@ -61,16 +61,12 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
-
-        if (database.migrator == null) {
-            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
-        }
+        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
         DatabaseSchemaMigrator migrator;
 
         try {
-            migrator = database.migrator.newInstance();
+            migrator = database.getSchemaMigrator().newInstance();
         } catch (IllegalAccessException e) {
             throw new DatabaseManagementException(e.getMessage());
         } catch (InstantiationException e) {
@@ -79,22 +75,18 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
         migrator.onUpgrade(db, oldVersion, newVersion);
 
-        LogUtils.i("[Database \"" + database.name + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
+        LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
-
-        if (database.migrator == null) {
-            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
-        }
+        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
         DatabaseSchemaMigrator migrator;
 
         try {
-            migrator = database.migrator.newInstance();
+            migrator = database.getSchemaMigrator().newInstance();
         } catch (IllegalAccessException  e) {
             throw new DatabaseManagementException(e.getMessage());
         } catch (InstantiationException e) {
@@ -103,16 +95,16 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
         migrator.onDowngrade(db, oldVersion, newVersion);
 
-        LogUtils.i("[Database \"" + database.name + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
+        LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
     @Override
     public boolean deleteDatabase() {
-        boolean result = context.deleteDatabase(database.name);
+        boolean result = context.deleteDatabase(database.getName());
 
         if (result) {
-            LogUtils.i("Database \"" + database.name + "\" deleted");
+            LogUtils.i("Database \"" + database.getName() + "\" deleted");
         }
 
         return result;
@@ -136,21 +128,14 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
 
     /**
-     * Get the entity of an object
+     * Get the {@link EntityObject} of an object
      *
      * @param   obj     object
-     * @return  entity
-     * @throws  QueryException if the object is not an entity
+     * @return  entity object
      */
     private EntityObject getObjectEntity(Object obj) {
         Class<?> objectClass = obj.getClass();
-        EntityObject entity = database.entities.get(objectClass);
-
-        if (entity == null) {
-            throw new QueryException("Class " + objectClass.getSimpleName() + " is not an entity");
-        }
-
-        return entity;
+        return database.getEntityObject(objectClass);
     }
 
 

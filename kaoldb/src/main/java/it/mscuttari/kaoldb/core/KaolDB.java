@@ -90,7 +90,7 @@ public final class KaolDB {
 
         for (String dbName : config.mapping.keySet()) {
             DatabaseObject database = config.mapping.get(dbName);
-            database.entities = EntityUtils.createEntities(database.classes);
+            database.setEntitiesMap(EntityUtils.createEntities(database.getClasses()));
         }
 
         LogUtils.i("Entities mapped");

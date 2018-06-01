@@ -433,7 +433,7 @@ class PredicateImpl extends ExpressionImpl {
         if (field.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn annotation = field.getAnnotation(JoinColumn.class);
             String column = fullAlias + "." + annotation.name();
-            EntityObject referencedEntity = db.entities.get(field.getType());
+            EntityObject referencedEntity = db.getEntityObject(field.getType());
             ColumnObject referecedColumn = referencedEntity.columnsNameMap.get(annotation.referencedColumnName());
 
             try {
@@ -452,7 +452,7 @@ class PredicateImpl extends ExpressionImpl {
 
             for (JoinColumn joinColumn : annotation.value()) {
                 String column = fullAlias + "." + joinColumn.name();
-                EntityObject referencedEntity = db.entities.get(field.getType());
+                EntityObject referencedEntity = db.getEntityObject(field.getType());
                 ColumnObject referencedColumn = referencedEntity.columnsNameMap.get(joinColumn.referencedColumnName());
 
                 try {

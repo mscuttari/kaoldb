@@ -16,7 +16,7 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 public final class KaolDB {
 
     private static KaolDB instance;
-    public Config config;
+    Config config;
     private Map<String, EntityManager> entityManagers;
 
 
@@ -48,7 +48,7 @@ public final class KaolDB {
      * @param   enabled     whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
-        config.debug = enabled;
+        config.setDebugMode(enabled);
     }
 
 
@@ -88,9 +88,9 @@ public final class KaolDB {
         // Map the entities
         LogUtils.d("Mapping the entities");
 
-        for (String dbName : config.mapping.keySet()) {
-            DatabaseObject database = config.mapping.get(dbName);
-            database.setEntitiesMap(EntityUtils.createEntities(database.getClasses()));
+        for (String dbName : config.getDatabaseMapping().keySet()) {
+            DatabaseObject database = config.getDatabaseMapping().get(dbName);
+            database.setEntitiesMap(EntityUtils.createEntities(database.getEntityClasses()));
         }
 
         LogUtils.i("Entities mapped");
@@ -121,7 +121,7 @@ public final class KaolDB {
 
         // Create a new entity manager
         LogUtils.d("Creating entity manager for database \"" + databaseName + "\"");
-        Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.mapping;
+        Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.getDatabaseMapping();
         DatabaseObject database = mapping.get(databaseName);
 
         if (database == null) {

@@ -6,7 +6,8 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,12 +16,12 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class Config {
 
-    /** Maps each database name to its {@link DatabaseObject}*/
-    public Map<String, DatabaseObject> mapping;
+    /** Maps each database name to its {@link DatabaseObject} */
+    private final Map<String, DatabaseObject> mapping;
 
 
     /** Whether the debug messages should be enabled or not */
-    public boolean debug;
+    private boolean debug;
 
 
     /**
@@ -29,6 +30,52 @@ class Config {
     public Config() {
         mapping = new HashMap<>();
         debug = false;
+    }
+
+
+    /**
+     * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}
+     *
+     * @return  database map
+     */
+    public Map<String, DatabaseObject> getDatabaseMapping() {
+        return Collections.unmodifiableMap(mapping);
+    }
+
+
+    /**
+     * Get an unmodifiable {@link Collection} of database names
+     *
+     * @return  database names
+     */
+    public Collection<String> getDatabaseNames() {
+        return Collections.unmodifiableCollection(mapping.keySet());
+    }
+
+
+    /**
+     * Check if debug mode is enabled
+     *
+     * @return  true if enabled; false otherwise
+     */
+    public boolean isDebugEnabled() {
+        return debug;
+    }
+
+
+    /**
+     * Set whether the debug mode should be enabled or not
+     *
+     * @param   enabled     whether to enable or not the debug mode
+     */
+    public void setDebugMode(boolean enabled) {
+        this.debug = enabled;
+
+        if (enabled) {
+            LogUtils.i("Debug mode enabled");
+        } else {
+            LogUtils.i("Debug mode disabled");
+        }
     }
 
 
@@ -136,7 +183,7 @@ class Config {
 
                 try {
                     Class<?> clazz = Class.forName(xml.getText());
-                    database.getClasses().add(clazz);
+                    database.addEntityClass(clazz);
                     LogUtils.i("[Database \"" + database.getName() + "\"]: found class " + clazz.getSimpleName());
 
                 } catch (ClassNotFoundException e) {

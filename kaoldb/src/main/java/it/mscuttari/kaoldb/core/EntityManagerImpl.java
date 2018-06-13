@@ -5,11 +5,13 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -28,7 +30,7 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
 class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     private DatabaseObject database;
-    private Context context;
+    private WeakReference<Context> context;
 
 
     /**
@@ -41,7 +43,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         super(context, database.getName(), null, database.getVersion());
 
         this.database = database;
-        this.context = context;
+        this.context = new WeakReference<>(context);
     }
 
 
@@ -52,6 +54,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
             if (createSQL != null) {
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
+                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
                 db.execSQL(createSQL);
                 LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
             }
@@ -101,7 +104,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     @Override
     public boolean deleteDatabase() {
-        boolean result = context.deleteDatabase(database.getName());
+        boolean result = getContext().deleteDatabase(database.getName());
 
         if (result) {
             LogUtils.i("Database \"" + database.getName() + "\" deleted");
@@ -191,7 +194,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      */
     private synchronized void persist(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
         // Extract the current entity data from the object to be persisted
-        ContentValues cv = objectToContentValues(context, database, currentEntity, childEntity, obj);
+        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
 
         // Do the same for its parent
         if (currentEntity.parent != null)
@@ -252,6 +255,21 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
             if (!isInTransaction) db.endTransaction();
             db.close();
         }
+    }
+
+
+    /**
+     * Get {@link Context}
+     *
+     * @return  context
+     */
+    private Context getContext() {
+        Context context = this.context.get();
+
+        if (context == null)
+            throw new KaolDBException("Context is null");
+
+        return context;
     }
 
 }

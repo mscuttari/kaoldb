@@ -61,6 +61,7 @@ public class DbFilmsTest {
         person.getBirthDate().set(Calendar.MONTH, Calendar.APRIL);
         person.getBirthDate().set(Calendar.DAY_OF_MONTH, 4);
 
+        em.persist(person.getCountry());
         em.persist(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);

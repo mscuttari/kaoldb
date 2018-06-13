@@ -277,7 +277,7 @@ class PojoAdapter {
             if (column.field != null && !fields.contains(column.field)) {
                 fields.add(column.field);
                 if (!checkDataExistence(obj, context, db, column.field))
-                    throw new QueryException("Object " + column.field + " doesn't exist in the database. Persist it first!");
+                    throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
 
                 insertFieldIntoContentValues(cv, obj, db, column.field);
             }
@@ -335,6 +335,7 @@ class PojoAdapter {
                 if (primaryKey.field == null)
                     throw new InvalidConfigException("Primary key column " + primaryKey.name + " has null field");
 
+                primaryKey.field.setAccessible(true);
                 Property property = new Property<>(destinationEntity.entityClass, primaryKey.field.getType(), primaryKey.field.getName());
                 Object value = primaryKey.field.get(destinationValue);
                 Expression expression = root.eq(property, value);

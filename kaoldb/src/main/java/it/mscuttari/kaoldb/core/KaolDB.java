@@ -3,7 +3,6 @@ package it.mscuttari.kaoldb.core;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
@@ -17,7 +16,6 @@ public final class KaolDB {
 
     private static KaolDB instance;
     Config config;
-    private Map<String, EntityManager> entityManagers;
 
 
     /**
@@ -25,7 +23,6 @@ public final class KaolDB {
      */
     private KaolDB() {
         this.config = new Config();
-        entityManagers = new HashMap<>();
     }
 
 
@@ -113,26 +110,9 @@ public final class KaolDB {
             throw new KaolDBException("Empty database name");
         }
 
-        // Check if the entity manager for the specifid database already exists
-        if (entityManagers.containsKey(databaseName)) {
-            EntityManager em = entityManagers.get(databaseName);
-            if (em != null) return em;
-        }
-
-        // Create a new entity manager
-        LogUtils.d("Creating entity manager for database \"" + databaseName + "\"");
         Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.getDatabaseMapping();
         DatabaseObject database = mapping.get(databaseName);
-
-        if (database == null) {
-            throw new KaolDBException("Database " + databaseName + " not found");
-        }
-
-        EntityManager em = new EntityManagerImpl(context, database);
-        entityManagers.put(databaseName, em);
-        LogUtils.i("Entity manager for database \"" + databaseName + "\" has been created");
-
-        return em;
+        return new EntityManagerImpl(context, database);
     }
 
 }

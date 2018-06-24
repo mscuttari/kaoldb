@@ -7,7 +7,6 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-
 /**
  * Defines a single-valued association to another entity that has one-to-one multiplicity.
  * If the relationship is bidirectional, the non-owning side must use the {@link OneToOne#mappedBy()}

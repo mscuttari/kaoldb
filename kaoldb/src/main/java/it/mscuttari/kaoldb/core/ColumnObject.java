@@ -214,20 +214,6 @@ class ColumnObject {
         if (this.field == null)
             return;
 
-        // Check annotation count
-        int annotationCount = 0;
-
-        if (this.field.isAnnotationPresent(Column.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinColumn.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinColumns.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinTable.class)) annotationCount++;
-
-        if (annotationCount == 0) {
-            throw new InvalidConfigException("Field " + this.field.getName() + " has no @Column annotation");
-        } else if (annotationCount > 1) {
-            throw new InvalidConfigException("Field " + this.field.getName() + " has too much column annotations");
-        }
-
         // Check references
         if (this.annotation instanceof JoinColumn) {
             // @JoinColumn

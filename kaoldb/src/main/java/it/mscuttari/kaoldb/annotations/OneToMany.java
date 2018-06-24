@@ -30,7 +30,7 @@ public @interface OneToMany {
      * Required unless the relationship is unidirectional.
      */
     // TODO: implement
-    String mappedBy() default "";
+    String mappedBy();
 
 
     /**

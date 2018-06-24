@@ -11,10 +11,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Filer;
-import javax.annotation.processing.Messager;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -28,7 +24,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import javax.tools.Diagnostic;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
@@ -38,22 +33,9 @@ import it.mscuttari.kaoldb.annotations.JoinTable;
 
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Entity")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
-public final class EntityProcessor extends AbstractProcessor {
+public final class EntityProcessor extends AbstractAnnotationProcessor {
 
     private static final String ENTITY_SUFFIX = "_";
-
-    private Filer filer;
-    private Messager messager;
-
-
-    @Override
-    public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
-
-        filer = processingEnv.getFiler();
-        messager = processingEnv.getMessager();
-    }
-
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -62,7 +44,7 @@ public final class EntityProcessor extends AbstractProcessor {
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             if (classElement.getKind() != ElementKind.CLASS)
-                messager.printMessage(Diagnostic.Kind.ERROR, "The element " + classElement.getSimpleName() + " should not have @Entity annotation", classElement);
+                logError("Element " + classElement.getSimpleName() + " should not have @Entity annotation", classElement);
 
             // Check the existence of a default constructor
             checkForDefaultConstructor((TypeElement) classElement);
@@ -119,10 +101,10 @@ public final class EntityProcessor extends AbstractProcessor {
                 }
 
                 // Create class file
-                JavaFile.builder(packageName, entityClass.build()).build().writeTo(filer);
+                JavaFile.builder(packageName, entityClass.build()).build().writeTo(getFiler());
 
             } catch (IOException e) {
-                messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+                logError(e.getMessage());
             }
         }
 
@@ -142,7 +124,7 @@ public final class EntityProcessor extends AbstractProcessor {
         }
 
         // Couldn't find any default constructor here
-        messager.printMessage(Diagnostic.Kind.ERROR, "Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
+        logError("Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
     }
 
 }

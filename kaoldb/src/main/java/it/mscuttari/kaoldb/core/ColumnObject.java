@@ -24,7 +24,7 @@ class ColumnObject {
     /** Class column field */
     public Field field;
 
-    /** Annotation of the field */
+    /** Annotation of the column ({@link Column} or {@link JoinColumn}) */
     public Annotation annotation;
 
     /** Column name */
@@ -63,9 +63,9 @@ class ColumnObject {
      */
     private ColumnObject(Column columnAnnotation, Field field) {
         this.field = field;
-        this.name = getColumnName(field);
-        this.primaryKey = field.isAnnotationPresent(Id.class);
         this.annotation = columnAnnotation;
+        this.name = getColumnName(columnAnnotation, field);
+        this.primaryKey = field.isAnnotationPresent(Id.class);
         this.type = field.getType();
         this.nullable = columnAnnotation.nullable();
         this.unique = columnAnnotation.unique();
@@ -82,7 +82,7 @@ class ColumnObject {
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
         this.field = field;
         this.annotation = joinColumnAnnotation;
-        this.name = joinColumnAnnotation.name();
+        this.name = getColumnName(joinColumnAnnotation, field);
         this.type = null;
         this.nullable = joinColumnAnnotation.nullable();
         this.primaryKey = field.isAnnotationPresent(Id.class);
@@ -162,36 +162,35 @@ class ColumnObject {
 
 
     /**
-     * Get column name
+     * Get column name of a field annotated with {@link Column} or {@link JoinColumn}
      *
-     * If the table is not specified, the following policy is applied:
-     * Uppercase characters are replaces with underscore followed by the same character converted to lowercase
-     * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
+     * If the {@link Column#name()} or the {@link JoinColumn#name()} are not specified, the
+     * following policy is applied:
+     *
+     * Uppercase characters are replaced with underscore followed by the same character converted
+     * to lowercase. Only the first character, if uppercase, is converted to lowercase avoiding
+     * the underscore.
+     *
      * Example: columnFieldName => column_field_name
      *
-     * @param   field       column field
-     * @return  table name
-     * @throws  InvalidConfigException if the field doesn't have @Column or @JoinColumn annotations
+     * @param   annotation      {@link Column} / {@link JoinColumn} annotation of the field
+     * @param   field           column field
+     *
+     * @return  column name
      */
-    private static String getColumnName(Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            // @Column
-            Column column = field.getAnnotation(Column.class);
+    private static String getColumnName(Annotation annotation, Field field) {
+        if (annotation instanceof Column) {
+            Column column = (Column) annotation;
             if (!column.name().isEmpty()) return column.name();
 
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            // @JoinColumn
-            JoinColumn joinColumn = field.getAnnotation(JoinColumn.class);
+        } else if (annotation instanceof JoinColumn) {
+            JoinColumn joinColumn = (JoinColumn) annotation;
             if (!joinColumn.name().isEmpty()) return joinColumn.name();
-
-        } else {
-            throw new InvalidConfigException("Field " + field.getName() + " doesn't have @Column or @JoinColumn annotations");
         }
 
-        // Currently not reachable (column name is a required field)
-        LogUtils.w(field.getName() + ": column tableName not specified, using the default one based on field tableName");
+        LogUtils.w(field.getName() + ": column name not specified, using the default one based on field name");
 
-        // Default table tableName
+        // Default column name
         String fieldName = field.getName();
         char c[] = fieldName.toCharArray();
         c[0] = Character.toLowerCase(c[0]);
@@ -204,6 +203,7 @@ class ColumnObject {
      * Check column consistence
      *
      * Method called during the mapping consistence check
+     *
      * @see EntityObject#checkConsistence(Map)
      *
      * @param   entities        map of all entities

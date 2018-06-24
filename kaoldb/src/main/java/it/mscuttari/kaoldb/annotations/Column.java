@@ -15,10 +15,9 @@ public @interface Column {
 
     /**
      * The name of the column
-     * // TODO: implement default value
      * Defaults to the property or field name.
      */
-    String name();
+    String name() default "";
 
 
     /**

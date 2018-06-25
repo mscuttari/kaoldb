@@ -63,7 +63,7 @@ class QueryImpl<M> implements Query<M> {
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             Map<String, Integer> cursorMap = getCursorColumnMap(c);
-            result.add(PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, entityObject, alias));
+            result.add(PojoAdapter.cursorToObject(c, cursorMap, resultClass, entityObject, alias));
         }
 
         c.close();

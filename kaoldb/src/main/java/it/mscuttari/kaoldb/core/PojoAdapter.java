@@ -37,18 +37,18 @@ class PojoAdapter {
     /**
      * Convert cursor to POJO (plain old java object)
      *
-     * @param   db              database object
      * @param   c               cursor
      * @param   cursorMap       map between cursor column names and column indexes
-     * @param   entityClass     entity class of the POJO (just for return type)
+     * @param   resultClass     entity class of the POJO
      * @param   entity          entity representing the POJO
      *
      * @return  populated object
      *
-     * @throws  PojoException   in case of error
+     * @throws  PojoException   if the child class is not found (wrong discriminator column value)
+     *                          or if it can not be instantiated
      */
     @Nullable
-    public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> entityClass, EntityObject entity, String alias) {
+    public static <T> T cursorToObject(Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, EntityObject entity, String alias) {
         if (entity.children.size() != 0) {
             // Go down to child class
             int columnIndex = c.getColumnIndex(entity.discriminatorColumn.name);
@@ -61,25 +61,35 @@ class PojoAdapter {
             }
 
             for (EntityObject child : entity.children) {
-                if (child.discriminatorValue.equals(discriminatorValue)) {
-                    return cursorToObject(db, c, cursorMap, entityClass, child, alias);
+                if (child.discriminatorValue != null && child.discriminatorValue.equals(discriminatorValue)) {
+                    return cursorToObject(c, cursorMap, resultClass, child, alias);
                 }
             }
 
             throw new PojoException("Child class not found");
 
         } else {
+            if (!resultClass.equals(entity.entityClass))
+                throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.entityClass.getSimpleName());
+
             // Populate child class
             try {
-                @SuppressWarnings("unchecked") T result = (T)entity.entityClass.newInstance();
+                T result = resultClass.newInstance();
 
                 while (entity != null) {
                     if (entity.realTable) {
                         for (ColumnObject column : entity.columns) {
                             if (column.field == null) continue;
 
-                            String columnName = alias + entity.getName() + "." + column.name;
-                            Object value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
+                            Object value;
+
+                            if (column.relationshipType == ColumnObject.RelationshipType.NONE) {
+                                String columnName = alias + entity.getName() + "." + column.name;
+                                value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
+                            } else {
+                                // TODO: eager load
+                                value = null;
+                            }
 
                             column.field.setAccessible(true);
                             column.field.set(result, value);
@@ -198,7 +208,7 @@ class PojoAdapter {
 
             } else {
                 // The discriminator value has not been found. Adding it automatically
-                Annotation discriminatorColumnAnnotation = currentEntity.discriminatorColumn.annotation;
+                Annotation discriminatorColumnAnnotation = currentEntity.discriminatorColumn.columnAnnotation;
 
                 if (discriminatorColumnAnnotation instanceof Column) {
                     // The discriminator column is linked to a field annotated with @Column
@@ -303,21 +313,8 @@ class PojoAdapter {
         // Primitive data
         Class<?> fieldClass = field.getType();
 
-        if (fieldClass.equals(Integer.class) || fieldClass.equals(int.class)) {
+        if (isPrimitiveType(fieldClass))
             return true;
-        } else if (fieldClass.equals(Long.class) || fieldClass.equals(long.class)) {
-            return true;
-        } else if (fieldClass.equals(Float.class) || fieldClass.equals(float.class)) {
-            return true;
-        } else if (fieldClass.equals(Double.class) || fieldClass.equals(double.class)) {
-            return true;
-        } else if (fieldClass.equals(String.class)) {
-            return true;
-        } else if (fieldClass.equals(Boolean.class) || fieldClass.equals(boolean.class)) {
-            return true;
-        } else if (fieldClass.equals(Date.class) || fieldClass.equals(Calendar.class)) {
-            return true;
-        }
 
         // Non-primitive data
         try {
@@ -477,6 +474,26 @@ class PojoAdapter {
                 cv.put(columnName, ((Calendar) value).getTimeInMillis());
             }
         }
+    }
+
+
+    /**
+     * Check if the data class is a primitive one (int, float, etc.) or if is one of the following:
+     * {@link Integer}, {@link Long}, {@link Float}, {@link Double}, {@link String},
+     * {@link Boolean}. {@link Date}, {@link Calendar}.
+     *
+     * @param   clazz       data class
+     * @return  true if one the specified classes is found
+     */
+    private static boolean isPrimitiveType(Class<?> clazz) {
+        return clazz.equals(Integer.class) || clazz.equals(int.class) ||
+                clazz.equals(Long.class) || clazz.equals(long.class) |
+                clazz.equals(Float.class) || clazz.equals(float.class) ||
+                clazz.equals(Double.class) || clazz.equals(double.class) ||
+                clazz.equals(String.class) ||
+                clazz.equals(Boolean.class) || clazz.equals(boolean.class) ||
+                clazz.equals(Date.class) ||
+                clazz.equals(Calendar.class);
     }
 
 }

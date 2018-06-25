@@ -7,6 +7,7 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -25,6 +26,7 @@ public class Person {
     private Calendar birthDate;
 
     @JoinColumn(name = "country", referencedColumnName = "name")
+    @ManyToOne
     private Country country;
 
 

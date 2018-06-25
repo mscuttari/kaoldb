@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb.processor;
 
+import java.util.Collection;
 import java.util.Set;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -8,7 +9,11 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 
+import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -52,10 +57,12 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
-     * It ensures that the field doesn't have more than one annotation between {@link OneToOne},
-     * {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     * It also ensures the field is annotated with {@link JoinColumn}, {@link JoinColumns} or
-     * {@link JoinTable}.
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link OneToOne},
+     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
+     *
+     * If any of the previous constraints is violated, the compile process is interrupted.
      *
      * @param   field       field element
      */
@@ -63,35 +70,65 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         checkAnnotationCount(field);
 
         // Check join columns presence
-        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
-        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
-        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
 
-        if (joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
-            logError("@OneToOne relationship doesn't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
+        if (oneToOneAnnotation.mappedBy().isEmpty()) {
+            JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+            JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+            JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+
+            if (joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
+                logError("@OneToOne relationship doesn't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
+        }
     }
 
 
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
-     * It ensures that the field doesn't have more than one annotation between {@link OneToOne},
-     * {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link OneToOne},
+     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     *  -   The field doesn't have {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
+     *      {@link JoinTable} annotations
+     *  -   The field implements the {@link Collection} interface.
+     *
+     * If any of the previous constraints is violated, the compile process is interrupted.
      *
      * @param   field       field element
      */
     private void checkOneToManyRelationship(Element field) {
         checkAnnotationCount(field);
+
+        // Check absence of @Column, @JoinColumn, @JoinColumns and @JoinTable annotations
+        Column columnAnnotation = field.getAnnotation(Column.class);
+        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+
+        if (columnAnnotation != null || joinColumnAnnotation != null || joinColumnsAnnotation != null || joinTableAnnotation != null)
+            logError("@OneToMany can't coexist with @Column, @JoinColumn, @JoinColumns or @JoinTable", field);
+
+        // The field must be a Collection
+        Elements elementUtils = processingEnv.getElementUtils();
+        Types typeUtils = processingEnv.getTypeUtils();
+
+        TypeMirror collectionInterface = typeUtils.erasure(elementUtils.getTypeElement("java.util.Collection").asType());
+
+        if (!implementsInterface(field.asType(), collectionInterface))
+            logError("Fields annotated with @OneToMany must implement the Collection interface", field);
     }
 
 
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
-     * It ensures that the field doesn't have more than one annotation between {@link OneToOne},
-     * {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     * It also ensures the field is annotated with {@link JoinColumn}, {@link JoinColumns} or
-     * {@link JoinTable}.
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link OneToOne},
+     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
+     *
+     * If any of the previous constraints is violated, the compile process is interrupted.
      *
      * @param   field       field element
      */
@@ -111,9 +148,12 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
-     * It ensures that the field doesn't have more than one annotation between {@link OneToOne},
-     * {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     * It also ensures the field is annotated with {@link JoinTable}.
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link OneToOne},
+     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     *  -   The field is annotated with {@link JoinTable}.
+     *
+     * If any of the previous constraints is violated, the compile process is interrupted.
      *
      * @param   field       field element
      */
@@ -151,6 +191,18 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         if (annotationCount > 1) {
             logError("Only one annotation between @OneToOne, @OneToMany, @ManyToOne and @ManyToMany is allowed", field);
         }
+    }
+
+
+    /**
+     * Check if an element implements an interface
+     *
+     * @param   element     TypeMirror      element
+     * @param   interf      TypeMirror      interface
+     * @return  true if the element implements the interface
+     */
+    private boolean implementsInterface(TypeMirror element, TypeMirror interf) {
+        return processingEnv.getTypeUtils().isAssignable(element, interf);
     }
 
 }

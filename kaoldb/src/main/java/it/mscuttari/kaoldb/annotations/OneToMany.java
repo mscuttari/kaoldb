@@ -26,8 +26,7 @@ public @interface OneToMany {
 
 
     /**
-     * The field that owns the relationship.
-     * Required unless the relationship is unidirectional.
+     * The field that owns the relationship
      */
     // TODO: implement
     String mappedBy();

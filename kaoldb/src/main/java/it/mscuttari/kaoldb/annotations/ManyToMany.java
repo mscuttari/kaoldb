@@ -1,17 +1,28 @@
 package it.mscuttari.kaoldb.annotations;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD, ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+@Target({METHOD, FIELD})
+@Retention(RUNTIME)
 public @interface ManyToMany {
 
-    Class targetEntity() default void.class;
-    //CascadeType[] cascade() default {};
-    //FetchType fetch() default FetchType.LAZY;
+    /**
+     * The operations that must be cascaded to the target of the association.
+     * Defaults to no operations being cascaded.
+     */
+    // TODO: implement
+    CascadeType[] cascade() default {};
+
+
+    /**
+     * The field that owns the relationship.
+     */
+    // TODO: implement
     String mappedBy() default "";
 
 }

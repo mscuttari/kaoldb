@@ -13,6 +13,10 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 
 /**
  * Analyze all the fields with {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
@@ -31,18 +35,74 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
         for (Element field : roundEnv.getElementsAnnotatedWith(Column.class))
-            checkAnnotationCount(field);
+            checkColumn(field);
 
         for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumn.class))
-            checkAnnotationCount(field);
+            checkJoinColumn(field);
 
         for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumns.class))
-            checkAnnotationCount(field);
+            checkJoinColumns(field);
 
         for (Element field : roundEnv.getElementsAnnotatedWith(JoinTable.class))
-            checkAnnotationCount(field);
+            checkJoinTable(field);
 
         return true;
+    }
+
+
+    private void checkColumn(Element field) {
+        checkAnnotationCount(field);
+
+        // Check relationship absence
+        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
+
+        if (oneToOneAnnotation != null || oneToManyAnnotation != null || manyToOneAnnotation != null || manyToManyAnnotation != null)
+            logError("Field annotated with @Column can't have @OneToOne, @OneToMany, @ManyToOne or @ManyToMany annotations", field);
+    }
+
+
+    private void checkJoinColumn(Element field) {
+        checkAnnotationCount(field);
+
+        // Check relationship
+        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
+
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
+            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+    }
+
+
+    private void checkJoinColumns(Element field) {
+        checkAnnotationCount(field);
+
+        // Check relationship
+        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
+
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
+            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+    }
+
+
+    private void checkJoinTable(Element field) {
+        checkAnnotationCount(field);
+
+        // Check relationship
+        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
+
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
+            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
     }
 
 

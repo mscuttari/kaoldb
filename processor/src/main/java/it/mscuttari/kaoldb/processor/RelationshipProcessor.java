@@ -167,9 +167,10 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * @param   field       field element
      */
     private void checkManyToOneRelationship(Element field) {
+        // Check absense of @OneToOne, @OneToMany and @ManyToMany annotations
         checkAnnotationCount(field);
 
-        // Check join columns presence
+        // Check presence of @JoinColumn, @JoinColumns or @JoinTable
         JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
         JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
         JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);

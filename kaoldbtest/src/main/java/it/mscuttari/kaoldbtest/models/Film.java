@@ -13,6 +13,7 @@ import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -29,8 +30,8 @@ public abstract class Film {
     @Column(name = "year")
     public Integer year;
 
-    @JoinColumn(name = "genre", referencedColumnName = "name")
     @ManyToOne
+    @JoinColumn(name = "genre", referencedColumnName = "name")
     public Genre genre;
 
     @ManyToMany

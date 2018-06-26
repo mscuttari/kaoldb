@@ -121,19 +121,25 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
 
         // The field must be a Collection
+        TypeMirror typeMirror = field.asType();
         TypeMirror collectionInterface = typeUtils.erasure(elementUtils.getTypeElement("java.util.Collection").asType());
 
-        if (!implementsInterface(field.asType(), collectionInterface))
-            logError("Fields annotated with @OneToMany class must implement the Collection interface", field);
+        if (!typeUtils.erasure(typeMirror).equals(collectionInterface))
+            logError("Fields annotated with @OneToMany must be Collections", field);
 
 
         // Check mapping field
         OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-        TypeMirror typeMirror = field.asType();
+
 
         TypeMirror linkedType = null;
         if (typeUtils.erasure(typeMirror).equals(collectionInterface)) {
-            linkedType = ((DeclaredType)typeMirror).getTypeArguments().get(0);
+            List<? extends TypeMirror> typeArguments = ((DeclaredType)typeMirror).getTypeArguments();
+
+            if (typeArguments.size() == 0)
+                logError("Collection must specify the data type using the diamond operator", field);
+
+            linkedType = typeArguments.get(0);
         }
 
         if (linkedType != null) {

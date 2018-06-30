@@ -94,7 +94,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field doesn't have {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
      *      {@link JoinTable} annotations.
-     *  -   The field implements the {@link Collection} interface.
+     *  -   The field is declared as a {@link Collection}.
      *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
      *      with {@link ManyToOne}.
      *
@@ -130,9 +130,8 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
         // Check mapping field
         OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-
-
         TypeMirror linkedType = null;
+
         if (typeUtils.erasure(typeMirror).equals(collectionInterface)) {
             List<? extends TypeMirror> typeArguments = ((DeclaredType)typeMirror).getTypeArguments();
 
@@ -193,19 +192,38 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field is annotated with {@link JoinTable}.
+     *  -   The field is declared as a {@link Collection}.
+     *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
+     *      with {@link ManyToOne}.
      *
      * If any of the previous constraints is violated, the compile process is interrupted.
      *
      * @param   field       field element
      */
     private void checkManyToManyRelationship(Element field) {
+        Elements elementUtils = processingEnv.getElementUtils();
+        Types typeUtils = processingEnv.getTypeUtils();
+
+        // Check absence of @OneToOne, @OneToMany and @ManyToOne annotations
         checkAnnotationCount(field);
 
-        // Check join table presence
+
+        // Check presence of @JoinTable annotation
         JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
 
         if (joinTableAnnotation == null)
-            logError("@ManyToMany relationship doesn't have @JoinTable annotation", field);
+            logError("@ManyToMany relationship must have a @JoinTable annotation", field);
+
+
+        // The field must be a Collection
+        TypeMirror typeMirror = field.asType();
+        TypeMirror collectionInterface = typeUtils.erasure(elementUtils.getTypeElement("java.util.Collection").asType());
+
+        if (!typeUtils.erasure(typeMirror).equals(collectionInterface))
+            logError("Fields annotated with @ManyToMany must be Collections", field);
+
+
+        // TODO: check data type consistency
     }
 
 

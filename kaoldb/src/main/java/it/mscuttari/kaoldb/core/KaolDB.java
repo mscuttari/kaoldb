@@ -15,7 +15,7 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 public final class KaolDB {
 
     private static KaolDB instance;
-    Config config;
+    private Config config;
 
 
     /**
@@ -45,7 +45,17 @@ public final class KaolDB {
      * @param   enabled     whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
-        config.setDebugMode(enabled);
+        getConfig().setDebugMode(enabled);
+    }
+
+
+    /**
+     * Get configuration
+     *
+     * @return  configuration object
+     */
+    Config getConfig() {
+        return config;
     }
 
 
@@ -71,7 +81,7 @@ public final class KaolDB {
         LogUtils.d("Parsing the configuration file");
 
         try {
-            config.parseConfigFile(xml);
+            getConfig().parseConfigFile(xml);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ConfigParseException(e.getMessage());
@@ -85,8 +95,8 @@ public final class KaolDB {
         // Map the entities
         LogUtils.d("Mapping the entities");
 
-        for (String dbName : config.getDatabaseMapping().keySet()) {
-            DatabaseObject database = config.getDatabaseMapping().get(dbName);
+        for (String dbName : getConfig().getDatabaseMapping().keySet()) {
+            DatabaseObject database = getConfig().getDatabaseMapping().get(dbName);
             database.setEntitiesMap(EntityUtils.createEntities(database.getEntityClasses()));
         }
 
@@ -110,7 +120,7 @@ public final class KaolDB {
             throw new KaolDBException("Empty database name");
         }
 
-        Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.getDatabaseMapping();
+        Map<String, DatabaseObject> mapping = KaolDB.getInstance().getConfig().getDatabaseMapping();
         DatabaseObject database = mapping.get(databaseName);
         return new EntityManagerImpl(context, database);
     }

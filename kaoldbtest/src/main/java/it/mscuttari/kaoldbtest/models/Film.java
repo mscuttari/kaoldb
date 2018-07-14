@@ -34,7 +34,7 @@ public abstract class Film {
     @JoinColumn(name = "genre", referencedColumnName = "name")
     public Genre genre;
 
-    @ManyToMany
+    @ManyToOne
     @JoinTable(
             name = "films_directors",
             joinColumns = {

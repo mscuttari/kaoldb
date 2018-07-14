@@ -20,7 +20,12 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 
 /**
  * Analyze all the fields with {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
- * {@link JoinTable} annotations
+ * {@link JoinTable} annotations and check if the constraints are respected.
+ *
+ * {@link Column} constraints: see {@link #checkColumn(Element)}
+ * {@link JoinColumn} constraints: see {@link #checkJoinColumn(Element)}
+ * {@link JoinColumns} constraints: see {@link #checkJoinColumns(Element)}
+ * {@link JoinTable} constraints: see {@link #checkJoinTable(Element)}
  */
 @SupportedAnnotationTypes({
         "it.mscuttari.kaoldb.annotations.Column",
@@ -50,6 +55,17 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     }
 
 
+    /**
+     * Check field annotated with {@link Column} annotation.
+     *
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link Column},
+     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     *  -   The field doesn't have {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
+     *      {@link ManyToMany} annotations.
+     *
+     * @param   field       field element
+     */
     private void checkColumn(Element field) {
         checkAnnotationCount(field);
 
@@ -64,6 +80,17 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     }
 
 
+    /**
+     * Check field annotated with {@link JoinColumn} annotation.
+     *
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link Column},
+     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     *  -   The field is annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
+     *      {@link ManyToMany} annotations.
+     *
+     * @param   field       field element
+     */
     private void checkJoinColumn(Element field) {
         checkAnnotationCount(field);
 
@@ -78,6 +105,17 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     }
 
 
+    /**
+     * Check field annotated with {@link JoinColumns} annotation.
+     *
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link Column},
+     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     *  -   The field is annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
+     *      {@link ManyToMany} annotations.
+     *
+     * @param   field       field element
+     */
     private void checkJoinColumns(Element field) {
         checkAnnotationCount(field);
 
@@ -92,6 +130,17 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     }
 
 
+    /**
+     * Check field annotated with {@link JoinTable} annotation.
+     *
+     * It ensures the following constraints are respected:
+     *  -   The field doesn't have more than one annotation between {@link Column},
+     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     *  -   The field is annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
+     *      {@link ManyToMany} annotations.
+     *
+     * @param   field       field element
+     */
     private void checkJoinTable(Element field) {
         checkAnnotationCount(field);
 

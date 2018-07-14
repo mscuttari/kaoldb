@@ -27,7 +27,12 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 
 /**
  * Analyze all the fields with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
- * {@link ManyToMany} annotations
+ * {@link ManyToMany} annotations and check if the constraints are respected.
+ *
+ * {@link OneToOne} constraints: see {@link #checkOneToOneRelationship(Element)}
+ * {@link OneToMany} constraints: see {@link #checkOneToManyRelationship(Element)}
+ * {@link ManyToOne} constraints: see {@link #checkManyToOneRelationship(Element)}
+ * {@link ManyToMany} constraints: see {@link #checkManyToManyRelationship(Element)}
  */
 @SupportedAnnotationTypes({
         "it.mscuttari.kaoldb.annotations.OneToOne",

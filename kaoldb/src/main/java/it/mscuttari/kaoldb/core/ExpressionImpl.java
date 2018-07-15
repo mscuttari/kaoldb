@@ -71,6 +71,30 @@ class ExpressionImpl implements Expression {
     }
 
 
+    @Override
+    public Expression xor(Expression expression) {
+        return this.and(expression.not()).or(this.not().and(expression));
+    }
+
+
+    @Override
+    public Expression nand(Expression expression) {
+        return this.and(expression).not();
+    }
+
+
+    @Override
+    public Expression nor(Expression expression) {
+        return this.not().and(expression.not());
+    }
+
+
+    @Override
+    public Expression xnor(Expression expression) {
+        return this.xor(expression).not();
+    }
+
+
     /**
      * Get string representation to be used in SQL query
      *

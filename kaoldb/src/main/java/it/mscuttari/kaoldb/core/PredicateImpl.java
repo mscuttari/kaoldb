@@ -9,6 +9,7 @@ import java.util.List;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 
@@ -20,23 +21,35 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 class PredicateImpl extends ExpressionImpl {
 
     private enum PredicateType {
-        IS_NULL("IS NULL"),
-        EQUAL("="),
-        GT(">"),
-        GE(">="),
-        LT("<"),
-        LE("<=");
+        IS_NULL ("IS NULL", PredicateCardinality.UNARY),
+        EQUAL   ("=",       PredicateCardinality.BINARY),
+        GT      (">",       PredicateCardinality.BINARY),
+        GE      (">=",      PredicateCardinality.BINARY),
+        LT      ("<",       PredicateCardinality.BINARY),
+        LE      ("<=",      PredicateCardinality.BINARY);
 
         private String operation;
+        private PredicateCardinality cardinality;
 
-        PredicateType(String operation) {
+        PredicateType(String operation, PredicateCardinality cardinality) {
             this.operation = operation;
+            this.cardinality = cardinality;
         }
 
         @Override
         public String toString() {
             return operation;
         }
+
+        public PredicateCardinality getCardinality() {
+            return cardinality;
+        }
+    }
+
+
+    private enum PredicateCardinality {
+        UNARY,
+        BINARY
     }
 
 
@@ -185,28 +198,50 @@ class PredicateImpl extends ExpressionImpl {
      */
     @Override
     public String toString() {
+        if (operation.getCardinality() == PredicateCardinality.UNARY) {
+            return processUnaryPredicate();
+        } else {
+            return processBinaryPredicate();
+        }
+    }
+
+
+    /**
+     * Get string representation of an unary predicate
+     *
+     * @return  string representation to be used in query
+     */
+    private String processUnaryPredicate() {
         StringBuilder sb = new StringBuilder();
 
-        // Single operand predicate
-        if (y == null) {
-            if (operation == PredicateType.IS_NULL) {
-                if (x.getData() instanceof Property) {
-                    List<String> columns = convertProperty((Property) x.getData(), x.getTableAlias());
+        Object data = x.getData();
 
-                    String separator = "";
-                    for (String column : columns) {
-                        sb.append(separator).append(column).append(" ").append(operation);
-                        separator = " AND ";
-                    }
-                } else {
-                    throw new QueryException("Invalid parameter");
+        if (operation == PredicateType.IS_NULL) {
+            if (data instanceof Property) {
+                List<String> columns = convertProperty((Property)data, x.getTableAlias());
+
+                String separator = "";
+                for (String column : columns) {
+                    sb.append(separator).append(column).append(" ").append(operation);
+                    separator = " AND ";
                 }
+            } else {
+                sb.append(objectToString(data)).append(" ").append(operation);
             }
-
-            return sb.toString();
         }
 
-        // Double operand predicate
+        return sb.toString();
+    }
+
+
+    /**
+     * Get string representation of an binary predicate
+     *
+     * @return  string representation to be used in query
+     */
+    private String processBinaryPredicate() {
+        StringBuilder sb = new StringBuilder();
+
         Object xData = x.getData();
         Object yData = y.getData();
 
@@ -252,7 +287,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if the property is invalid
      */
-    private List<String> convertProperty(Property property, String alias) {
+    private List<String> convertProperty(Property<?, ?> property, String alias) {
         List<String> result = new ArrayList<>();
         Field field;
 
@@ -291,6 +326,12 @@ class PredicateImpl extends ExpressionImpl {
             return result;
         }
 
+        // @JoinTable
+        if (field.isAnnotationPresent(JoinTable.class)) {
+            // TODO: implement
+            throw new QueryException("Not implemented");
+        }
+
         throw new QueryException("Invalid parameter");
     }
 
@@ -311,11 +352,9 @@ class PredicateImpl extends ExpressionImpl {
         List<Pair<String, String>> result = new ArrayList<>();
         Field xField, yField;
 
-
         // Fully qualified aliases
         String xFullAlias = xAlias + xProperty.getFieldParentClass().getSimpleName();
         String yFullAlias = yAlias + yProperty.getFieldParentClass().getSimpleName();
-
 
         // Get fields
         try {
@@ -333,7 +372,6 @@ class PredicateImpl extends ExpressionImpl {
         if (!xField.getType().isAssignableFrom(yField.getType()) && !yField.getType().isAssignableFrom(xField.getType()))
             throw new QueryException("Incompatible types: " + xField.getType().getSimpleName() + ", " + yField.getType().getSimpleName());
 
-
         // @Column
         if (xField.isAnnotationPresent(Column.class) && yField.isAnnotationPresent(Column.class)) {
             Column xAnnotation = xField.getAnnotation(Column.class);
@@ -346,7 +384,6 @@ class PredicateImpl extends ExpressionImpl {
             return result;
         }
 
-
         // @JoinColumn
         if (xField.isAnnotationPresent(JoinColumn.class) && yField.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn xAnnotation = xField.getAnnotation(JoinColumn.class);
@@ -358,7 +395,6 @@ class PredicateImpl extends ExpressionImpl {
             result.add(new Pair<>(xColumn, yColumn));
             return result;
         }
-
 
         // @JoinColumns
         if (xField.isAnnotationPresent(JoinColumns.class) && yField.isAnnotationPresent(JoinColumns.class)) {
@@ -381,6 +417,11 @@ class PredicateImpl extends ExpressionImpl {
             return result;
         }
 
+        // @JoinTable
+        if (xField.isAnnotationPresent(JoinTable.class) && yField.isAnnotationPresent(JoinTable.class)) {
+            // TODO: implement
+            throw new QueryException("Not implemented");
+        }
 
         throw new QueryException("Invalid parameters");
     }
@@ -390,7 +431,7 @@ class PredicateImpl extends ExpressionImpl {
      * Create property-value associations for the query
      *
      * @param   db          database object
-     * @param   property    property
+     * @param   property    model property
      * @param   alias       table alias
      * @param   obj         object value
      *
@@ -398,14 +439,12 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if the requested configuration is invalid
      */
-    private List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property property, String alias, Object obj) {
+    private List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property<?, ?> property, String alias, Object obj) {
         List<Pair<String, String>> result = new ArrayList<>();
         Field field;
 
-
         // Fully qualified alias
         String fullAlias = alias + property.getFieldParentClass().getSimpleName();
-
 
         // Get field
         try {
@@ -414,11 +453,9 @@ class PredicateImpl extends ExpressionImpl {
             throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
         }
 
-
         // Object type must be compatible with the property
         if (!field.getType().isAssignableFrom(obj.getClass()))
             throw new QueryException("Invalid object class");
-
 
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
@@ -427,7 +464,6 @@ class PredicateImpl extends ExpressionImpl {
             result.add(new Pair<>(column, objectToString(obj)));
             return result;
         }
-
 
         // @JoinColumn
         if (field.isAnnotationPresent(JoinColumn.class)) {
@@ -444,7 +480,6 @@ class PredicateImpl extends ExpressionImpl {
                 throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
             }
         }
-
 
         // @JoinColumns
         if (field.isAnnotationPresent(JoinColumns.class)) {
@@ -467,6 +502,11 @@ class PredicateImpl extends ExpressionImpl {
             return result;
         }
 
+        // @JoinTable
+        if (field.isAnnotationPresent(JoinTable.class)) {
+            // TODO: implement
+            throw new QueryException("Not implemented");
+        }
 
         throw new QueryException("Invalid parameters");
     }

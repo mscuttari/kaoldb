@@ -20,6 +20,8 @@ public interface QueryBuilder<T> {
      * @param   <M>             entity class
      *
      * @return  entity root
+     *
+     * @throws  QueryException  if the alias is null or empty
      */
     <M> Root<M> getRoot(Class<M> entityClass, String alias);
 

@@ -12,6 +12,9 @@ import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
+ * QueryBuilder implementation
+ *
+ * @see QueryBuilder
  * @param   <T>     result objects class
  */
 class QueryBuilderImpl<T> implements QueryBuilder<T> {
@@ -27,6 +30,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
      * Constructor
      *
      * @param   db              database object
+     * @param   resultClass     class of the query result object
+     * @param   entityManager   entity manager instance
+     *
      * @throws  QueryException  if the result class is not an entity
      */
     QueryBuilderImpl(DatabaseObject db, Class<T> resultClass, EntityManagerImpl entityManager) {
@@ -38,6 +44,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     @Override
     public <M> Root<M> getRoot(Class<M> entityClass, String alias) {
+        if (alias == null || alias.isEmpty())
+            throw new QueryException("Alias can't be null or empty");
+
         return new From<>(db, entityClass, alias);
     }
 

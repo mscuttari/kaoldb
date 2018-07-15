@@ -22,20 +22,19 @@ public interface Expression {
     /**
      * Create "and" expression
      *
-     * @param   expression      second expression
+     * @param   expressions     expressions to be bound with "and" operator
      * @return  expression
-     * @throws  QueryException  if any of the predicates are null
      */
-    Expression and(Expression expression);
+    Expression and(Expression... expressions);
 
 
     /**
      * Create "or" expression
      *
-     * @param   expression      second expression
+     * @param   expressions     expressions to be bound with "or" operator
      * @return  expression
      * @throws  QueryException  if any of the predicates are null
      */
-    Expression or(Expression expression);
+    Expression or(Expression... expressions);
 
 }

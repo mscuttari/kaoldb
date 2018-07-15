@@ -1,6 +1,5 @@
 package it.mscuttari.kaoldb.core;
 
-import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 
 /**
@@ -47,20 +46,28 @@ class ExpressionImpl implements Expression {
 
 
     @Override
-    public Expression and(Expression expression) {
-        if (expression == null)
-            throw new QueryException("Expression can't be null");
+    public Expression and(Expression... expressions) {
+        Expression result = this;
 
-        return new ExpressionImpl(ExpressionType.AND, this, expression);
+        for (Expression expression : expressions) {
+            if (expression != null)
+                result = new ExpressionImpl(ExpressionType.AND, result, expression);
+        }
+
+        return result;
     }
 
 
     @Override
-    public Expression or(Expression expression) {
-        if (expression == null)
-            throw new QueryException("Expression can't be null");
+    public Expression or(Expression... expressions) {
+        Expression result = this;
 
-        return new ExpressionImpl(ExpressionType.OR, this, expression);
+        for (Expression expression : expressions) {
+            if (expression != null)
+                result = new ExpressionImpl(ExpressionType.OR, result, expression);
+        }
+
+        return result;
     }
 
 

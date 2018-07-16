@@ -173,7 +173,7 @@ class PojoAdapter {
     /**
      * Prepare the data to be saved in a particular entity table
      *
-     *{@link ContentValues#size()} must be checked before saving the data in the database.
+     * {@link ContentValues#size()} must be checked before saving the data in the database.
      * If zero, no data needs to be saved and, if not skipped, the
      * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.
      *
@@ -203,7 +203,7 @@ class PojoAdapter {
                 // Checking if it is in accordance with the child entity class
                 Object specifiedDiscriminatorValue = cv.get(currentEntity.discriminatorColumn.name);
 
-                if (specifiedDiscriminatorValue != null && !specifiedDiscriminatorValue.equals(childEntity.discriminatorValue))
+                if (specifiedDiscriminatorValue == null || !specifiedDiscriminatorValue.equals(childEntity.discriminatorValue))
                     throw new QueryException("Wrong discriminator value: expected " + childEntity.discriminatorValue + ", found " + specifiedDiscriminatorValue);
 
             } else {
@@ -274,20 +274,58 @@ class PojoAdapter {
 
                 } else if (discriminatorColumnAnnotation instanceof JoinTable) {
                     // The discriminator column is linked to a field annotated with @JoinTable
-                    throw new QueryException("Not implemented");
+                    Class<?> discriminatorType = currentEntity.discriminatorColumn.field.getType();
+                    Object discriminator;
+
+                    try {
+                        // Create the discriminator object containing the discriminator column
+                        discriminator = discriminatorType.newInstance();
+
+                        for (JoinColumn joinColumn : ((JoinTable)discriminatorColumnAnnotation).joinColumns()) {
+                            if (joinColumn.name().equals(currentEntity.discriminatorColumn.name)) {
+                                // Set the child discriminator value
+                                Field discriminatorField = discriminatorType.getField(joinColumn.referencedColumnName());
+                                discriminatorField.set(discriminator, childEntity.discriminatorValue);
+
+                                // Assign the discriminator value to the object to be persisted
+                                currentEntity.discriminatorColumn.field.set(obj, discriminator);
+
+                                break;
+                            }
+                        }
+
+                    } catch (InstantiationException e) {
+                        throw new QueryException(e.getMessage());
+                    } catch (IllegalAccessException e) {
+                        throw new QueryException(e.getMessage());
+                    } catch (NoSuchFieldException e) {
+                        throw new QueryException(e.getMessage());
+                    }
+
+                    insertJoinTableIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinTable)discriminatorColumnAnnotation);
                 }
             }
         }
 
 
-        // Normal columns
+        // Fields
         List<Field> fields = new ArrayList<>();
 
         for (ColumnObject column : currentEntity.columns) {
             if (column.field != null && !fields.contains(column.field)) {
                 fields.add(column.field);
-                if (!checkDataExistence(obj, context, db, column.field))
-                    throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
+
+                try {
+                    column.field.setAccessible(true);
+                    Object fieldValue = column.field.get(obj);
+
+                    if (!checkDataExistence(fieldValue, context, db))
+                        throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
+
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                    throw new QueryException(e.getMessage());
+                }
 
                 insertFieldIntoContentValues(cv, obj, db, column.field);
             }
@@ -298,43 +336,40 @@ class PojoAdapter {
 
 
     /**
-     * Check if the object already exists in the database
+     * Check if an object already exists in the database
      *
-     * @param   obj         {@link Object} to be persisted whose class contains the {@code field}
-     * @param   context     application {@link Context}
-     * @param   db          {@link DatabaseObject} of the database the entity belongs to
-     * @param   field       {@link Field} to be checked. In case of basic field type (Integer,
+     * @param   obj         {@link Object} to be searched. In case of basic object type (Integer,
      *                      String, etc.) the check will be successful; in case of complex type
      *                      (custom classes), a query searching for the object is run
+     * @param   context     application {@link Context}
+     * @param   db          {@link DatabaseObject} of the database the entity belongs to
      *
      * @return  true if the data exits; false otherwise
      */
-    private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db, Field field) {
-        // Primitive data
-        Class<?> fieldClass = field.getType();
+    private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db) {
+        Class<?> clazz = obj.getClass();
 
-        if (isPrimitiveType(fieldClass))
+        // Primitive data
+        if (isPrimitiveType(clazz))
             return true;
 
         // Non-primitive data
         try {
-            field.setAccessible(true);
-            Object destinationValue = field.get(obj);
-            EntityObject destinationEntity = db.getEntityObject(destinationValue.getClass());
+            EntityObject entity = db.getEntityObject(clazz);
 
             EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
-            QueryBuilder<?> qb = em.getQueryBuilder(destinationEntity.entityClass);
-            Root<?> root = qb.getRoot(destinationEntity.entityClass, "de");
+            QueryBuilder<?> qb = em.getQueryBuilder(entity.entityClass);
+            Root<?> root = qb.getRoot(entity.entityClass, "de");
 
             Expression where = null;
 
-            for (ColumnObject primaryKey : destinationEntity.primaryKeys) {
+            for (ColumnObject primaryKey : entity.primaryKeys) {
                 if (primaryKey.field == null)
                     throw new InvalidConfigException("Primary key column " + primaryKey.name + " has null field");
 
                 primaryKey.field.setAccessible(true);
-                Property property = new Property<>(destinationEntity.entityClass, primaryKey.field.getType(), primaryKey.field.getName());
-                Object value = primaryKey.field.get(destinationValue);
+                Property property = new Property<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field.getName());
+                Object value = primaryKey.field.get(obj);
                 Expression expression = root.eq(property, value);
                 where = where == null ? expression : where.and(expression);
             }
@@ -349,7 +384,7 @@ class PojoAdapter {
 
 
     /**
-     * Insert field into {@link ContentValues}
+     * Insert {@link Field} value into {@link ContentValues}
      *
      * @param   cv      {@link ContentValues} to be populated
      * @param   obj     {@link Object} to be persisted whose class contains the {@code field}
@@ -367,7 +402,7 @@ class PojoAdapter {
             insertJoinColumnsIntoContentValues(cv, obj, db, field, field.getAnnotation(JoinColumns.class));
 
         } else if (field.isAnnotationPresent(JoinTable.class)) {
-            throw new QueryException("Not implemented");
+            insertJoinTableIntoContentValues(cv, obj, db, field, field.getAnnotation(JoinTable.class));
         }
     }
 
@@ -424,15 +459,30 @@ class PojoAdapter {
 
 
     /**
-     * Insert join columns field into {@link ContentValues}
+     * Insert {@link JoinColumns} field into {@link ContentValues}
      *
      * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     object containing the data
-     * @param   db      database object
-     * @param   field   column field
+     * @param   obj     {@link Object} to be persisted which contains the field
+     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   field   {@link Field} linked to the table column to be populated
      */
     private static void insertJoinColumnsIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumns annotation) {
         for (JoinColumn joinColumnAnnotation : annotation.value()) {
+            insertJoinColumnIntoContentValues(cv, obj, db, field, joinColumnAnnotation);
+        }
+    }
+
+
+    /**
+     * Insert {@link JoinTable} field into {@link ContentValues}
+     *
+     * @param   cv      {@link ContentValues} to be populated
+     * @param   obj     {@link Object} to be persisted which contains the field
+     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   field   {@link Field} linked to the table column to be populated
+     */
+    private static void insertJoinTableIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinTable annotation) {
+        for (JoinColumn joinColumnAnnotation : annotation.joinColumns()) {
             insertJoinColumnIntoContentValues(cv, obj, db, field, joinColumnAnnotation);
         }
     }

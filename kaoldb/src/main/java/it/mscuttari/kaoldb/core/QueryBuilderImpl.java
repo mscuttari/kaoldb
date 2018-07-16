@@ -97,7 +97,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         // Current entity
         EntityObject entity = db.getEntityObject(resultClass);
         for (ColumnObject column : entity.columns) {
-            selectColumns.add(alias + entity.entityClass.getSimpleName() + "." + column.name + " AS \"" + alias + entity.entityClass.getSimpleName() + "." + column.name + "\"");
+            selectColumns.add(alias + entity.getName() + "." + column.name + " AS \"" + alias + entity.getName() + "." + column.name + "\"");
         }
 
         // Parents
@@ -105,7 +105,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         while (parent != null) {
             for (ColumnObject column : parent.columns) {
-                selectColumns.add(alias + parent.entityClass.getSimpleName() + "." + column.name + " AS \"" + alias + parent.entityClass.getSimpleName() + "." + column.name + "\"");
+                selectColumns.add(alias + parent.getName() + "." + column.name + " AS \"" + alias + parent.getName() + "." + column.name + "\"");
             }
 
             parent = parent.parent;
@@ -163,7 +163,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         for (EntityObject child : entity.children) {
             for (ColumnObject column : child.columns) {
-                result.add(alias + child.entityClass.getSimpleName() + "." + column.name + " AS \"" + alias + child.entityClass.getSimpleName() + "." + column.name + "\"");
+                result.add(alias + child.getName() + "." + column.name + " AS \"" + alias + child.getName() + "." + column.name + "\"");
             }
 
             List<String> recursiveResult = childrenSelectClause(child, alias);

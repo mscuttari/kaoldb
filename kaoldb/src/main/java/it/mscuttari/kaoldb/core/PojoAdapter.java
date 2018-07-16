@@ -70,7 +70,7 @@ class PojoAdapter {
 
         } else {
             if (!resultClass.equals(entity.entityClass))
-                throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.entityClass.getSimpleName());
+                throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.getName());
 
             // Populate child class
             try {

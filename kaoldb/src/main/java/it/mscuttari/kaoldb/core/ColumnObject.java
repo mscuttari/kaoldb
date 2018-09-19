@@ -1,7 +1,5 @@
 package it.mscuttari.kaoldb.core;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -13,6 +11,10 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 /**
@@ -21,11 +23,27 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
  */
 class ColumnObject {
 
+    /**
+     * Relationship types
+     *
+     * {@link #NONE} <==> {@link #field} has no relationship annotation.
+     * {@link #ONE_TO_ONE} <==> {@link #field} is annotated with {@link OneToOne}.
+     * {@link #ONE_TO_MANY} <==> {@link #field} is annotated with {@link OneToMany}.
+     * {@link #MANY_TO_ONE} <==> {@link #field} is annotated with {@link ManyToOne}.
+     * {@link #MANY_TO_MANY} <==> {@link #field} is annotated with {@link ManyToMany}.
+     */
+    public enum RelationshipType {
+        NONE, ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
+    }
+
     /** Class column field */
     public Field field;
 
-    /** Annotation of the field */
-    public Annotation annotation;
+    /** Annotation of the column ({@link Column} or {@link JoinColumn}) */
+    public Annotation columnAnnotation;
+
+    /** Relationship type */
+    public RelationshipType relationshipType;
 
     /** Column name */
     public String name;
@@ -47,13 +65,6 @@ class ColumnObject {
     /** Unique column property */
     public boolean unique;
 
-    /**
-     * Referenced column name (if the data is represented by another entity)
-     * Null if the column consist of basic data (string, integer, etc.)
-     */
-    @Nullable
-    public String referencedColumnName;
-
 
     /**
      * Constructor for fields annotated with {@link Column}
@@ -63,13 +74,13 @@ class ColumnObject {
      */
     private ColumnObject(Column columnAnnotation, Field field) {
         this.field = field;
-        this.name = getColumnName(field);
+        this.columnAnnotation = columnAnnotation;
+        this.name = getColumnName(columnAnnotation, field);
         this.primaryKey = field.isAnnotationPresent(Id.class);
-        this.annotation = columnAnnotation;
         this.type = field.getType();
         this.nullable = columnAnnotation.nullable();
         this.unique = columnAnnotation.unique();
-        this.referencedColumnName = null;
+        this.relationshipType = getRelationshipType(field);
     }
 
 
@@ -81,13 +92,13 @@ class ColumnObject {
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
         this.field = field;
-        this.annotation = joinColumnAnnotation;
-        this.name = joinColumnAnnotation.name();
+        this.columnAnnotation = joinColumnAnnotation;
+        this.name = getColumnName(joinColumnAnnotation, field);
         this.type = null;
         this.nullable = joinColumnAnnotation.nullable();
         this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
-        this.referencedColumnName = joinColumnAnnotation.referencedColumnName();
+        this.relationshipType = getRelationshipType(field);
     }
 
 
@@ -162,36 +173,35 @@ class ColumnObject {
 
 
     /**
-     * Get column name
+     * Get column name of a field annotated with {@link Column} or {@link JoinColumn}
      *
-     * If the table is not specified, the following policy is applied:
-     * Uppercase characters are replaces with underscore followed by the same character converted to lowercase
-     * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
+     * If the {@link Column#name()} or the {@link JoinColumn#name()} are not specified, the
+     * following policy is applied:
+     *
+     * Uppercase characters are replaced with underscore followed by the same character converted
+     * to lowercase. Only the first character, if uppercase, is converted to lowercase avoiding
+     * the underscore.
+     *
      * Example: columnFieldName => column_field_name
      *
-     * @param   field       column field
-     * @return  table name
-     * @throws  InvalidConfigException if the field doesn't have @Column or @JoinColumn annotations
+     * @param   annotation      {@link Column} / {@link JoinColumn} annotation of the field
+     * @param   field           column field
+     *
+     * @return  column name
      */
-    private static String getColumnName(Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            // @Column
-            Column column = field.getAnnotation(Column.class);
+    private static String getColumnName(Annotation annotation, Field field) {
+        if (annotation instanceof Column) {
+            Column column = (Column) annotation;
             if (!column.name().isEmpty()) return column.name();
 
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            // @JoinColumn
-            JoinColumn joinColumn = field.getAnnotation(JoinColumn.class);
+        } else if (annotation instanceof JoinColumn) {
+            JoinColumn joinColumn = (JoinColumn) annotation;
             if (!joinColumn.name().isEmpty()) return joinColumn.name();
-
-        } else {
-            throw new InvalidConfigException("Field " + field.getName() + " doesn't have @Column or @JoinColumn annotations");
         }
 
-        // Currently not reachable (column name is a required field)
-        LogUtils.w(field.getName() + ": column tableName not specified, using the default one based on field tableName");
+        LogUtils.w(field.getName() + ": column name not specified, using the default one based on field name");
 
-        // Default table tableName
+        // Default column name
         String fieldName = field.getName();
         char c[] = fieldName.toCharArray();
         c[0] = Character.toLowerCase(c[0]);
@@ -201,9 +211,31 @@ class ColumnObject {
 
 
     /**
+     * Get the relationship type of a field
+     *
+     * @param   field       field to be analyzed
+     * @return  {@link RelationshipType}
+     */
+    private static RelationshipType getRelationshipType(Field field) {
+        if (field.isAnnotationPresent(OneToOne.class)) {
+            return RelationshipType.ONE_TO_ONE;
+        } else if (field.isAnnotationPresent(OneToMany.class)) {
+            return RelationshipType.ONE_TO_MANY;
+        } else if (field.isAnnotationPresent(ManyToOne.class)) {
+            return RelationshipType.MANY_TO_ONE;
+        } else if (field.isAnnotationPresent(ManyToMany.class)) {
+            return RelationshipType.MANY_TO_MANY;
+        }
+
+        return RelationshipType.NONE;
+    }
+
+
+    /**
      * Check column consistence
      *
      * Method called during the mapping consistence check
+     *
      * @see EntityObject#checkConsistence(Map)
      *
      * @param   entities        map of all entities
@@ -214,22 +246,8 @@ class ColumnObject {
         if (this.field == null)
             return;
 
-        // Check annotation count
-        int annotationCount = 0;
-
-        if (this.field.isAnnotationPresent(Column.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinColumn.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinColumns.class)) annotationCount++;
-        if (this.field.isAnnotationPresent(JoinTable.class)) annotationCount++;
-
-        if (annotationCount == 0) {
-            throw new InvalidConfigException("Field " + this.field.getName() + " has no @Column annotation");
-        } else if (annotationCount > 1) {
-            throw new InvalidConfigException("Field " + this.field.getName() + " has too much column annotations");
-        }
-
         // Check references
-        if (this.annotation instanceof JoinColumn) {
+        if (this.columnAnnotation instanceof JoinColumn) {
             // @JoinColumn
             Class<?> referencedClass = this.field.getType();
             EntityObject referencedEntity = entities.get(referencedClass);
@@ -237,7 +255,7 @@ class ColumnObject {
             if (referencedEntity == null)
                 throw new InvalidConfigException("Field " + this.field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
 
-            String referencedColumnName = ((JoinColumn) this.annotation).referencedColumnName();
+            String referencedColumnName = ((JoinColumn) this.columnAnnotation).referencedColumnName();
             ColumnObject referencedColumn = null;
 
             while (referencedEntity != null && referencedColumn == null) {
@@ -249,6 +267,52 @@ class ColumnObject {
                 throw new InvalidConfigException("Field " + field.getName() + ": referenced column " + referencedColumnName + " not found");
 
             this.type = referencedColumn.type;
+        }
+
+        // Check relationships
+        if (relationshipType == RelationshipType.ONE_TO_ONE) {
+            // @OneToOne
+            OneToOne annotation = field.getAnnotation(OneToOne.class);
+
+            if (!annotation.mappedBy().isEmpty()) {
+                EntityObject linkedEntity = entities.get(type);
+
+                try {
+                    Field mappedByField = linkedEntity.entityClass.getField(annotation.mappedBy());
+
+                    if (!mappedByField.getType().equals(field.getDeclaringClass()))
+                        throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field should be of type " + field.getDeclaringClass().getSimpleName());
+
+                    if (!mappedByField.isAnnotationPresent(OneToOne.class))
+                        throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field doesn't have @OneToOne annotation");
+                } catch (NoSuchFieldException e) {
+                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field not found");
+                }
+            }
+
+        } else if (relationshipType == RelationshipType.ONE_TO_MANY) {
+            // @OneToMany
+            OneToMany annotation = field.getAnnotation(OneToMany.class);
+            EntityObject linkedEntity = entities.get(type);
+
+            try {
+                Field mappedByField = linkedEntity.entityClass.getField(annotation.mappedBy());
+
+                if (!mappedByField.getType().equals(field.getDeclaringClass()))
+                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field should be of type " + field.getDeclaringClass().getSimpleName());
+
+                if (!mappedByField.isAnnotationPresent(ManyToOne.class))
+                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field doesn't have @OneToOne annotation");
+            } catch (NoSuchFieldException e) {
+                throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field not found");
+            }
+
+
+        } else if (relationshipType == RelationshipType.MANY_TO_ONE) {
+            // TODO: implement
+
+        } else if (relationshipType == RelationshipType.MANY_TO_MANY) {
+            // TODO: implement
         }
     }
 

@@ -11,18 +11,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface ManyToMany {
 
-    /**
-     * The operations that must be cascaded to the target of the association.
-     * Defaults to no operations being cascaded.
-     */
-    // TODO: implement
-    CascadeType[] cascade() default {};
-
-
-    /**
-     * The field that owns the relationship.
-     */
-    // TODO: implement
     String mappedBy() default "";
 
 }

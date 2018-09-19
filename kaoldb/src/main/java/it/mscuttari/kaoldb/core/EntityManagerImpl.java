@@ -5,11 +5,13 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -28,7 +30,7 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
 class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     private DatabaseObject database;
-    private Context context;
+    private WeakReference<Context> context;
 
 
     /**
@@ -38,20 +40,21 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      * @param   database    database mapping object
      */
     EntityManagerImpl(Context context, DatabaseObject database) {
-        super(context, database.name, null, database.version);
+        super(context, database.getName(), null, database.getVersion());
 
         this.database = database;
-        this.context = context;
+        this.context = new WeakReference<>(context);
     }
 
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        for (EntityObject entity : database.entities.values()) {
+        for (EntityObject entity : database.getEntities()) {
             String createSQL = EntityUtils.getCreateTableSql(entity);
 
             if (createSQL != null) {
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
+                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
                 db.execSQL(createSQL);
                 LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
             }
@@ -61,16 +64,12 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
-
-        if (database.migrator == null) {
-            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
-        }
+        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
         DatabaseSchemaMigrator migrator;
 
         try {
-            migrator = database.migrator.newInstance();
+            migrator = database.getSchemaMigrator().newInstance();
         } catch (IllegalAccessException e) {
             throw new DatabaseManagementException(e.getMessage());
         } catch (InstantiationException e) {
@@ -79,22 +78,18 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
         migrator.onUpgrade(db, oldVersion, newVersion);
 
-        LogUtils.i("[Database \"" + database.name + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
+        LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.name + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
-
-        if (database.migrator == null) {
-            throw new DatabaseManagementException("Database \"" + database.name + "\"]: schema migrator not set");
-        }
+        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
         DatabaseSchemaMigrator migrator;
 
         try {
-            migrator = database.migrator.newInstance();
+            migrator = database.getSchemaMigrator().newInstance();
         } catch (IllegalAccessException  e) {
             throw new DatabaseManagementException(e.getMessage());
         } catch (InstantiationException e) {
@@ -103,16 +98,16 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
         migrator.onDowngrade(db, oldVersion, newVersion);
 
-        LogUtils.i("[Database \"" + database.name + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
+        LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
     @Override
     public boolean deleteDatabase() {
-        boolean result = context.deleteDatabase(database.name);
+        boolean result = getContext().deleteDatabase(database.getName());
 
         if (result) {
-            LogUtils.i("Database \"" + database.name + "\" deleted");
+            LogUtils.i("Database \"" + database.getName() + "\" deleted");
         }
 
         return result;
@@ -136,21 +131,14 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
 
     /**
-     * Get the entity of an object
+     * Get the {@link EntityObject} of an object
      *
      * @param   obj     object
-     * @return  entity
-     * @throws  QueryException if the object is not an entity
+     * @return  entity object
      */
     private EntityObject getObjectEntity(Object obj) {
         Class<?> objectClass = obj.getClass();
-        EntityObject entity = database.entities.get(objectClass);
-
-        if (entity == null) {
-            throw new QueryException("Class " + objectClass.getSimpleName() + " is not an entity");
-        }
-
-        return entity;
+        return database.getEntityObject(objectClass);
     }
 
 
@@ -206,7 +194,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      */
     private synchronized void persist(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
         // Extract the current entity data from the object to be persisted
-        ContentValues cv = objectToContentValues(context, database, currentEntity, childEntity, obj);
+        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
 
         // Do the same for its parent
         if (currentEntity.parent != null)
@@ -267,6 +255,21 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
             if (!isInTransaction) db.endTransaction();
             db.close();
         }
+    }
+
+
+    /**
+     * Get {@link Context}
+     *
+     * @return  context
+     */
+    private Context getContext() {
+        Context context = this.context.get();
+
+        if (context == null)
+            throw new KaolDBException("Context is null");
+
+        return context;
     }
 
 }

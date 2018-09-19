@@ -9,6 +9,11 @@ import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -25,13 +30,17 @@ public abstract class Film {
     @Column(name = "year")
     public Integer year;
 
+    @ManyToOne
     @JoinColumn(name = "genre", referencedColumnName = "name")
     public Genre genre;
 
-    @JoinColumns(value = {
-            @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
-            @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
-    })
+    @ManyToOne
+    @JoinTable(
+            name = "films_directors",
+            joinColumns = {
+                    @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
+            })
     public Person director;
     
     @Column(name = "length")

@@ -1,14 +1,24 @@
 package it.mscuttari.kaoldb.core;
 
+import android.util.Pair;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 class EntityUtils {
 
@@ -87,6 +97,12 @@ class EntityUtils {
         if (!uniqueKeysSql.isEmpty())
             result.append(", ").append(uniqueKeysSql);
 
+        // Foreign keys
+        String foreignKeysSql = getForeignKeysSql(entity);
+
+        if (!foreignKeysSql.isEmpty())
+            result.append(", ").append(foreignKeysSql);
+
         result.append(");");
         //result.append(") WITHOUT ROWID;");
 
@@ -125,6 +141,8 @@ class EntityUtils {
                 result.append(" REAL");
             } else if (fieldType.equals(String.class)) {
                 result.append(" TEXT");
+            } else if (fieldType.equals(Date.class) || fieldType.equals(Calendar.class)) {
+                result.append(" INETGER");
             } else {
                 result.append(" BLOB");
             }
@@ -210,6 +228,125 @@ class EntityUtils {
             result.append(prefixExternal).append(uc);
             prefixExternal = ", ";
         }
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get the foreign keys SQL constraints to be inserted in the create table query
+     *
+     * Example:
+     * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
+     * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
+     * FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6)
+     *
+     * @param   entity      entity object
+     * @return  SQL constraints
+     */
+    private static String getForeignKeysSql(EntityObject entity) {
+        StringBuilder result = new StringBuilder();
+
+        Collection<String> constraints = new ArrayList<>();
+
+        // Inheritance
+        String inheritanceSql = getInheritanceConstraints(entity);
+
+        if (!inheritanceSql.isEmpty())
+            constraints.add(inheritanceSql);
+
+        // Relationships
+        String relationshipsSql = getRelationshipsConstraints(entity);
+
+        if (!relationshipsSql.isEmpty())
+            constraints.add(relationshipsSql);
+
+        // Create unique SQL statement
+        String separator = "";
+
+        for (String constraint : constraints) {
+            result.append(separator).append(constraint);
+            separator = ", ";
+        }
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get the inheritance SQL constraint to be inserted in the create table query
+     *
+     * Example: FOREIGN KEY (primary_key_1, primary_key_2) REFERENCES parent_table(primary_key_1, primary_key_2)
+     *
+     * @param   entity      entity object
+     * @return  SQL constraint
+     */
+    private static String getInheritanceConstraints(EntityObject entity) {
+        StringBuilder result = new StringBuilder();
+
+        if (entity.parent != null) {
+            EntityObject parent = entity.parent;
+
+            // Go up in hierarchy until there is a real table
+            while (parent != null && !parent.realTable)
+                parent = parent.parent;
+
+            // Check if there's a real parent table (TABLE_PER_CLASS strategy makes this unknown)
+            if (parent != null) {
+                // List of associations between local column and foreign column
+                Collection<Pair<String, String>> associations = new HashSet<>(parent.primaryKeys.size());
+
+                for (ColumnObject primaryKey : parent.primaryKeys) {
+                    associations.add(new Pair<>(primaryKey.name, primaryKey.name));
+                }
+
+                if (associations.size() > 0) {
+                    String separator;
+
+                    result.append("FOREIGN KEY(");
+
+                    // Local columns
+                    separator = "";
+                    for (Pair<String, String> association : associations) {
+                        result.append(separator).append(association.first);
+                        separator = ", ";
+                    }
+
+                    result.append(") REFERENCES ");
+
+                    // Referenced table name
+                    result.append(parent.tableName).append("(");
+
+                    // Referenced columns
+                    separator = "";
+                    for (Pair<String, String> association : associations) {
+                        result.append(separator).append(association.second);
+                        separator = ", ";
+                    }
+
+                    result.append(") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+                }
+            }
+        }
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get the relationships SQL constraints to be inserted in the create table query
+     *
+     * Example:
+     * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
+     * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
+     *
+     * @param   entity      entity object
+     * @return  SQL constraint
+     */
+    private static String getRelationshipsConstraints(EntityObject entity) {
+        StringBuilder result = new StringBuilder();
+
+        // TODO: to be implemented
 
         return result.toString();
     }

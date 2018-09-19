@@ -3,7 +3,6 @@ package it.mscuttari.kaoldb.core;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
@@ -16,8 +15,7 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 public final class KaolDB {
 
     private static KaolDB instance;
-    public Config config;
-    private Map<String, EntityManager> entityManagers;
+    private Config config;
 
 
     /**
@@ -25,7 +23,6 @@ public final class KaolDB {
      */
     private KaolDB() {
         this.config = new Config();
-        entityManagers = new HashMap<>();
     }
 
 
@@ -48,7 +45,17 @@ public final class KaolDB {
      * @param   enabled     whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
-        config.debug = enabled;
+        getConfig().setDebugMode(enabled);
+    }
+
+
+    /**
+     * Get configuration
+     *
+     * @return  configuration object
+     */
+    Config getConfig() {
+        return config;
     }
 
 
@@ -74,7 +81,7 @@ public final class KaolDB {
         LogUtils.d("Parsing the configuration file");
 
         try {
-            config.parseConfigFile(xml);
+            getConfig().parseConfigFile(xml);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ConfigParseException(e.getMessage());
@@ -88,9 +95,9 @@ public final class KaolDB {
         // Map the entities
         LogUtils.d("Mapping the entities");
 
-        for (String dbName : config.mapping.keySet()) {
-            DatabaseObject database = config.mapping.get(dbName);
-            database.entities = EntityUtils.createEntities(database.classes);
+        for (String dbName : getConfig().getDatabaseMapping().keySet()) {
+            DatabaseObject database = getConfig().getDatabaseMapping().get(dbName);
+            database.setEntitiesMap(EntityUtils.createEntities(database.getEntityClasses()));
         }
 
         LogUtils.i("Entities mapped");
@@ -113,26 +120,9 @@ public final class KaolDB {
             throw new KaolDBException("Empty database name");
         }
 
-        // Check if the entity manager for the specifid database already exists
-        if (entityManagers.containsKey(databaseName)) {
-            EntityManager em = entityManagers.get(databaseName);
-            if (em != null) return em;
-        }
-
-        // Create a new entity manager
-        LogUtils.d("Creating entity manager for database \"" + databaseName + "\"");
-        Map<String, DatabaseObject> mapping = KaolDB.getInstance().config.mapping;
+        Map<String, DatabaseObject> mapping = KaolDB.getInstance().getConfig().getDatabaseMapping();
         DatabaseObject database = mapping.get(databaseName);
-
-        if (database == null) {
-            throw new KaolDBException("Database " + databaseName + " not found");
-        }
-
-        EntityManager em = new EntityManagerImpl(context, database);
-        entityManagers.put(databaseName, em);
-        LogUtils.i("Entity manager for database \"" + databaseName + "\" has been created");
-
-        return em;
+        return new EntityManagerImpl(context, database);
     }
 
 }

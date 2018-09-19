@@ -129,11 +129,7 @@ class From<X> implements Root<X> {
     @Override
     public <Y, T> Expression eq(Property<X, T> x, Class<Y> yClass, String yAlias, Property<Y, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);
-
-        if (!db.entities.containsKey(yClass))
-            throw new QueryException("Class " + yClass.getSimpleName() + " is not an entity");
-
-        Variable<Y, T> b = new Variable<>(db, db.entities.get(yClass), yAlias, y);
+        Variable<Y, T> b = new Variable<>(db, db.getEntityObject(yClass), yAlias, y);
 
         return PredicateImpl.eq(db, a, b);
     }
@@ -144,15 +140,9 @@ class From<X> implements Root<X> {
      *
      * @param   entityClass     entity class
      * @return  entity object
-     * @throws  QueryException  if the class is not an entity
      */
     private EntityObject getEntity(Class<?> entityClass) {
-        EntityObject entity = db.entities.get(entityClass);
-
-        if (entity == null)
-            throw new QueryException("Class " + entityClass.getSimpleName() + " is not an entity");
-
-        return entity;
+        return db.getEntityObject(entityClass);
     }
 
 
@@ -232,7 +222,7 @@ class From<X> implements Root<X> {
 
                     root = new LeftJoin<>(db, root, child.entityClass, alias, on);
                     root.hierarchyVisited = true;
-                    root = resolveChildrenInheritance(root, db.entities.get(root.getEntityClass()), alias);
+                    root = resolveChildrenInheritance(root, db.getEntityObject(root.getEntityClass()), alias);
                 }
             }
         }

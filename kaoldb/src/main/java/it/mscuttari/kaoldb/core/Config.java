@@ -6,7 +6,8 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,12 +16,12 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class Config {
 
-    /** Maps each database name to its {@link DatabaseObject}*/
-    public Map<String, DatabaseObject> mapping;
+    /** Maps each database name to its {@link DatabaseObject} */
+    private final Map<String, DatabaseObject> mapping;
 
 
     /** Whether the debug messages should be enabled or not */
-    public boolean debug;
+    private boolean debug;
 
 
     /**
@@ -29,6 +30,52 @@ class Config {
     public Config() {
         mapping = new HashMap<>();
         debug = false;
+    }
+
+
+    /**
+     * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}
+     *
+     * @return  database map
+     */
+    public Map<String, DatabaseObject> getDatabaseMapping() {
+        return Collections.unmodifiableMap(mapping);
+    }
+
+
+    /**
+     * Get an unmodifiable {@link Collection} of database names
+     *
+     * @return  database names
+     */
+    public Collection<String> getDatabaseNames() {
+        return Collections.unmodifiableCollection(mapping.keySet());
+    }
+
+
+    /**
+     * Check if debug mode is enabled
+     *
+     * @return  true if enabled; false otherwise
+     */
+    public boolean isDebugEnabled() {
+        return debug;
+    }
+
+
+    /**
+     * Set whether the debug mode should be enabled or not
+     *
+     * @param   enabled     whether to enable or not the debug mode
+     */
+    public void setDebugMode(boolean enabled) {
+        this.debug = enabled;
+
+        if (enabled) {
+            LogUtils.i("Debug mode enabled");
+        } else {
+            LogUtils.i("Debug mode disabled");
+        }
     }
 
 
@@ -87,22 +134,18 @@ class Config {
         DatabaseObject database = new DatabaseObject();
 
         // Name
-        database.name = xml.getAttributeValue(null, "name");
-
-        if (database.name == null || database.name.isEmpty()) {
-            throw new InvalidConfigException("Database name not specified");
-        }
+        database.setName(xml.getAttributeValue(null, "name"));
 
         // Version
         String version = xml.getAttributeValue(null, "version");
 
         if (version == null || version.isEmpty())
-            throw new InvalidConfigException("Database " + database.name + ": version not set");
+            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: version not set");
 
         try {
-            database.version = Integer.valueOf(version);
+            database.setVersion(Integer.valueOf(version));
         } catch (NumberFormatException e) {
-            throw new InvalidConfigException("Database " + database.name + ": invalid version");
+            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid version");
         }
 
         // Schema migrator
@@ -112,27 +155,25 @@ class Config {
             try {
                 Class<?> migratorClass = Class.forName(migrator);
                 if (DatabaseSchemaMigrator.class.isAssignableFrom(migratorClass)) {
-                    database.migrator = migratorClass.asSubclass(DatabaseSchemaMigrator.class);
+                    database.setSchemaMigrator(migratorClass.asSubclass(DatabaseSchemaMigrator.class));
                 } else {
-                    throw new InvalidConfigException("Database " + database.name + ": invalid schema migrator");
+                    throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator");
                 }
 
             } catch (ClassNotFoundException e) {
-                throw new InvalidConfigException("Database " + database.name + ": invalid schema migrator");
+                throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator");
             }
         }
 
 
         LogUtils.i("Database found: [" +
-                "name = " + database.name + ", " +
-                "version = " + database.version + ", " +
-                "migrator = " + database.migrator.getSimpleName() + "]"
+                "name = " + database.getName() + ", " +
+                "version = " + database.getVersion() + ", " +
+                "migrator = " + database.getSchemaMigrator().getSimpleName() + "]"
         );
 
 
         // Classes
-        database.classes = new ArrayList<>();
-
         int eventType = xml.getEventType();
 
         while (eventType != XmlPullParser.END_TAG || xml.getName().equals("class")) {
@@ -142,21 +183,21 @@ class Config {
 
                 try {
                     Class<?> clazz = Class.forName(xml.getText());
-                    database.classes.add(clazz);
-                    LogUtils.i("Database " + database.name + ": found class " + clazz.getSimpleName());
+                    database.addEntityClass(clazz);
+                    LogUtils.i("[Database \"" + database.getName() + "\"]: found class " + clazz.getSimpleName());
 
                 } catch (ClassNotFoundException e) {
-                    throw new InvalidConfigException("Database " + database.name + ": class " + xml.getText() + " not found");
+                    throw new InvalidConfigException("[Database \"" + database.getName()+ "\"]: class " + xml.getText() + " not found");
                 }
             }
 
             eventType = xml.next();
         }
 
-        LogUtils.e("Database " + database.name + ": classes mapped");
+        LogUtils.e("[Database \"" + database.getName() + "\"]: classes mapped");
 
         // Add database to databases list
-        mapping.put(database.name, database);
+        mapping.put(database.getName(), database);
     }
 
 }

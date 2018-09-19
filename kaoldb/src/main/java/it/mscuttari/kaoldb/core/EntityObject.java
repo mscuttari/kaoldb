@@ -111,15 +111,15 @@ class EntityObject {
     public String toString() {
         String result = "";
 
-        result += "Class: " + this.entityClass.getSimpleName() + ", ";
+        result += "Class: " + getName() + ", ";
 
         if (this.parent != null)
-            result += "Parent: " + this.parent.entityClass.getSimpleName() + ", ";
+            result += "Parent: " + this.parent.getName() + ", ";
 
         result += "Children: [";
         for (EntityObject child : this.children) {
             //noinspection StringConcatenationInLoop
-            result += child.entityClass.getSimpleName() + ", ";
+            result += child.getName() + ", ";
         }
         result += "], ";
 
@@ -142,7 +142,7 @@ class EntityObject {
 
     @Override
     public int hashCode() {
-        return this.entityClass.getSimpleName().hashCode();
+        return getName().hashCode();
     }
 
 
@@ -166,7 +166,7 @@ class EntityObject {
      * @return  class name
      */
     public String getName() {
-        return this.entityClass.getSimpleName();
+        return entityClass.getSimpleName();
     }
 
 
@@ -331,7 +331,7 @@ class EntityObject {
         Collection<ColumnObject> joinColumns = getJoinColumns(allFields);
 
         if (!Collections.disjoint(result, joinColumns))
-            throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": some columns are defined more than once");
+            throw new InvalidConfigException("Class " + getName() + ": some columns are defined more than once");
 
         result.addAll(joinColumns);
 
@@ -527,26 +527,26 @@ class EntityObject {
         // Discriminator column
         if (this.children.size() != 0) {
             if (!this.entityClass.isAnnotationPresent(Inheritance.class))
-                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " doesn't have @Inheritance annotation");
+                throw new InvalidConfigException("Class " + getName() + " doesn't have @Inheritance annotation");
 
             if (!this.entityClass.isAnnotationPresent(DiscriminatorColumn.class))
-                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+                throw new InvalidConfigException("Class " + getName() + " has @Inheritance annotation but not @DiscriminatorColumn");
 
             DiscriminatorColumn discriminatorColumnAnnotation = this.entityClass.getAnnotation(DiscriminatorColumn.class);
             if (discriminatorColumnAnnotation.name().isEmpty())
-                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": empty discriminator column");
+                throw new InvalidConfigException("Class " + getName() + ": empty discriminator column");
 
             this.discriminatorColumn = this.columnsNameMap.get(discriminatorColumnAnnotation.name());
 
             if (discriminatorColumn == null)
-                throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+                throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
 
             discriminatorColumn.nullable = false;
         }
 
         // Discriminator value
         if (this.parent != null && discriminatorValue == null) {
-            throw new InvalidConfigException("Class " + this.entityClass.getSimpleName() + " doesn't have @DiscriminatorValue annotation");
+            throw new InvalidConfigException("Class " + getName() + " doesn't have @DiscriminatorValue annotation");
         }
     }
 
@@ -560,7 +560,7 @@ class EntityObject {
     void checkConsistence(Map<Class<?>, EntityObject> entities) {
         // Table name
         if (this.realTable && this.tableName == null)
-            throw new InvalidConfigException("Entity " + this.entityClass.getSimpleName() + " can't have empty table name");
+            throw new InvalidConfigException("Entity " + getName() + " can't have empty table name");
 
         // Join columns consistence
         for (ColumnObject column : this.columns) {

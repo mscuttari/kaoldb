@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 import android.database.DatabaseUtils;
+import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
@@ -56,13 +57,13 @@ class QueryImpl<M> implements Query<M> {
         SQLiteDatabase db = entityManager.getReadableDatabase();
 
         Cursor c = db.rawQuery(sql, null);
-        Log.e("KaolDb", DatabaseUtils.dumpCursorToString(c));
+
         List<M> result = new ArrayList<>(c.getCount());
-        EntityObject entityObject = this.db.entities.get(resultClass);
+        EntityObject entityObject = this.db.getEntityObject(resultClass);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             Map<String, Integer> cursorMap = getCursorColumnMap(c);
-            result.add(PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, entityObject, alias));
+            result.add(PojoAdapter.cursorToObject(c, cursorMap, resultClass, entityObject, alias));
         }
 
         c.close();
@@ -80,13 +81,15 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Map each cursor column name to its column index
+     * Create a {@link Map} between each cursor column name and its column index
      *
      * Required to work with column names containing a dot, such as tableName.columnName
-     * @link http://androidxref.com/5.1.0_r1/xref/frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java#165
+     * In fact, the default {@link SQLiteCursor} <a href="http://androidxref.com/5.1.0_r1/xref/frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java#165">implementation</a>
+     * has a section aimed to fix bug 903852, but this workaround actually breaks the usage of
+     * dots in column names.
      *
-     * @param   c       cursor
-     * @return  map
+     * @param   c       cursor to be mapped
+     * @return  {@link Map} between column name and column index
      */
     private static Map<String, Integer> getCursorColumnMap(Cursor c) {
         Map<String, Integer> map = new HashMap<>(c.getColumnCount(), 1);

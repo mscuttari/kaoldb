@@ -1,18 +1,42 @@
 package it.mscuttari.kaoldb.annotations;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD, ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+/**
+ * Defines a many-valued association with one-to-many multiplicity.
+ *
+ * If the relationship is bidirectional, the {@link OneToMany#mappedBy()} element must be used to
+ * specify the relationship field or property of the entity that is the owner of the relationship.
+ */
+@Target({METHOD, FIELD})
+@Retention(RUNTIME)
 public @interface OneToMany {
 
-    Class targetEntity() default void.class;
-    //CascadeType[] cascade() default {};
-    //FetchType fetch() default FetchType.LAZY;
-    String mappedBy() default "";
+    /**
+     * The operations that must be cascaded to the target of the association.
+     * By default no operations are cascaded.
+     */
+    // TODO: implement
+    CascadeType[] cascade() default {};
+
+
+    /**
+     * The field that owns the relationship
+     */
+    // TODO: implement
+    String mappedBy();
+
+
+    /**
+     * Whether to apply the remove operation to entities that have been removed from the
+     * relationship and to cascade the remove operation to those entities.
+     */
+    // TODO: implement
     boolean orphanRemoval() default false;
 
 }

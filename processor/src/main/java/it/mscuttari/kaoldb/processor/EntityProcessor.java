@@ -43,11 +43,18 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
         ClassName propertyClass = ClassName.get("it.mscuttari.kaoldb.core", "Property");
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
-            if (classElement.getKind() != ElementKind.CLASS)
+            if (classElement.getKind() != ElementKind.CLASS) {
                 logError("Element " + classElement.getSimpleName() + " should not have @Entity annotation", classElement);
+                continue;
+            }
 
             // Check the existence of a default constructor
-            checkForDefaultConstructor((TypeElement) classElement);
+            try {
+                checkForDefaultConstructor((TypeElement) classElement);
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+                continue;
+            }
 
             // Get package name
             Element enclosing = classElement;
@@ -74,17 +81,23 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         if (internalElement.getKind() != ElementKind.FIELD) continue;
 
                         // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
-                        Column columnAnnotation = internalElement.getAnnotation(Column.class);
-                        JoinColumn joinColumnAnnotation = internalElement.getAnnotation(JoinColumn.class);
+                        Column columnAnnotation           = internalElement.getAnnotation(Column.class);
+                        JoinColumn joinColumnAnnotation   = internalElement.getAnnotation(JoinColumn.class);
                         JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
-                        JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
+                        JoinTable joinTableAnnotation     = internalElement.getAnnotation(JoinTable.class);
 
                         if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                             continue;
 
-                        // Create property
+                        // Get field name and type
                         String fieldName = internalElement.getSimpleName().toString();
                         TypeName fieldType = ClassName.get(internalElement.asType());
+
+                        // Remove the diamond operator, if present ("Collection<Type>.class" is not allowed, but "Collection.class" is)
+                        if (fieldType instanceof ParameterizedTypeName)
+                            fieldType = ((ParameterizedTypeName) fieldType).rawType;
+
+                        // Create the property
                         ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(propertyClass, classType, fieldType);
 
                         entityClass.addField(
@@ -116,15 +129,16 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
      * Check for default constructor existence
      *
      * @param   element     entity element
+     * @throws  ProcessorException if the class doesn't have a default constructor
      */
-    private void checkForDefaultConstructor(TypeElement element) {
+    private void checkForDefaultConstructor(TypeElement element) throws ProcessorException {
         for (ExecutableElement cons : ElementFilter.constructorsIn(element.getEnclosedElements())) {
             if (cons.getParameters().isEmpty())
                 return;
         }
 
         // Couldn't find any default constructor here
-        logError("Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
+        throw new ProcessorException("Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
     }
 
 }

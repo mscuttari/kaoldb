@@ -24,13 +24,18 @@ public final class DiscriminatorValueProcessor extends AbstractAnnotationProcess
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
         for (Element element : roundEnv.getElementsAnnotatedWith(DiscriminatorValue.class)) {
-            if (element.getKind() != ElementKind.CLASS)
+            // Check that the element is a class
+            if (element.getKind() != ElementKind.CLASS) {
                 logError("Element " + element.getSimpleName() + " should not have @DiscriminatorValue annotation", element);
+                continue;
+            }
 
+            // Check that the class has the @Entity annotation
             Entity entityAnnotation = element.getAnnotation(Entity.class);
 
-            if (entityAnnotation == null)
+            if (entityAnnotation == null) {
                 logError("Class " + element.getSimpleName() + " is not an entity", element);
+            }
         }
 
         return true;

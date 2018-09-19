@@ -39,17 +39,37 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(Column.class))
-            checkColumn(field);
+        for (Element field : roundEnv.getElementsAnnotatedWith(Column.class)) {
+            try {
+                checkColumn(field);
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+            }
+        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumn.class))
-            checkJoinColumn(field);
+        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumn.class)) {
+            try {
+                checkJoinColumn(field);
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+            }
+        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumns.class))
-            checkJoinColumns(field);
+        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumns.class)) {
+            try {
+                checkJoinColumns(field);
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+            }
+        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinTable.class))
-            checkJoinTable(field);
+        for (Element field : roundEnv.getElementsAnnotatedWith(JoinTable.class)) {
+            try {
+                checkJoinTable(field);
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+            }
+        }
 
         return true;
     }
@@ -65,18 +85,20 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
      *      {@link ManyToMany} annotations.
      *
      * @param   field       field element
+     * @throws  ProcessorException if some constraints are not respected
      */
-    private void checkColumn(Element field) {
+    private void checkColumn(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
         // Check relationship absence
-        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
-        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        OneToOne oneToOneAnnotation     = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation   = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation   = field.getAnnotation(ManyToOne.class);
         ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
-        if (oneToOneAnnotation != null || oneToManyAnnotation != null || manyToOneAnnotation != null || manyToManyAnnotation != null)
-            logError("Field annotated with @Column can't have @OneToOne, @OneToMany, @ManyToOne or @ManyToMany annotations", field);
+        if (oneToOneAnnotation != null || oneToManyAnnotation != null || manyToOneAnnotation != null || manyToManyAnnotation != null) {
+            throw new ProcessorException("Field annotated with @Column can't have @OneToOne, @OneToMany, @ManyToOne or @ManyToMany annotations", field);
+        }
     }
 
 
@@ -90,18 +112,20 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
      *      {@link ManyToMany} annotations.
      *
      * @param   field       field element
+     * @throws  ProcessorException if some constraints are not respected
      */
-    private void checkJoinColumn(Element field) {
+    private void checkJoinColumn(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
         // Check relationship
-        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
-        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        OneToOne oneToOneAnnotation     = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation   = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation   = field.getAnnotation(ManyToOne.class);
         ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
-        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
-            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null) {
+            throw new ProcessorException("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        }
     }
 
 
@@ -115,18 +139,20 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
      *      {@link ManyToMany} annotations.
      *
      * @param   field       field element
+     * @throws  ProcessorException if some constraints are not respected
      */
-    private void checkJoinColumns(Element field) {
+    private void checkJoinColumns(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
         // Check relationship
-        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
-        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        OneToOne oneToOneAnnotation     = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation   = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation   = field.getAnnotation(ManyToOne.class);
         ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
-        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
-            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null) {
+            throw new ProcessorException("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        }
     }
 
 
@@ -140,43 +166,45 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
      *      {@link ManyToMany} annotations.
      *
      * @param   field       field element
+     * @throws  ProcessorException if some constraints are not respected
      */
-    private void checkJoinTable(Element field) {
+    private void checkJoinTable(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
         // Check relationship
-        OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
-        OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
-        ManyToOne manyToOneAnnotation = field.getAnnotation(ManyToOne.class);
+        OneToOne oneToOneAnnotation     = field.getAnnotation(OneToOne.class);
+        OneToMany oneToManyAnnotation   = field.getAnnotation(OneToMany.class);
+        ManyToOne manyToOneAnnotation   = field.getAnnotation(ManyToOne.class);
         ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
-        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null)
-            logError("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null) {
+            throw new ProcessorException("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        }
     }
 
 
     /**
      * Check if the field has only one between {@link Column}, {@link JoinColumn},
      * {@link JoinColumns} and {@link JoinTable} annotations.
-     * If the field has more than one annotation, the compile process is stopped.
      *
      * @param   field       field to be checked
+     * @throws  ProcessorException if some constraints are not respected
      */
-    private void checkAnnotationCount(Element field) {
-        Column columnAnnotation = field.getAnnotation(Column.class);
-        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+    private void checkAnnotationCount(Element field) throws ProcessorException{
+        Column columnAnnotation           = field.getAnnotation(Column.class);
+        JoinColumn joinColumnAnnotation   = field.getAnnotation(JoinColumn.class);
         JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
-        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+        JoinTable joinTableAnnotation     = field.getAnnotation(JoinTable.class);
 
         int annotationCount = 0;
 
-        if (columnAnnotation != null) annotationCount++;
-        if (joinColumnAnnotation != null) annotationCount++;
+        if (columnAnnotation      != null) annotationCount++;
+        if (joinColumnAnnotation  != null) annotationCount++;
         if (joinColumnsAnnotation != null) annotationCount++;
-        if (joinTableAnnotation != null) annotationCount++;
+        if (joinTableAnnotation   != null) annotationCount++;
 
         if (annotationCount > 1) {
-            logError("Only one annotation between @Column, @JoinColumn, @JoinColumns and @JoinTable is allowed", field);
+            throw new ProcessorException("Only one annotation between @Column, @JoinColumn, @JoinColumns and @JoinTable is allowed", field);
         }
     }
 

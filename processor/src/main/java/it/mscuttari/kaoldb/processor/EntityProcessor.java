@@ -51,6 +51,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
             // Check the existence of a default constructor
             try {
                 checkForDefaultConstructor((TypeElement) classElement);
+
             } catch (ProcessorException e) {
                 logError(e.getMessage(), e.getElement());
                 continue;
@@ -109,8 +110,8 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                     }
 
                     // Superclass
-                    TypeMirror superClassTypeMirror = ((TypeElement)currentElement).getSuperclass();
-                    currentElement = ((DeclaredType)superClassTypeMirror).asElement();
+                    TypeMirror superClassTypeMirror = ((TypeElement) currentElement).getSuperclass();
+                    currentElement = ((DeclaredType) superClassTypeMirror).asElement();
                 }
 
                 // Create class file

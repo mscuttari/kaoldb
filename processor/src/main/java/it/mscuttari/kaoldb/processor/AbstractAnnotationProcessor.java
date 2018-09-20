@@ -2,23 +2,30 @@ package it.mscuttari.kaoldb.processor;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
-import javax.annotation.processing.Messager;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
 public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
-    private Filer filer;
-    private Messager messager;
+    /**
+     * Get element utils
+     *
+     * @return  element utils
+     */
+    protected final Elements getElementUtils() {
+        return processingEnv.getElementUtils();
+    }
 
 
-    @Override
-    public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
-
-        filer = processingEnv.getFiler();
-        messager = processingEnv.getMessager();
+    /**
+     * Get type utils
+     *
+     * @return  type utils
+     */
+    protected final Types getTypeUtils() {
+        return processingEnv.getTypeUtils();
     }
 
 
@@ -27,8 +34,8 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      *
      * @return  filer
      */
-    protected Filer getFiler() {
-        return filer;
+    protected final Filer getFiler() {
+        return processingEnv.getFiler();
     }
 
 
@@ -37,7 +44,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      *
      * @param   message     message
      */
-    protected void logError(String message) {
+    protected final void logError(String message) {
         logError(message, null);
     }
 
@@ -48,8 +55,8 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      * @param   message     message
      * @param   element     the element to use as a position hint
      */
-    protected void logError(String message, Element element) {
-        messager.printMessage(Diagnostic.Kind.ERROR, message, element);
+    protected final void logError(String message, Element element) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
     }
 
 
@@ -58,7 +65,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      *
      * @param   message     message
      */
-    protected void logWarning(String message) {
+    protected final void logWarning(String message) {
         logWarning(message, null);
     }
 
@@ -69,8 +76,8 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      * @param   message     message
      * @param   element     the element to use as a position hint
      */
-    protected void logWarning(String message, Element element) {
-        messager.printMessage(Diagnostic.Kind.ERROR, message, element);
+    protected final void logWarning(String message, Element element) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
     }
 
 }

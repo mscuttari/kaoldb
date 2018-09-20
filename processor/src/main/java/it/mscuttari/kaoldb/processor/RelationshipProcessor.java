@@ -207,38 +207,37 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field is annotated with {@link JoinTable}.
      *  -   The field is declared as a {@link Collection}.
-     *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
-     *      with {@link ManyToMany}.
+     *  -   The {@link OneToMany#mappedBy()} field, if specified, exists, is a {@link Collection}
+     *      of compatible type and is annotated with a {@link ManyToMany} annotation denoted by
+     *      having an empty {@link OneToMany#mappedBy()} (in order to have an owning side of the
+     *      relationship).
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraint are not respected
      */
     private void checkManyToManyRelationship(Element field) throws ProcessorException {
-        Elements elementUtils = processingEnv.getElementUtils();
-        Types typeUtils = processingEnv.getTypeUtils();
-
+        ManyToMany annotation = field.getAnnotation(ManyToMany.class);
 
         // Check absence of @OneToOne, @OneToMany and @ManyToOne annotations
         checkAnnotationCount(field);
 
 
         // The field must be a Collection
-        TypeMirror typeMirror = field.asType();
-        TypeMirror collectionInterface = typeUtils.erasure(elementUtils.getTypeElement("java.util.Collection").asType());
+        TypeMirror fieldType = field.asType();
+        TypeMirror collectionType = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
 
-        if (!typeUtils.erasure(typeMirror).equals(collectionInterface))
+        if (!getTypeUtils().erasure(fieldType).equals(collectionType))
             throw new ProcessorException("Fields annotated with @ManyToMany must be Collections", field);
 
 
         // Check the presence of the diamond operator
-        List<? extends TypeMirror> collectionTypes = ((DeclaredType)typeMirror).getTypeArguments();
+        List<? extends TypeMirror> collectionInterfaceArguments = ((DeclaredType) fieldType).getTypeArguments();
 
-        if (collectionTypes.size() == 0)
+        if (collectionInterfaceArguments.size() == 0)
             throw new ProcessorException("Collection must specify the data type using the diamond operator", field);
 
-        ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
-        if (manyToManyAnnotation.mappedBy().isEmpty()) {
+        if (annotation.mappedBy().isEmpty()) {
             // Owning side of the relationship ("mappedBy" field is empty).
             // The field must have the @JoinTable annotation.
 
@@ -247,30 +246,27 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
         } else {
             // Non-owning side of the relationship
-            TypeMirror linkedType = collectionTypes.get(0);
-            Element linkedField = getClassField(linkedType, manyToManyAnnotation.mappedBy());
-
-            if (linkedField == null)
-                throw new ProcessorException("Field \"" + manyToManyAnnotation.mappedBy() + "\" not found in class \"" + typeUtils.asElement(linkedType).getSimpleName() + "\"", field);
-
+            TypeMirror linkedClassType = collectionInterfaceArguments.get(0);
+            Element linkedField = getClassField(linkedClassType, annotation.mappedBy());
             ManyToMany linkedFieldAnnotation = linkedField.getAnnotation(ManyToMany.class);
 
-            if (linkedFieldAnnotation == null) {
-                throw new ProcessorException("Field must have @ManyToMany annotation", linkedField);
-
-            } else if (!linkedFieldAnnotation.mappedBy().isEmpty()) {
+            if (!linkedFieldAnnotation.mappedBy().isEmpty()) {
+                // Check that the linked field is not market as non-owning side too
                 throw new ProcessorException("Only one owning side of the relationship is allowed", linkedField);
             }
 
+
             // Check that the data type is compatible
-            TypeMirror linkedTypeMirror = linkedField.asType();
+            TypeMirror linkedFieldType = linkedField.asType();
+
 
             // Check that the linked field is a Collection
-            if (!typeUtils.erasure(linkedTypeMirror).equals(collectionInterface))
+            if (!getTypeUtils().erasure(linkedFieldType).equals(collectionType))
                 throw new ProcessorException("Fields annotated with @ManyToMany must be Collections", linkedField);
 
+
             // Check that the Collection type is compatible
-            List<? extends TypeMirror> linkedCollectionArguments = ((DeclaredType) linkedTypeMirror).getTypeArguments();
+            List<? extends TypeMirror> linkedCollectionArguments = ((DeclaredType) linkedFieldType).getTypeArguments();
 
             if (linkedCollectionArguments.size() == 0)
                 throw new ProcessorException("Collection must specify the data type using the diamond operator", linkedField);
@@ -278,9 +274,11 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
             TypeMirror linkedCollectionType = linkedCollectionArguments.get(0);
 
             if (!implementsInterface(linkedCollectionType, field.getEnclosingElement().asType()))
-                throw new ProcessorException("Collection type must be of type " + typeUtils.asElement(field.getEnclosingElement().asType()).getSimpleName(), linkedField);
+                throw new ProcessorException("Collection type must be of type " + getTypeUtils().asElement(field.getEnclosingElement().asType()).getSimpleName(), linkedField);
         }
     }
+
+
 
 
     /**
@@ -315,9 +313,11 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * @param   classType       class type
      * @param   fieldName       field name
      *
-     * @return  field (null if not found)
+     * @return  field
+     *
+     * @throws  ProcessorException if the class doesn't contain any fields with the specified name
      */
-    private Element getClassField(TypeMirror classType, String fieldName) {
+    private Element getClassField(TypeMirror classType, String fieldName) throws ProcessorException {
         Element classElement = processingEnv.getTypeUtils().asElement(classType);
 
         for (Element field : classElement.getEnclosedElements()) {
@@ -325,7 +325,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
                 return field;
         }
 
-        return null;
+        throw new ProcessorException("Field \"" + fieldName + "\" not found", classElement);
     }
 
 
@@ -337,7 +337,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * @return  true if the element implements the interface
      */
     private boolean implementsInterface(TypeMirror element, TypeMirror interf) {
-        return processingEnv.getTypeUtils().isAssignable(element, interf);
+        return getTypeUtils().isAssignable(element, interf);
     }
 
 }

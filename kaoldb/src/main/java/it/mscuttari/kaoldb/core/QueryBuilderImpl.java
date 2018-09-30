@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
@@ -70,12 +71,56 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         if (from == null)
             throw new QueryException("\"From\" clause not set");
 
+        Root<?> from = createJoinForPredicates(this.from, where);
         String sql = "SELECT " + getSelectClause(from, alias) + " FROM " + from;
 
         if (where != null)
             sql += " WHERE " + where;
 
+        System.out.println(sql);
+
         return new QueryImpl<>(entityManager, db, resultClass, alias, sql);
+    }
+
+
+    /**
+     * Create the joins according to the predicates.
+     * If for example, an equality predicate is referred to another entity, a join with that
+     * entity table is needed.
+     *
+     * @param   root    original root
+     * @param   where   WHERE clause
+     *
+     * @return  root extended with the required joins
+     */
+    private static Root<?> createJoinForPredicates(Root<?> root, Expression where) {
+        // No other entity involved
+        if (where == null)
+            return root;
+
+        // Just a security check. This condition should never happen
+        if (!(where instanceof ExpressionImpl))
+            return root;
+
+        // Iterate through the predicates of the expression
+        PredicatesIterator iterator = new PredicatesIterator((ExpressionImpl) where);
+
+        while (iterator.hasNext()) {
+            PredicateImpl predicate = iterator.next();
+
+            Object leftData = predicate.getFirstVariable().getData();
+
+            if (leftData instanceof Property) {
+                Property property = (Property) leftData;
+
+                if (property.getColumnAnnotation() != null && property.getColumnAnnotation() != Column.class) {
+                    String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
+                    root = root.innerJoin(property.getFieldType(), alias, property);
+                }
+            }
+        }
+
+        return root;
     }
 
 

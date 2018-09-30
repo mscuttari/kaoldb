@@ -7,7 +7,7 @@ import it.mscuttari.kaoldb.interfaces.Expression;
  *
  * @see Expression
  */
-class ExpressionImpl implements Expression {
+class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
 
     private enum ExpressionType {
         NOT,
@@ -32,6 +32,18 @@ class ExpressionImpl implements Expression {
         this.operation = operation;
         this.x = x;
         this.y = y;
+    }
+
+
+    @Override
+    public ExpressionImpl getLeft() {
+        return (ExpressionImpl) x;
+    }
+
+
+    @Override
+    public ExpressionImpl getRight() {
+        return (ExpressionImpl) y;
     }
 
 

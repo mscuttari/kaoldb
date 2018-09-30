@@ -7,7 +7,6 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 
 import it.mscuttari.kaoldb.core.KaolDB;
@@ -62,14 +61,15 @@ public class DbFilmsTest {
         person.getBirthDate().set(Calendar.MONTH, Calendar.APRIL);
         person.getBirthDate().set(Calendar.DAY_OF_MONTH, 4);
 
-        em.persist(person.getCountry());
-        em.persist(person);
+        //em.persist(person.getCountry());
+        //em.persist(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot.eq(Person_.firstName, person.getFirstName())
-                .and(personRoot.eq(Person_.lastName, person.getLastName()));
+        Expression where = personRoot.eq(Person_.firstName, "Prova")
+                .or(personRoot.eq(Person_.lastName, "Downey").and(personRoot.eq(Person_.firstName, "Robert")))
+                .and(personRoot.eq(Person_.country, new Country("USA")));
 
         qb.from(personRoot).where(where);
 

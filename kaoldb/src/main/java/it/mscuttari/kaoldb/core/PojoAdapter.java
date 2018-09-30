@@ -87,7 +87,7 @@ class PojoAdapter {
                                 String columnName = alias + entity.getName() + "." + column.name;
                                 value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
                             } else {
-                                // TODO: eager load
+                                // TODO: Eager / lazy load
                                 value = null;
                             }
 
@@ -121,42 +121,43 @@ class PojoAdapter {
      * @param   columnName      column name
      *
      * @return  column value
+     *
+     * @throws  PojoException if the data type is not compatible with the one found in the database
      */
-    private static Object cursorFieldToObject(Cursor c, Map<String, Integer> cursorMap, String columnName, Class<?> dataType) {
+    @SuppressWarnings("unchecked")
+    private static <T> T cursorFieldToObject(Cursor c, Map<String, Integer> cursorMap, String columnName, Class<T> dataType) {
         int columnIndex = cursorMap.get(columnName);
         int columnType = c.getType(columnIndex);
 
-        // Get value from cursor
         Object value = null;
 
         if (columnType == Cursor.FIELD_TYPE_INTEGER) {
             if (!(dataType.equals(Integer.class) || dataType.equals(int.class) || !dataType.equals(Date.class) || !dataType.equals(Calendar.class)))
                 throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found Integer");
 
-            if (dataType.equals(Long.class) || dataType.equals(long.class)) {
+            if (dataType.equals(Integer.class) || dataType.equals(int.class)) {
+                value = c.getInt(columnIndex);
+
+            } else if (dataType.equals(Long.class) || dataType.equals(long.class)) {
                 value = c.getLong(columnIndex);
 
             } else if (dataType.equals(Date.class)) {
-                value = new Date();
-                ((Date) value).setTime(c.getLong(columnIndex));
+                value = new Date(c.getLong(columnIndex));
 
             } else if (dataType.equals(Calendar.class)) {
                 value = Calendar.getInstance();
                 ((Calendar) value).setTimeInMillis(c.getLong(columnIndex));
-
-            } else {
-                value = c.getInt(columnIndex);
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
             if (!(dataType.equals(Float.class) || dataType.equals(float.class) || dataType.equals(Double.class) || dataType.equals(double.class)))
                 throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found Float");
 
-            if (dataType.equals(Double.class) || dataType.equals(double.class)) {
-                value = c.getDouble(columnIndex);
-
-            } else {
+            if (dataType.equals(Float.class) || dataType.equals(float.class)) {
                 value = c.getFloat(columnIndex);
+
+            } else if (dataType.equals(Double.class) || dataType.equals(double.class)) {
+                value = c.getDouble(columnIndex);
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
@@ -166,7 +167,7 @@ class PojoAdapter {
             value = c.getString(columnIndex);
         }
 
-        return value;
+        return (T) value;
     }
 
 
@@ -315,17 +316,10 @@ class PojoAdapter {
             if (column.field != null && !fields.contains(column.field)) {
                 fields.add(column.field);
 
-                try {
-                    column.field.setAccessible(true);
-                    Object fieldValue = column.field.get(obj);
+                Object fieldValue = column.getValue(obj);
 
-                    if (!checkDataExistence(fieldValue, context, db))
-                        throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
-
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                    throw new QueryException(e.getMessage());
-                }
+                if (!checkDataExistence(fieldValue, context, db))
+                    throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
 
                 insertFieldIntoContentValues(cv, obj, db, column.field);
             }
@@ -344,42 +338,49 @@ class PojoAdapter {
      * @param   context     application {@link Context}
      * @param   db          {@link DatabaseObject} of the database the entity belongs to
      *
-     * @return  true if the data exits; false otherwise
+     * @return  true if the data already exits in the database; false otherwise
+     *
+     * @throws  InvalidConfigException  if the entity has a primary key not linked to a class field
+     *                                  (not normally reachable situation)
      */
     private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db) {
         Class<?> clazz = obj.getClass();
 
-        // Primitive data
+        // Primitive data can't be stored alone in the database because they have no table associated.
+        // Therefore, primitive data existence check should be skipped (this way it is always
+        // considered successful)
+
         if (isPrimitiveType(clazz))
             return true;
 
-        // Non-primitive data
-        try {
-            EntityObject entity = db.getEntityObject(clazz);
 
-            EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
-            QueryBuilder<?> qb = em.getQueryBuilder(entity.entityClass);
-            Root<?> root = qb.getRoot(entity.entityClass, "de");
+        // Non-primitive data existence must be checked and so a select query is executed
+        // The select query is based on the primary keys of the entity
+        EntityObject entity = db.getEntityObject(clazz);
 
-            Expression where = null;
+        EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
+        QueryBuilder<?> qb = em.getQueryBuilder(entity.entityClass);
+        Root<?> root = qb.getRoot(entity.entityClass, "de");
 
-            for (ColumnObject primaryKey : entity.primaryKeys) {
-                if (primaryKey.field == null)
-                    throw new InvalidConfigException("Primary key column " + primaryKey.name + " has null field");
+        Expression where = null;
 
-                primaryKey.field.setAccessible(true);
-                Property property = new Property<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field.getName());
-                Object value = primaryKey.field.get(obj);
-                Expression expression = root.eq(property, value);
-                where = where == null ? expression : where.and(expression);
-            }
+        for (ColumnObject primaryKey : entity.primaryKeys) {
+            if (primaryKey.field == null)
+                throw new InvalidConfigException("Primary key column \"" + primaryKey.name + "\" has null field");
 
-            Object resultObj = qb.from(root).where(where).build("de").getSingleResult();
-            return resultObj != null;
+            // Create the property that the generated class would have because of the primary key field
+            Property property = new Property<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field);
 
-        } catch (IllegalAccessException e) {
-            throw new QueryException(e.getMessage());
+            Object value = primaryKey.getValue(obj);
+            Expression expression = root.eq(property, value);
+
+            // In case of multiple primary keys, concatenated the WHERE expressions
+            where = where == null ? expression : where.and(expression);
         }
+
+        // Run the query and check if its result is not an empty set
+        Object queryResult = qb.from(root).where(where).build("de").getSingleResult();
+        return queryResult != null;
     }
 
 
@@ -420,7 +421,7 @@ class PojoAdapter {
             Object value = field.get(obj);
             insertDataIntoContentValues(cv, annotation.name(), value);
 
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             throw new QueryException(e.getMessage());
         }
     }
@@ -431,7 +432,7 @@ class PojoAdapter {
      *
      * @param   cv      {@link ContentValues} to be populated
      * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
      * @param   field   {@link Field} linked to the table column to be populated
      */
     private static void insertJoinColumnIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumn annotation) {
@@ -452,7 +453,7 @@ class PojoAdapter {
                 insertDataIntoContentValues(cv, annotation.name(), value);
             }
 
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             throw new QueryException(e.getMessage());
         }
     }
@@ -491,6 +492,14 @@ class PojoAdapter {
     /**
      * Insert value into {@link ContentValues}
      *
+     * The conversion of the object value to column value follows these rules:
+     *  -   If the column name is already in use, its value is replaced with the newer one.
+     *  -   Passing a null value will result in a NULL table column.
+     *  -   An empty string ("") will not generate a NULL column but a string with a length of
+     *      zero (empty string).
+     *  -   Boolean values are stored either as 1 (true) or 0 (false).
+     *  -   {@link Date} and {@link Calendar} objects are stored by saving their time in milliseconds.
+     *
      * @param   cv          content values
      * @param   columnName  column name
      * @param   value       value
@@ -498,6 +507,7 @@ class PojoAdapter {
     private static void insertDataIntoContentValues(ContentValues cv, String columnName, Object value) {
         if (value == null) {
             cv.putNull(columnName);
+
         } else {
             if (value instanceof Integer || value.getClass().equals(int.class)) {
                 cv.put(columnName, (int) value);
@@ -536,14 +546,23 @@ class PojoAdapter {
      * @return  true if one the specified classes is found
      */
     private static boolean isPrimitiveType(Class<?> clazz) {
-        return clazz.equals(Integer.class) || clazz.equals(int.class) ||
-                clazz.equals(Long.class) || clazz.equals(long.class) |
-                clazz.equals(Float.class) || clazz.equals(float.class) ||
-                clazz.equals(Double.class) || clazz.equals(double.class) ||
-                clazz.equals(String.class) ||
-                clazz.equals(Boolean.class) || clazz.equals(boolean.class) ||
-                clazz.equals(Date.class) ||
-                clazz.equals(Calendar.class);
+        Class<?>[] primitiveTypes = {
+                Integer.class, int.class,
+                Long.class, long.class,
+                Float.class, float.class,
+                Double.class, double.class,
+                String.class,
+                Boolean.class, boolean.class,
+                Date.class,
+                Calendar.class
+        };
+
+        for (Class<?> primitiveType : primitiveTypes) {
+            if (primitiveType.isAssignableFrom(clazz))
+                return true;
+        }
+
+        return false;
     }
 
 }

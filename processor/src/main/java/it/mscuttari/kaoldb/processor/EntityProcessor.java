@@ -30,6 +30,10 @@ import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Entity")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
@@ -90,6 +94,35 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                             continue;
 
+                        // Skip the field if it's annotated with @OneToMany or @ManyToMany
+                        OneToMany oneToManyAnnotation   = internalElement.getAnnotation(OneToMany.class);
+                        ManyToMany manyToManyAnnotation = internalElement.getAnnotation(ManyToMany.class);
+
+                        if (oneToManyAnnotation != null || manyToManyAnnotation != null)
+                            continue;
+
+                        // Field column annotation
+                        ClassName propertyColumnAnnotation;
+
+                        if (columnAnnotation != null) {
+                            propertyColumnAnnotation = ClassName.get(Column.class);
+                        } else if (joinColumnAnnotation != null) {
+                            propertyColumnAnnotation = ClassName.get(JoinColumn.class);
+                        } else if (joinColumnsAnnotation != null) {
+                            propertyColumnAnnotation = ClassName.get(JoinColumns.class);
+                        } else {
+                            propertyColumnAnnotation = ClassName.get(JoinTable.class);
+                        }
+
+                        // Field relationship annotation
+                        ClassName propertyRelationshipAnnotation = null;
+
+                        if (internalElement.getAnnotation(OneToOne.class) != null) {
+                            propertyRelationshipAnnotation = ClassName.get(OneToOne.class);
+                        } else if (internalElement.getAnnotation(ManyToOne.class) != null) {
+                            propertyRelationshipAnnotation = ClassName.get(ManyToOne.class);
+                        }
+
                         // Get field name and type
                         String fieldName = internalElement.getSimpleName().toString();
                         TypeName fieldType = ClassName.get(internalElement.asType());
@@ -104,7 +137,23 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         entityClass.addField(
                                 FieldSpec.builder(parameterizedField, fieldName)
                                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                                        .initializer("new $T<>($T.class, $T.class, $T.class, $S);", propertyClass, classElement, currentElement, fieldType, fieldName)
+                                        .initializer(
+                                                "new $T<>(" +
+                                                        "$T.class, " +
+                                                        "$T.class, " +
+                                                        "$T.class, " +
+                                                        "$S, " +
+                                                        "$T.class, " +
+                                                        (propertyRelationshipAnnotation == null ? "$S" : "$T.class") +
+                                                        ");",
+                                                propertyClass,
+                                                classElement,
+                                                currentElement,
+                                                fieldType,
+                                                fieldName,
+                                                propertyColumnAnnotation,
+                                                propertyRelationshipAnnotation
+                                        )
                                         .build()
                         );
                     }

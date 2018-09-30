@@ -12,6 +12,7 @@ class Variable<M, T> {
     private Property<M, T> property;
     private T value;
 
+
     /**
      * Constructor
      *
@@ -68,12 +69,38 @@ class Variable<M, T> {
     }
 
 
+    /**
+     * Get the object represented by this variable.
+     * It can be either an entity property or a simple raw value
+     *
+     * @return  data
+     */
     public Object getData() {
         if (property != null) {
             return property;
         } else {
             return value;
         }
+    }
+
+
+    /**
+     * String wrapper class.
+     * Used in the Variable class creation in order to avoid the quotation marks in the resulting query.
+     */
+    public static class StringWrapper {
+
+        private String value;
+
+        StringWrapper(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
     }
 
 }

@@ -207,6 +207,26 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
+     * Get first variable
+     *
+     * @return  first variable
+     */
+    public Variable<?, ?> getFirstVariable() {
+        return x;
+    }
+
+
+    /**
+     * Get second variable
+     *
+     * @return  second variable
+     */
+    public Variable<?, ?> getSecondVariable() {
+        return y;
+    }
+
+
+    /**
      * Get string representation of an unary predicate
      *
      * @return  string representation to be used in query
@@ -218,7 +238,7 @@ class PredicateImpl extends ExpressionImpl {
 
         if (operation == PredicateType.IS_NULL) {
             if (data instanceof Property) {
-                List<String> columns = convertProperty((Property)data, x.getTableAlias());
+                List<String> columns = getPropertyColumns((Property)data, x.getTableAlias());
 
                 String separator = "";
                 for (String column : columns) {
@@ -247,7 +267,7 @@ class PredicateImpl extends ExpressionImpl {
 
         if (xData instanceof Property && yData instanceof Property) {
             // Two properties
-            List<Pair<String, String>> pairs = bindProperties((Property)xData, x.getTableAlias(), (Property)yData, y.getTableAlias());
+            List<Pair<String, String>> pairs = bindProperties(db, (Property) xData, x.getTableAlias(), (Property) yData, y.getTableAlias());
 
             String separator = "";
             for (Pair<String, String> pair : pairs) {
@@ -258,7 +278,7 @@ class PredicateImpl extends ExpressionImpl {
 
         } else if (xData instanceof Property) {
             // Property + value
-            List<Pair<String, String>> pairs = bindPropertyObject(db, (Property)xData, x.getTableAlias(), yData);
+            List<Pair<String, String>> pairs = bindPropertyObject(db, (Property) xData, x.getTableAlias(), yData);
 
             String separator = "";
             for (Pair<String, String> pair : pairs) {
@@ -278,28 +298,35 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Get columns of a property
+     * Get the columns linked to a property
+     *
+     * In case of {@link Column} or {@link JoinColumn} annotated field:
+     *  -   The result list will contain just one column.
+     *
+     * In case of {@link JoinColumns} annotated field:
+     *  -   The result list will contain all the join columns.
+     *
+     * In case of {@link JoinTable} annotated field:
+     *  -   The result list will contain the direct join columns. The inverse join columns are
+     *      are not included because they are linked to the other join side table.
+     *
+     * Every column is in the format "tableAlias.columnName".
      *
      * @param   property    property
      * @param   alias       table alias
      *
      * @return  list of columns
      *
-     * @throws  QueryException  if the property is invalid
+     * @throws  QueryException if the property is invalid
      */
-    private List<String> convertProperty(Property<?, ?> property, String alias) {
+    private static List<String> getPropertyColumns(Property<?, ?> property, String alias) {
         List<String> result = new ArrayList<>();
-        Field field;
 
         // Fully qualified alias
-        String fullAlias = alias + property.getFieldParentClass().getSimpleName();
+        String fullAlias = From.getFullAlias(alias, property.getFieldParentClass());
 
         // Get field
-        try {
-            field = property.getEntityClass().getDeclaredField(property.getFieldName());
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
-        }
+        Field field = property.getField();
 
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
@@ -328,8 +355,13 @@ class PredicateImpl extends ExpressionImpl {
 
         // @JoinTable
         if (field.isAnnotationPresent(JoinTable.class)) {
-            // TODO: implement
-            throw new QueryException("Not implemented");
+            JoinTable annotation = field.getAnnotation(JoinTable.class);
+
+            for (JoinColumn joinColumn : annotation.joinColumns()) {
+                result.add(fullAlias + "." + joinColumn.referencedColumnName());
+            }
+
+            return result;
         }
 
         throw new QueryException("Invalid parameter");
@@ -339,6 +371,7 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create property-property associations for the query
      *
+     * @param   db          database object
      * @param   xProperty   first property
      * @param   xAlias      first table alias
      * @param   yProperty   second property
@@ -348,28 +381,18 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if the requested configuration is invalid
      */
-    private List<Pair<String, String>> bindProperties(Property xProperty, String xAlias, Property yProperty, String yAlias) {
+    private static List<Pair<String, String>> bindProperties(DatabaseObject db, Property xProperty, String xAlias, Property yProperty, String yAlias) {
         List<Pair<String, String>> result = new ArrayList<>();
-        Field xField, yField;
 
         // Fully qualified aliases
-        String xFullAlias = xAlias + xProperty.getFieldParentClass().getSimpleName();
-        String yFullAlias = yAlias + yProperty.getFieldParentClass().getSimpleName();
+        String xFullAlias = From.getFullAlias(xAlias, xProperty.getFieldParentClass());
+        String yFullAlias = From.getFullAlias(yAlias, yProperty.getFieldParentClass());
 
         // Get fields
-        try {
-            xField = xProperty.getEntityClass().getDeclaredField(xProperty.getFieldName());
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + xProperty.getFieldName() + " not found in entity " + xProperty.getEntityClass().getSimpleName());
-        }
+        Field xField = xProperty.getField();
+        Field yField = yProperty.getField();
 
-        try {
-            yField = yProperty.getEntityClass().getDeclaredField(yProperty.getFieldName());
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + yProperty.getFieldName() + " not found in entity " + yProperty.getEntityClass().getSimpleName());
-        }
-
-        if (!xField.getType().isAssignableFrom(yField.getType()) && !yField.getType().isAssignableFrom(xField.getType()))
+        if (!(xField.getType().isAssignableFrom(yField.getType()) && yField.getType().isAssignableFrom(xField.getType())))
             throw new QueryException("Incompatible types: " + xField.getType().getSimpleName() + ", " + yField.getType().getSimpleName());
 
         // @Column
@@ -419,8 +442,23 @@ class PredicateImpl extends ExpressionImpl {
 
         // @JoinTable
         if (xField.isAnnotationPresent(JoinTable.class) && yField.isAnnotationPresent(JoinTable.class)) {
-            // TODO: implement
-            throw new QueryException("Not implemented");
+            JoinTable xAnnotation = xField.getAnnotation(JoinTable.class);
+            JoinTable yAnnotation = yField.getAnnotation(JoinTable.class);
+
+            outer:
+            for (JoinColumn xJoinColumn : xAnnotation.joinColumns()) {
+                for (JoinColumn yJoinColumn : yAnnotation.joinColumns()) {
+                    if (xJoinColumn.name().equals(yJoinColumn.name())) {
+                        String xColumn = xFullAlias + "." + xJoinColumn.referencedColumnName();
+                        String yColumn = yFullAlias + "." + yJoinColumn.referencedColumnName();
+
+                        result.add(new Pair<>(xColumn, yColumn));
+                        continue outer;
+                    }
+                }
+            }
+
+            return result;
         }
 
         throw new QueryException("Invalid parameters");
@@ -439,73 +477,45 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws  QueryException  if the requested configuration is invalid
      */
-    private List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property<?, ?> property, String alias, Object obj) {
+    private static List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property<?, ?> property, String alias, Object obj) {
         List<Pair<String, String>> result = new ArrayList<>();
-        Field field;
-
-        // Fully qualified alias
-        String fullAlias = alias + property.getFieldParentClass().getSimpleName();
 
         // Get field
-        try {
-            field = property.getEntityClass().getDeclaredField(property.getFieldName());
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + property.getFieldName() + " not found in entity " + property.getEntityClass().getSimpleName());
-        }
+        Field field = property.getField();
 
         // Object type must be compatible with the property
         if (!field.getType().isAssignableFrom(obj.getClass()))
             throw new QueryException("Invalid object class");
 
         // @Column
-        if (field.isAnnotationPresent(Column.class)) {
+        if (property.getColumnAnnotation() == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
+
+            String fullAlias = From.getFullAlias(alias, property.getFieldParentClass());
             String column = fullAlias + "." + annotation.name();
+
             result.add(new Pair<>(column, objectToString(obj)));
-            return result;
-        }
-
-        // @JoinColumn
-        if (field.isAnnotationPresent(JoinColumn.class)) {
-            JoinColumn annotation = field.getAnnotation(JoinColumn.class);
-            String column = fullAlias + "." + annotation.name();
-            EntityObject referencedEntity = db.getEntityObject(field.getType());
-            ColumnObject referecedColumn = referencedEntity.columnsNameMap.get(annotation.referencedColumnName());
-
-            try {
-                assert referecedColumn.field != null;
-                Object value = referecedColumn.field.get(obj);
-                result.add(new Pair<>(column, objectToString(value)));
-            } catch (IllegalAccessException e) {
-                throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
-            }
-        }
-
-        // @JoinColumns
-        if (field.isAnnotationPresent(JoinColumns.class)) {
-            JoinColumns annotation = field.getAnnotation(JoinColumns.class);
-
-            for (JoinColumn joinColumn : annotation.value()) {
-                String column = fullAlias + "." + joinColumn.name();
-                EntityObject referencedEntity = db.getEntityObject(field.getType());
-                ColumnObject referencedColumn = referencedEntity.columnsNameMap.get(joinColumn.referencedColumnName());
-
-                try {
-                    assert referencedColumn.field != null;
-                    Object value = referencedColumn.field.get(obj);
-                    result.add(new Pair<>(column, objectToString(value)));
-                } catch (IllegalAccessException e) {
-                    throw new QueryException("Can't access field " + field.getName() + " of class " + field.getType().getSimpleName());
-                }
-            }
 
             return result;
         }
 
-        // @JoinTable
-        if (field.isAnnotationPresent(JoinTable.class)) {
-            // TODO: implement
-            throw new QueryException("Not implemented");
+        // @JoinColumn, @JoinColumns, @JoinTable
+        if (property.getColumnAnnotation() == JoinColumn.class ||
+                property.getColumnAnnotation() == JoinColumns.class ||
+                property.getColumnAnnotation() == JoinTable.class) {
+
+            EntityObject referencedEntity = db.getEntityObject(property.getFieldType());
+
+            String fullAlias = Join.getJoinFullAlias(alias, property.getFieldParentClass(), property.getFieldType());
+
+            for (ColumnObject primaryKey : referencedEntity.getAllPrimaryKeys()) {
+                String column = fullAlias + "." + primaryKey.name;
+                String primaryKeyValue = objectToString(primaryKey.getValue(obj));
+
+                result.add(new Pair<>(column, primaryKeyValue));
+            }
+
+            return result;
         }
 
         throw new QueryException("Invalid parameters");
@@ -513,7 +523,7 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Convert object to  string in order to be placed in the query
+     * Convert object to string in order to be placed in the query
      *
      * @param   obj     object
      * @return  string

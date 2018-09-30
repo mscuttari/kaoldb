@@ -1,7 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import it.mscuttari.kaoldb.interfaces.Expression;
-import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
  * @param   <X>     right side entity of the join
@@ -18,7 +17,7 @@ final class NaturalJoin<X, Y> extends Join<X, Y> {
      * @param   alias           second joined entity alias
      */
     NaturalJoin(DatabaseObject db, From<Y> from, Class<X> entityClass, String alias) {
-        super(db, JoinType.NATURAL, from, entityClass, alias, (Expression)null);
+        super(db, JoinType.NATURAL, from, entityClass, alias, (Expression) null);
     }
 
 }

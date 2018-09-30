@@ -26,7 +26,7 @@ class From<X> implements Root<X> {
      */
     From(DatabaseObject db, Class<X> entityClass, String alias) {
         this.db = db;
-        this.entity = getEntity(entityClass);
+        this.entity = db.getEntityObject(entityClass);
         this.alias = alias;
     }
 
@@ -41,7 +41,7 @@ class From<X> implements Root<X> {
         // Resolve hierarchy joins
         if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
             From<?> root = this;
-            EntityObject entity = getEntity(getEntityClass());
+            EntityObject entity = db.getEntityObject(getEntityClass());
 
             root = resolveParentInheritance(root, entity, alias);
             root = resolveChildrenInheritance(root, entity, alias);
@@ -136,13 +136,25 @@ class From<X> implements Root<X> {
 
 
     /**
-     * Get entity object
+     * Get full alias of this entity table (alias + class name)
      *
-     * @param   entityClass     entity class
-     * @return  entity object
+     * @return  full alias
      */
-    private EntityObject getEntity(Class<?> entityClass) {
-        return db.getEntityObject(entityClass);
+    public String getFullAlias() {
+        return getFullAlias(getAlias(), getEntityClass());
+    }
+
+
+    /**
+     * Get full alias of an entity table (alias + class name)
+     *
+     * @param   alias   entity alias
+     * @param   clazz   entity class
+     *
+     * @return  full alias
+     */
+    public static String getFullAlias(String alias, Class<?> clazz) {
+        return alias + clazz.getSimpleName();
     }
 
 
@@ -169,8 +181,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, parent, alias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, parent, alias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field));
                         Expression onParent = PredicateImpl.eq(db, a, b);
                         on = on == null ? onParent : on.and(onParent);
                     }
@@ -211,8 +223,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field.getName()));
-                        Variable<?, ?> b = new Variable<>(db, child, alias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field.getName()));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, child, alias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }

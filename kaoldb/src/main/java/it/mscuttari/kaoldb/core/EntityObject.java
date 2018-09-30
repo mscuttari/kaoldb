@@ -25,6 +25,7 @@ import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -96,13 +97,9 @@ class EntityObject {
         this.entityClass = entityClass;
         this.tableName = getTableName(entityClass, classes);
         this.realTable = isRealTable(entityClass, classes);
-        this.columns = null;
-        this.columnsNameMap = null;
         this.inheritanceType = getInheritanceType(entityClass);
-        this.parent = null;
         this.children = new HashSet<>();
         searchParentAndChildren(this, classes, entitesMap);
-        this.discriminatorColumn  = null;
         this.discriminatorValue = entityClass.isAnnotationPresent(DiscriminatorValue.class) ? entityClass.getAnnotation(DiscriminatorValue.class).value() : null;
     }
 
@@ -515,7 +512,8 @@ class EntityObject {
         this.columns = getColumns();
 
         // Map between column name and column object
-        columnsNameMap = new HashMap<>(this.columns.size());
+        Map<String, ColumnObject> columnsNameMap = new HashMap<>(this.columns.size());
+        this.columnsNameMap = Collections.unmodifiableMap(columnsNameMap);
 
         for (ColumnObject column : this.columns) {
             columnsNameMap.put(column.name, column);
@@ -536,7 +534,7 @@ class EntityObject {
             if (discriminatorColumnAnnotation.name().isEmpty())
                 throw new InvalidConfigException("Class " + getName() + ": empty discriminator column");
 
-            this.discriminatorColumn = this.columnsNameMap.get(discriminatorColumnAnnotation.name());
+            this.discriminatorColumn = columnsNameMap.get(discriminatorColumnAnnotation.name());
 
             if (discriminatorColumn == null)
                 throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
@@ -579,6 +577,56 @@ class EntityObject {
                 }
             }
         }
+    }
+
+
+    /**
+     * Get field of a class given its name
+     *
+     * @param   fieldName   field name
+     * @return  field
+     * @throws  MappingException if there is no field in the class with the specified name
+     */
+    public Field getField(String fieldName) {
+        return getField(entityClass, fieldName);
+    }
+
+
+    /**
+     * Get field of a class given its name
+     *
+     * @param   clazz       class the field belongs to
+     * @param   fieldName   field name
+     *
+     * @return  field
+     *
+     * @throws  MappingException if there is no field in the class with the specified name
+     */
+    public static Field getField(Class<?> clazz, String fieldName) {
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"");
+        }
+    }
+
+
+    /**
+     * Get all the primary keys, including the parent entities ones
+     *
+     * @return  primary keys
+     */
+    public Collection<ColumnObject> getAllPrimaryKeys() {
+        Collection<ColumnObject> result = new HashSet<>();
+        EntityObject entity = this;
+
+        // Navigate up in the hierarchy tree
+        while (entity != null) {
+            result.addAll(entity.primaryKeys);
+            entity = entity.parent;
+        }
+
+        return Collections.unmodifiableCollection(result);
     }
 
 }

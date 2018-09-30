@@ -4,13 +4,10 @@ import android.util.Pair;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.core.Variable.StringWrapper;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 
@@ -38,9 +35,11 @@ abstract class Join<X, Y> extends From<X> {
     }
 
 
-    private JoinType type;
-    private From<Y> from;
-    private Expression on;
+    private final JoinType type;
+    private final From<Y> from;
+    private final String alias;
+    private final Property<Y, X> property;
+    private final Expression on;
 
 
     /**
@@ -60,24 +59,9 @@ abstract class Join<X, Y> extends From<X> {
 
         this.type = type;
         this.from = from;
-
-        Field field;
-
-        // Get field
-        try {
-            field = from.getEntityClass().getField(property.getFieldName());
-        } catch (NoSuchFieldException e) {
-            throw new QueryException("Field " + property.getFieldName() + " not found in entity " + entityClass.getSimpleName());
-        }
-
-        List<Pair<String, String>> columnsPairs = decomposeJoinColumn(field, from.getAlias(), alias);
-
-        for (Pair<String, String> pair : columnsPairs) {
-            Variable<Y, StringWrapper> a = new Variable<>(new StringWrapper(pair.first));
-            Variable<X, StringWrapper> b = new Variable<>(new StringWrapper(pair.second));
-            Expression association = PredicateImpl.eq(db, a, b);
-            this.on = this.on == null ? association : this.on.and(association);
-        }
+        this.alias = alias;
+        this.property = property;
+        this.on = null;
     }
 
 
@@ -96,6 +80,8 @@ abstract class Join<X, Y> extends From<X> {
 
         this.type = type;
         this.from = from;
+        this.alias = alias;
+        this.property = null;
         this.on = on;
     }
 
@@ -103,17 +89,39 @@ abstract class Join<X, Y> extends From<X> {
     /**
      * Get string representation to be used in query
      *
-     * @return  "from" clause
+     * @return  "FROM" clause
      */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        // Predefined ON clause
+        if (on != null) {
+            return "(" + from + " " + type + " " + super.toString() + " ON " + on + ")";
+        }
 
-        sb.append("(").append(from).append(" ").append(type).append(" ").append(super.toString());
-        if (on != null) sb.append(" ON ").append(on);
-        sb.append(")");
+        // ON clause dependent on the property
+        if (property.getColumnAnnotation() == JoinColumn.class) {
+            // Two tables join
+            Expression on = getTwoTablesOnClause(property.getField().getAnnotation(JoinColumn.class));
+            return "(" + from + " " + type + " " + super.toString() + " ON " + on + ")";
 
-        return sb.toString();
+        } else if (property.getColumnAnnotation() == JoinColumns.class) {
+            // Two tables join
+            Expression on = getTwoTablesOnClause(property.getField().getAnnotation(JoinColumns.class));
+            return "(" + from + " " + type + " " + super.toString() + " ON " + on + ")";
+
+        } else if (property.getColumnAnnotation() == JoinTable.class) {
+            // Three tables join
+            JoinTable annotation = property.getField().getAnnotation(JoinTable.class);
+            String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), from.getAlias(), alias);
+
+            Expression onLeft = getThreeTablesLeftOnClause(annotation);
+            Expression onRight = getThreeTablesRightOnClause(annotation);
+
+            return "((" + from + " " + type + " " + midTable + " ON " + onLeft + ") " +
+                    type + " " + super.toString() + " ON " + onRight + ")";
+        }
+
+        throw new QueryException("Invalid join field \"" + property.getFieldName() + "\"");
     }
 
 
@@ -128,68 +136,121 @@ abstract class Join<X, Y> extends From<X> {
 
 
     /**
-     * Get columns pairs to join two entities
+     * Get the "ON" expression for the direct join columns of a {@link JoinColumn} annotated property
      *
-     * @param   xField      left side field
-     * @param   xAlias      left side table alias
-     * @param   yAlias      right side table alias
-     *
-     * @return  columns pairs
+     * @param   annotation      annotation
+     * @return  "ON" expression
      */
-    private static List<Pair<String, String>> decomposeJoinColumn(Field xField, String xAlias, String yAlias) {
-        List<Pair<String, String>> result = new ArrayList<>();
+    private Expression getTwoTablesOnClause(JoinColumn annotation) {
+        String xFullAlias = from.getFullAlias();
+        String yFullAlias = getFullAlias();
 
-        // Joined classes
-        Class<?> xClass = xField.getDeclaringClass();
-        Class<?> yClass = xField.getType();
-
-        // Fully qualified aliases
-        String xFullAlias = xAlias + xClass.getSimpleName();
-        String yFullAlias = yAlias + yClass.getSimpleName();
-
-        // @JoinColumn
-        if (xField.isAnnotationPresent(JoinColumn.class)) {
-            JoinColumn annotation = xField.getAnnotation(JoinColumn.class);
-            result.add(new Pair<>(xFullAlias + "." + annotation.name(), yFullAlias + "." + annotation.referencedColumnName()));
-            return result;
-        }
-
-        // @JoinColumns
-        if (xField.isAnnotationPresent(JoinColumns.class)) {
-            JoinColumns annotation = xField.getAnnotation(JoinColumns.class);
-
-            for (JoinColumn joinColumn : annotation.value())
-                result.add(new Pair<>(xFullAlias + "." + joinColumn.name(), yFullAlias + "." + joinColumn.referencedColumnName()));
-
-            return result;
-        }
-
-        // @JoinTable
-        if (xField.isAnnotationPresent(JoinTable.class)) {
-            // TODO: N:N relationship
-            throw new QueryException("Not implemented");
-        }
-
-        throw new QueryException("Invalid join field " + xField.getName());
+        Pair<String, String> columnsPair = new Pair<>(xFullAlias + "." + annotation.name(), yFullAlias + "." + annotation.referencedColumnName());
+        return columnsPairToExpression(columnsPair);
     }
 
 
     /**
-     * String wrapper class
-     * Used in the Variable class creation in order to avoid the quotation marks in the resulting query
+     * Get the "ON" expression for the direct join columns of a {@link JoinColumns} annotated property
+     *
+     * @param   annotation      annotation
+     * @return  "ON" expression
      */
-    private static class StringWrapper {
+    private Expression getTwoTablesOnClause(JoinColumns annotation) {
+        Expression result = null;
 
-        private String value;
-
-        StringWrapper(String value) {
-            this.value = value;
+        for (JoinColumn joinColumn : annotation.value()) {
+            Expression expression = getTwoTablesOnClause(joinColumn);
+            result = result == null ? expression : result.and(expression);
         }
 
-        @Override
-        public String toString() {
-            return value;
+        return result;
+    }
+
+
+    /**
+     * Get the "ON" expression for the direct join columns of a {@link JoinTable} annotated property
+     *
+     * @param   annotation      annotation
+     * @return  "ON" expression
+     */
+    private Expression getThreeTablesLeftOnClause(JoinTable annotation) {
+        String joinTableAlias = getJoinTableAlias(annotation.name(), from.getAlias(), alias);
+        String fullAlias = from.getFullAlias();
+        Expression result = null;
+
+        for (JoinColumn joinColumn : annotation.joinColumns()) {
+            Pair<String, String> columnsPair = new Pair<>(fullAlias + "." + joinColumn.referencedColumnName(), joinTableAlias + "." + joinColumn.name());
+            Expression expression = columnsPairToExpression(columnsPair);
+            result = result == null ? expression : result.and(expression);
         }
+
+        return result;
+    }
+
+
+    /**
+     * Get the "ON" expression for the inverse join columns of a {@link JoinTable} annotated property
+     *
+     * @param   annotation      annotation
+     * @return  "ON" expression
+     */
+    private Expression getThreeTablesRightOnClause(JoinTable annotation) {
+        String joinTableAlias = getJoinTableAlias(annotation.name(), from.getAlias(), alias);
+        String fullAlias = getFullAlias(alias, property.getFieldType());
+        Expression result = null;
+
+        for (JoinColumn joinColumn : annotation.joinColumns()) {
+            Pair<String, String> columnsPair = new Pair<>(fullAlias + "." + joinColumn.referencedColumnName(), joinTableAlias + "." + joinColumn.name());
+            Expression expression = columnsPairToExpression(columnsPair);
+            result = result == null ? expression : result.and(expression);
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Convert a column association pair to the equivalent expression
+     *
+     * @param   pair    column association
+     * @return  expression
+     */
+    private Expression columnsPairToExpression(Pair<String, String> pair) {
+        Variable<Y, StringWrapper> a = new Variable<>(new StringWrapper(pair.first));
+        Variable<X, StringWrapper> b = new Variable<>(new StringWrapper(pair.second));
+        return PredicateImpl.eq(db, a, b);
+    }
+
+
+    /**
+     * Get the alias to be used for the join table
+     *
+     * @param   tableName   join table name
+     * @param   xAlias      first table alias
+     * @param   yAlias      second table alias
+     *
+     * @return  join table alias
+     */
+    private static String getJoinTableAlias(String tableName, String xAlias, String yAlias) {
+        return tableName + "X" + xAlias + "Y" + yAlias;
+    }
+
+
+    /**
+     * Get full alias for an automatically joined table
+     *
+     * @param   alias           left alias
+     * @param   leftClass       left class
+     * @param   rightClass      right class
+     *
+     * @return  full alias
+     */
+    public static String getJoinFullAlias(String alias, Class<?> leftClass, Class<?> rightClass) {
+        return alias +
+                (leftClass == null ? "" : leftClass.getSimpleName()) +
+                "Join" +
+                (rightClass == null ? "" : rightClass.getSimpleName());
     }
 
 }

@@ -13,8 +13,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -89,6 +87,8 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
+     *  -   If specified, the {@link OneToOne#mappedBy()} field exists, is of correct type and is
+     *      annotated {@link OneToOne}.
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -96,7 +96,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     private void checkOneToOneRelationship(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
-        // Check join columns presence
+        // Check presence of @JoinColumn, @JoinColumns or @JoinTable
         OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
 
         if (oneToOneAnnotation.mappedBy().isEmpty()) {
@@ -106,6 +106,16 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
             if (joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                 throw new ProcessorException("@OneToOne relationship doesn't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
+
+        } else {
+            TypeMirror linkedType = field.asType();
+            Element linkedField = getClassField(linkedType, oneToOneAnnotation.mappedBy());
+
+            if (!getTypeUtils().isAssignable(field.getEnclosingElement().asType(), linkedField.asType()))
+                throw new ProcessorException("Field \"" + oneToOneAnnotation.mappedBy() + "\" must be of type \"" + field.getEnclosingElement().getSimpleName() + "\"", linkedField);
+
+            if (linkedField.getAnnotation(OneToOne.class) == null)
+                throw new ProcessorException("Field \"" + oneToOneAnnotation.mappedBy() + "\" must be annotated with @OneToOne", linkedField);
         }
     }
 
@@ -126,10 +136,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * @throws  ProcessorException if some constraints are not respected
      */
     private void checkOneToManyRelationship(Element field) throws ProcessorException {
-        Elements elementUtils = processingEnv.getElementUtils();
-        Types typeUtils = processingEnv.getTypeUtils();
-
-
         // Check absence of @OneToOne, @ManyToOne and @ManyToMany annotations
         checkAnnotationCount(field);
 
@@ -146,9 +152,9 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
         // The field must be a Collection
         TypeMirror typeMirror = field.asType();
-        TypeMirror collectionInterface = typeUtils.erasure(elementUtils.getTypeElement("java.util.Collection").asType());
+        TypeMirror collectionInterface = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
 
-        if (!typeUtils.erasure(typeMirror).equals(collectionInterface))
+        if (!getTypeUtils().erasure(typeMirror).equals(collectionInterface))
             throw new ProcessorException("Fields annotated with @OneToMany must be Collections", field);
 
 
@@ -163,9 +169,9 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         Element linkedField = getClassField(linkedType, oneToManyAnnotation.mappedBy());
 
         if (linkedField == null)
-            throw new ProcessorException("Field \"" + oneToManyAnnotation.mappedBy() + "\" not found in class \"" + typeUtils.asElement(linkedType).getSimpleName() + "\"", field);
+            throw new ProcessorException("Field \"" + oneToManyAnnotation.mappedBy() + "\" not found in class \"" + getTypeUtils().asElement(linkedType).getSimpleName() + "\"", field);
 
-        if (typeUtils.isAssignable(linkedField.asType(), field.asType()))
+        if (!getTypeUtils().isAssignable(field.getEnclosingElement().asType(), linkedField.asType()))
             throw new ProcessorException("Field \"" + oneToManyAnnotation.mappedBy() + "\" must be of type \"" + field.getEnclosingElement().getSimpleName() + "\"", linkedField);
 
         ManyToOne manyToOneAnnotation = linkedField.getAnnotation(ManyToOne.class);
@@ -273,7 +279,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
             TypeMirror linkedCollectionType = linkedCollectionArguments.get(0);
 
-            if (!implementsInterface(linkedCollectionType, field.getEnclosingElement().asType()))
+            if (!getTypeUtils().isAssignable(field.getEnclosingElement().asType(), linkedCollectionType))
                 throw new ProcessorException("Collection type must be of type " + getTypeUtils().asElement(field.getEnclosingElement().asType()).getSimpleName(), linkedField);
         }
     }
@@ -326,18 +332,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         }
 
         throw new ProcessorException("Field \"" + fieldName + "\" not found", classElement);
-    }
-
-
-    /**
-     * Check if an element implements an interface
-     *
-     * @param   element     TypeMirror      element
-     * @param   interf      TypeMirror      interface
-     * @return  true if the element implements the interface
-     */
-    private boolean implementsInterface(TypeMirror element, TypeMirror interf) {
-        return getTypeUtils().isAssignable(element, interf);
     }
 
 }

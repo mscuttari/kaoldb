@@ -16,6 +16,7 @@ import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+import it.mscuttari.kaoldb.exceptions.QueryException;
 
 /**
  * Each {@link ColumnObject} maps a field annotated with {@link Column}, {@link JoinColumn},
@@ -26,14 +27,18 @@ class ColumnObject {
     /**
      * Relationship types
      *
-     * {@link #NONE} <==> {@link #field} has no relationship annotation.
-     * {@link #ONE_TO_ONE} <==> {@link #field} is annotated with {@link OneToOne}.
-     * {@link #ONE_TO_MANY} <==> {@link #field} is annotated with {@link OneToMany}.
-     * {@link #MANY_TO_ONE} <==> {@link #field} is annotated with {@link ManyToOne}.
+     * {@link #NONE}         <==> {@link #field} has no relationship annotation.
+     * {@link #ONE_TO_ONE}   <==> {@link #field} is annotated with {@link OneToOne}.
+     * {@link #ONE_TO_MANY}  <==> {@link #field} is annotated with {@link OneToMany}.
+     * {@link #MANY_TO_ONE}  <==> {@link #field} is annotated with {@link ManyToOne}.
      * {@link #MANY_TO_MANY} <==> {@link #field} is annotated with {@link ManyToMany}.
      */
     public enum RelationshipType {
-        NONE, ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
+        NONE,
+        ONE_TO_ONE,
+        ONE_TO_MANY,
+        MANY_TO_ONE,
+        MANY_TO_MANY
     }
 
     /** Class column field */
@@ -268,51 +273,31 @@ class ColumnObject {
 
             this.type = referencedColumn.type;
         }
-
-        // Check relationships
-        if (relationshipType == RelationshipType.ONE_TO_ONE) {
-            // @OneToOne
-            OneToOne annotation = field.getAnnotation(OneToOne.class);
-
-            if (!annotation.mappedBy().isEmpty()) {
-                EntityObject linkedEntity = entities.get(type);
-
-                try {
-                    Field mappedByField = linkedEntity.entityClass.getField(annotation.mappedBy());
-
-                    if (!mappedByField.getType().equals(field.getDeclaringClass()))
-                        throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field should be of type " + field.getDeclaringClass().getSimpleName());
-
-                    if (!mappedByField.isAnnotationPresent(OneToOne.class))
-                        throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field doesn't have @OneToOne annotation");
-                } catch (NoSuchFieldException e) {
-                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field not found");
-                }
-            }
-
-        } else if (relationshipType == RelationshipType.ONE_TO_MANY) {
-            // @OneToMany
-            OneToMany annotation = field.getAnnotation(OneToMany.class);
-            EntityObject linkedEntity = entities.get(type);
-
-            try {
-                Field mappedByField = linkedEntity.entityClass.getField(annotation.mappedBy());
-
-                if (!mappedByField.getType().equals(field.getDeclaringClass()))
-                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field should be of type " + field.getDeclaringClass().getSimpleName());
-
-                if (!mappedByField.isAnnotationPresent(ManyToOne.class))
-                    throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field doesn't have @OneToOne annotation");
-            } catch (NoSuchFieldException e) {
-                throw new InvalidConfigException("Field " + field.getName() + ": mappedBy field not found");
-            }
+    }
 
 
-        } else if (relationshipType == RelationshipType.MANY_TO_ONE) {
-            // TODO: implement
+    /**
+     * Get column value
+     *
+     * @param   obj     object to get the value from
+     * @param   <T>     object class
+     *
+     * @return  column value
+     *
+     * @throws QueryException if the field can't be accessed
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getValue(Object obj) {
+        // Just a security check
+        if (field == null)
+            return null;
 
-        } else if (relationshipType == RelationshipType.MANY_TO_MANY) {
-            // TODO: implement
+        field.setAccessible(true);
+
+        try {
+            return (T) field.get(obj);
+        } catch (Exception e) {
+            throw new QueryException(e.getMessage());
         }
     }
 

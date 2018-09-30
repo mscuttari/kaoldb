@@ -156,13 +156,9 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
         Map<String, Object> result = new HashMap<>(entity.primaryKeys.size());
 
-        for (ColumnObject column : entity.primaryKeys) {
-            try {
-                Object value = column.field.get(obj);
-                result.put(column.name, value);
-            } catch (IllegalAccessException e) {
-                throw new QueryException(e.getMessage());
-            }
+        for (ColumnObject primaryKey : entity.primaryKeys) {
+            Object value = primaryKey.getValue(obj);
+            result.put(primaryKey.name, value);
         }
 
         return result;

@@ -15,10 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 class EntityUtils {
 

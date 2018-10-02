@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 
-public abstract class LeavesIterator<T extends TreeNode<T>> implements Iterator<T> {
+abstract class LeavesIterator<T extends TreeNode<T>> implements Iterator<T> {
 
     private final Stack<T> stack = new Stack<>();
     private T nextNode = null;

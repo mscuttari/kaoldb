@@ -70,6 +70,12 @@ class ColumnObject {
     /** Unique column property */
     public boolean unique;
 
+    /** Default value */
+    public String defaultValue;
+
+    /** Custom column definition */
+    public String customColumnDefinition;
+
 
     /**
      * Constructor for fields annotated with {@link Column}
@@ -85,6 +91,8 @@ class ColumnObject {
         this.type = field.getType();
         this.nullable = columnAnnotation.nullable();
         this.unique = columnAnnotation.unique();
+        this.defaultValue = columnAnnotation.defaultValue();
+        this.customColumnDefinition = columnAnnotation.columnDefinition();
         this.relationshipType = getRelationshipType(field);
     }
 
@@ -103,6 +111,8 @@ class ColumnObject {
         this.nullable = joinColumnAnnotation.nullable();
         this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
+        this.defaultValue = joinColumnAnnotation.defaultValue();
+        this.customColumnDefinition = joinColumnAnnotation.columnDefinition();
         this.relationshipType = getRelationshipType(field);
     }
 

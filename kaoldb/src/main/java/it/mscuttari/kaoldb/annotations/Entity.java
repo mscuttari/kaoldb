@@ -14,14 +14,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Entity {
 
     /**
-     * The name used to refer to the entity in queries
-     * Defaults value is the unqualified name of the entity class
-     */
-    // TODO: implement
-    String name() default "";
-
-
-    /**
      * Unique table columns constraints
      */
     UniqueConstraint[] uniqueConstraints() default {};

@@ -14,7 +14,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Column {
 
     /**
-     * The name of the column
+     * The name of the column.
      * Defaults to the property or field name.
      */
     String name() default "";
@@ -35,5 +35,18 @@ public @interface Column {
      * to constraints specified at the table level.
      */
     boolean unique() default false;
+
+
+    /**
+     * Default value of the column
+     */
+    String defaultValue() default "";
+
+
+    /**
+     * The SQL fragment that is used when generating the DDL for the column.
+     * Defaults to the generated SQL to create a column of the inferred type.
+     */
+    String columnDefinition() default "";
 
 }

@@ -124,6 +124,12 @@ class EntityUtils {
             result.append(prefix).append(column.name);
             prefix = ", ";
 
+            // Custom column definition
+            if (!column.customColumnDefinition.isEmpty()) {
+                result.append(" ").append(column.customColumnDefinition);
+                continue;
+            }
+
             // Column type
             Class<?> fieldType = column.type;
 
@@ -138,7 +144,7 @@ class EntityUtils {
             } else if (fieldType.equals(String.class)) {
                 result.append(" TEXT");
             } else if (fieldType.equals(Date.class) || fieldType.equals(Calendar.class)) {
-                result.append(" INETGER");
+                result.append(" INTEGER");
             } else {
                 result.append(" BLOB");
             }
@@ -153,9 +159,10 @@ class EntityUtils {
                 result.append(" UNIQUE");
             }
 
-            // TODO: default value
-            // TODO: autoincrement
-            // TODO: custom text
+            // Default value
+            if (!column.defaultValue.isEmpty()) {
+                result.append(" DEFAULT ").append(column.defaultValue);
+            }
         }
 
         return result.toString();

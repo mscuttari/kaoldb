@@ -3,7 +3,7 @@ package it.mscuttari.kaoldb.core;
 /**
  * Get the predicates (leaves) of an expressions tree
  */
-public final class PredicatesIterator extends LeavesIterator<ExpressionImpl> {
+final class PredicatesIterator extends LeavesIterator<ExpressionImpl> {
 
     /**
      * Constructor

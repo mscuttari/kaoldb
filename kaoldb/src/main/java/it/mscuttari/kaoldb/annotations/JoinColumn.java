@@ -43,4 +43,17 @@ public @interface JoinColumn {
      */
     boolean unique() default false;
 
+
+    /**
+     * Default value of the column
+     */
+    String defaultValue() default "";
+
+
+    /**
+     * The SQL fragment that is used when generating the DDL for the column.
+     * Defaults to the generated SQL to create a column of the inferred type.
+     */
+    String columnDefinition() default "";
+
 }

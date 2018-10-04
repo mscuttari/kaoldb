@@ -1,10 +1,12 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+
+group = 'com.github.mscuttari'
 
 android {
     compileSdkVersion 27
 
     defaultConfig {
-        applicationId "it.mscuttari.kaoldbtest"
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
@@ -16,25 +18,21 @@ android {
 
     buildTypes {
         release {
+            useProguard true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
-    testOptions {
-        unitTests {
-            includeAndroidResources = true
-        }
+    dexOptions {
+        preDexLibraries = false
     }
-
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    annotationProcessor project(':processor')
-    implementation project(':kaoldb')
-    testImplementation "org.robolectric:robolectric:3.8"
     testImplementation 'junit:junit:4.12'
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'org.jetbrains:annotations-java5:15.0'
 }
+
+apply from: rootProject.file('release-bintray.gradle')

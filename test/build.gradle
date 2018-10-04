@@ -1,12 +1,10 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-
-group = 'com.github.mscuttari'
+apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 27
 
     defaultConfig {
+        applicationId "it.mscuttari.kaoldbtest"
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
@@ -18,19 +16,25 @@ android {
 
     buildTypes {
         release {
-            useProguard true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
-    dexOptions {
-        preDexLibraries = false
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
     }
+
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    annotationProcessor project(':annotation-processor')
+    implementation project(':core')
+    testImplementation "org.robolectric:robolectric:3.8"
     testImplementation 'junit:junit:4.12'
-    implementation 'org.jetbrains:annotations-java5:15.0'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
 }

@@ -1,0 +1,33 @@
+/**
+ * Bintray release configuration
+ **/
+ext {
+    bintrayRepo = 'KaolDB'
+    bintrayName = POM_BINTRAY_NAME
+
+    publishedGroupId = 'it.mscuttari.kaoldb'
+    libraryName = 'KaolDB'
+    artifact = POM_ARTIFACT_ID
+    packagingType = POM_PACKAGING
+
+    libraryDescription = POM_DESCRIPTION
+
+    siteUrl = 'https://github.com/mscuttari/KaolDB'
+    gitUrl = 'https://github.com/mscuttari/KaolDB.git'
+
+    libraryVersion = POM_VERSION
+
+    developerId = 'mscuttari'
+    developerName = 'Michele Scuttari'
+    developerEmail = 'michele@scuttari.me'
+
+    licenseName = 'MIT'
+    licenseUrl = 'https://github.com/quangctkm9207/multi-library-bintray/LICENSE'
+    allLicenses = ["MIT"]
+}
+
+// Set up the Android Maven publication.
+apply from: rootProject.file('jcenter/maven-install.gradle')
+
+// Publish on Bintray.
+apply from: rootProject.file('jcenter/bintray.gradle')

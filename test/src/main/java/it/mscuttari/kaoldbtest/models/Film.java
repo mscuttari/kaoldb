@@ -46,6 +46,9 @@ public abstract class Film {
     @Column(name = "length")
     public Integer length;
 
+    @Column(name = "restriction")
+    public FilmRestrictionType restriction;
+
 
     /**
      * Default constructor

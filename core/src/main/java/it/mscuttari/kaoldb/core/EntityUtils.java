@@ -145,6 +145,8 @@ class EntityUtils {
                 result.append(" TEXT");
             } else if (fieldType.equals(Date.class) || fieldType.equals(Calendar.class)) {
                 result.append(" INTEGER");
+            } else if (fieldType.isEnum()) {
+                result.append(" TEXT");
             } else {
                 result.append(" BLOB");
             }

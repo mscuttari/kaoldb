@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -161,10 +162,17 @@ class PojoAdapter {
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
+            if (dataType.isEnum()) {
+                Enum enumClass = Enum.class.cast(dataType);
+                value = Enum.valueOf(enumClass.getClass(), c.getString(columnIndex));
+                
+            } else if (String.class.isAssignableFrom(dataType)) {
+                value = c.getString(columnIndex);
+            }
+
             if (!(dataType.equals(String.class)))
                 throw new PojoException("Incompatible data type: expected " + dataType.getSimpleName() + ", found String");
 
-            value = c.getString(columnIndex);
         }
 
         return (T) value;
@@ -509,7 +517,10 @@ class PojoAdapter {
             cv.putNull(columnName);
 
         } else {
-            if (value instanceof Integer || value.getClass().equals(int.class)) {
+            if (value instanceof Enum) {
+                cv.put(columnName, ((Enum) value).name());
+
+            } else if (value instanceof Integer || value.getClass().equals(int.class)) {
                 cv.put(columnName, (int) value);
 
             } else if (value instanceof Long || value.getClass().equals(long.class)) {
@@ -547,6 +558,7 @@ class PojoAdapter {
      */
     private static boolean isPrimitiveType(Class<?> clazz) {
         Class<?>[] primitiveTypes = {
+                Enum.class,
                 Integer.class, int.class,
                 Long.class, long.class,
                 Float.class, float.class,

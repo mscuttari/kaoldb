@@ -87,8 +87,13 @@ class PojoAdapter {
                             if (column.relationshipType == ColumnObject.RelationshipType.NONE) {
                                 String columnName = alias + entity.getName() + "." + column.name;
                                 value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
-                            } else {
+
+                            } else if (column.relationshipType == ColumnObject.RelationshipType.ONE_TO_ONE || column.relationshipType == ColumnObject.RelationshipType.MANY_TO_ONE){
                                 // TODO: Eager / lazy load
+                                value = null;
+
+                            } else {
+                                // @OneToMany and @ManyToMany annotated fields are populated later
                                 value = null;
                             }
 

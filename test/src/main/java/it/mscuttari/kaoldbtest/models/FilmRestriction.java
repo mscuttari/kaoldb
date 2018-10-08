@@ -1,8 +1,8 @@
 package it.mscuttari.kaoldbtest.models;
 
-public enum FilmRestrictionType {
+public enum FilmRestriction {
 
-    EVERYBODY,
+    NONE,
     MIN14,
     MIN18
 

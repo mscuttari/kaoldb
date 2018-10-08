@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -84,11 +85,13 @@ class ColumnObject {
      * @param   field               field which has the {@link Column} annotation
      */
     private ColumnObject(Column columnAnnotation, Field field) {
+        field.setAccessible(true);
+
         this.field = field;
         this.columnAnnotation = columnAnnotation;
         this.name = getColumnName(columnAnnotation, field);
         this.primaryKey = field.isAnnotationPresent(Id.class);
-        this.type = field.getType();
+        this.type = getFieldType(field);
         this.nullable = columnAnnotation.nullable();
         this.unique = columnAnnotation.unique();
         this.defaultValue = columnAnnotation.defaultValue();
@@ -104,10 +107,12 @@ class ColumnObject {
      * @param   field                   field which has the {@link JoinColumn} annotation
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
+        field.setAccessible(true);
+
         this.field = field;
         this.columnAnnotation = joinColumnAnnotation;
         this.name = getColumnName(joinColumnAnnotation, field);
-        this.type = null;
+        this.type = getFieldType(field);
         this.nullable = joinColumnAnnotation.nullable();
         this.primaryKey = field.isAnnotationPresent(Id.class);
         this.unique = joinColumnAnnotation.unique();
@@ -226,6 +231,29 @@ class ColumnObject {
 
 
     /**
+     * Get field type
+     *
+     * If the field is annotated with {@link OneToMany} or {@link ManyToMany}, the returned class
+     * is the collection elements one
+     *
+     * @param   field   field
+     * @return  field type
+     */
+    private static Class<?> getFieldType(Field field) {
+        if (field.isAnnotationPresent(OneToOne.class) || field.isAnnotationPresent(ManyToOne.class)) {
+            return field.getType();
+
+        } else if (field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(ManyToMany.class)) {
+            ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
+            return (Class<?>) collectionType.getActualTypeArguments()[0];
+
+        } else {
+            return field.getType();
+        }
+    }
+
+
+    /**
      * Get the relationship type of a field
      *
      * @param   field       field to be analyzed
@@ -287,14 +315,14 @@ class ColumnObject {
 
 
     /**
-     * Get column value
+     * Get field value
      *
      * @param   obj     object to get the value from
      * @param   <T>     object class
      *
-     * @return  column value
+     * @return  field value
      *
-     * @throws QueryException if the field can't be accessed
+     * @throws  QueryException if the field can't be accessed
      */
     @SuppressWarnings("unchecked")
     public <T> T getValue(Object obj) {
@@ -307,6 +335,25 @@ class ColumnObject {
         try {
             return (T) field.get(obj);
         } catch (Exception e) {
+            throw new QueryException(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Set field value
+     *
+     * @param   obj     object containing the field to be set
+     * @param   value   value to be set
+     *
+     * @throws  QueryException if the field can't be accessed
+     */
+    public void setValue(Object obj, Object value) {
+        field.setAccessible(true);
+
+        try {
+            field.set(obj, value);
+        } catch (IllegalAccessException e) {
             throw new QueryException(e.getMessage());
         }
     }

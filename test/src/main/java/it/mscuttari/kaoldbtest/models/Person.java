@@ -17,18 +17,18 @@ public class Person {
 
     @Id
     @Column(name = "first_name")
-    private String firstName;
+    public String firstName;
 
     @Id
     @Column(name = "last_name")
-    private String lastName;
+    public String lastName;
 
     @Column(name = "birth_date")
-    private Calendar birthDate;
+    public Calendar birthDate;
 
-    @JoinColumn(name = "country", referencedColumnName = "name")
     @ManyToOne
-    private Country country;
+    @JoinColumn(name = "country", referencedColumnName = "name")
+    public Country country;
 
 
     /**
@@ -89,46 +89,6 @@ public class Person {
     @Override
     public String toString() {
         return "[first name: " + firstName + ", last name: " + lastName + ", birth date: " + birthDate.getTimeInMillis() + "]";
-    }
-
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-
-    public String getLastName() {
-        return lastName;
-    }
-
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-
-    public Calendar getBirthDate() {
-        return birthDate;
-    }
-
-
-    public void setBirthDate(Calendar birthDate) {
-        this.birthDate = birthDate;
-    }
-
-
-    public Country getCountry() {
-        return country;
-    }
-
-
-    public void setCountry(Country country) {
-        this.country = country;
     }
 
 }

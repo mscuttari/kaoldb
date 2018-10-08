@@ -4,23 +4,41 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
+import it.mscuttari.kaoldb.exceptions.QueryException;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
+import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
+import it.mscuttari.kaoldb.interfaces.QueryBuilder;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
  * @param   <M>     result objects class
  */
 class QueryImpl<M> implements Query<M> {
 
-    private EntityManagerImpl entityManager;
-    private DatabaseObject db;
-    private Class<M> resultClass;
-    private String alias;
-    private String sql;
+    private final EntityManagerImpl entityManager;
+    private final DatabaseObject db;
+    private final Class<M> resultClass;
+    private final String alias;
+    private final String sql;
 
 
     /**
@@ -61,7 +79,10 @@ class QueryImpl<M> implements Query<M> {
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             Map<String, Integer> cursorMap = getCursorColumnMap(c);
-            result.add(PojoAdapter.cursorToObject(c, cursorMap, resultClass, entityObject, alias));
+            M object = PojoAdapter.cursorToObject(c, cursorMap, resultClass, entityObject, alias);
+            loadEagerData(object);
+            createLazyCollections(object);
+            result.add(object);
         }
 
         c.close();
@@ -98,6 +119,144 @@ class QueryImpl<M> implements Query<M> {
         }
 
         return map;
+    }
+
+
+    /**
+     * Eagerly load data linked to field annotated with {@link OneToOne} or {@link ManyToOne}
+     *
+     * @param   object      object got from the query
+     */
+    private void loadEagerData(M object) {
+        if (object == null)
+            return;
+
+        EntityObject entity = db.getEntityObject(object.getClass());
+        Collection<Field> usedFields = new HashSet<>();
+
+        for (ColumnObject column : entity.columns) {
+            // Skip if field has already been used
+            if (usedFields.contains(column.field))
+                continue;
+
+            // Skip if the relationship type is not a one to one or many to one
+            if (column.relationshipType != ColumnObject.RelationshipType.ONE_TO_ONE &&
+                    column.relationshipType != ColumnObject.RelationshipType.MANY_TO_ONE)
+                continue;
+
+            // Add the field to the used ones
+            usedFields.add(column.field);
+
+            // Create the query
+            Class<?> linkedClass = column.field.getType();
+            QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
+
+            // Create a fake property to be used for the join
+            Property property = new Property<>(entity.entityClass, linkedClass, column.field);
+
+            // Create the join
+            Root<?> root = qb.getRoot(entity.entityClass, "source");
+            @SuppressWarnings("unchecked") Root<?> join = root.innerJoin(linkedClass, "destination", property);
+
+            Expression where = null;
+
+            for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
+                Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
+                Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
+                where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
+            }
+
+            // Build the query
+            Query<?> query = qb.from(join).where(where).build("destination");
+
+            // Run the query and assign the result to the object field
+            column.setValue(object, query.getSingleResult());
+        }
+    }
+
+
+    /**
+     * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields
+     *
+     * @param   object      object got from the query
+     */
+    @SuppressWarnings("unchecked")
+    private void createLazyCollections(M object) {
+        if (object == null)
+            return;
+
+        EntityObject entity = db.getEntityObject(object.getClass());
+        Collection<Field> usedFields = new HashSet<>();
+
+        for (ColumnObject column : entity.columns) {
+            // Skip if field has already been used
+            if (usedFields.contains(column.field))
+                continue;
+
+            // Skip if the relationship type is not a one to many or a many to many
+            if (column.relationshipType != ColumnObject.RelationshipType.ONE_TO_MANY &&
+                    column.relationshipType != ColumnObject.RelationshipType.MANY_TO_MANY)
+                continue;
+
+            // Add the field to the used ones
+            usedFields.add(column.field);
+
+            // Create the query
+            Class<?> linkedClass = column.type;
+            QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
+            EntityObject linkedEntity = db.getEntityObject(linkedClass);
+
+            Root<?> root = qb.getRoot(entity.entityClass, "source");
+            Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
+
+            // The only fields allowed to be Collections are @OneToMany or @ManyToMany annotated ones
+            OneToMany oneToManyAnnotation = column.field.getAnnotation(OneToMany.class);
+            ManyToMany manyToManyAnnotation = column.field.getAnnotation(ManyToMany.class);
+
+            if (oneToManyAnnotation == null && manyToManyAnnotation == null)
+                throw new QueryException("No mapping field found for relationship of field \"" + column.field.getName() + "\"");
+
+            // Get the mapping field
+            String mappedByFieldName = oneToManyAnnotation != null ? oneToManyAnnotation.mappedBy() : manyToManyAnnotation.mappedBy();
+            Field mappedByField = linkedEntity.getField(mappedByFieldName);
+
+            // Create a fake property to be used for the equal predicate
+            Property property = new Property<>(linkedClass, entity.entityClass, mappedByField);
+
+            // Create the join and equality constraints
+            Root<?> join = linkedClassRoot.innerJoin(entity.entityClass, "source", property);
+            Expression where = null;
+
+            for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
+                Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
+                Expression primaryKeyEquality = join.eq(primaryKeyProperty, primaryKey.getValue(object));
+                where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
+            }
+
+            // Build the query to be executed when needed
+            Query<?> query = qb.from(root).where(where).build("destination");
+
+            // Get the collection instance
+            Object fieldValue = column.getValue(object);
+
+            // Create an appropriate lazy collection and assign it to the field
+            LazyCollection<?, ?> lazyCollection;
+
+            if (fieldValue == null) {
+                lazyCollection = new LazyList<>(null, query);
+
+            } else if (fieldValue instanceof List) {
+                lazyCollection = new LazyList<>((List) fieldValue, query);
+
+            } else if (fieldValue instanceof Set) {
+                lazyCollection = new LazySet<>((Set) fieldValue, query);
+
+            } else {
+                throw new QueryException("Wrong field type. @OneToMany and @ManyToMany fields must be Lists or Sets");
+            }
+
+            column.setValue(object, lazyCollection);
+        }
     }
 
 }

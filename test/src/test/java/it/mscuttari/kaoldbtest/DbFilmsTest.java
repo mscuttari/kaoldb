@@ -57,18 +57,18 @@ public class DbFilmsTest {
                 new Country("USA")
         );
 
-        person.getBirthDate().set(Calendar.YEAR, 1965);
-        person.getBirthDate().set(Calendar.MONTH, Calendar.APRIL);
-        person.getBirthDate().set(Calendar.DAY_OF_MONTH, 4);
+        person.birthDate.set(Calendar.YEAR, 1965);
+        person.birthDate.set(Calendar.MONTH, Calendar.APRIL);
+        person.birthDate.set(Calendar.DAY_OF_MONTH, 4);
 
-        //em.persist(person.getCountry());
-        //em.persist(person);
+        em.persist(person.country);
+        em.persist(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot.eq(Person_.firstName, "Prova")
-                .or(personRoot.eq(Person_.lastName, "Downey").and(personRoot.eq(Person_.firstName, "Robert")))
+        Expression where = personRoot.eq(Person_.firstName, "Robert")
+                .and(personRoot.eq(Person_.lastName, "Downey Jr"))
                 .and(personRoot.eq(Person_.country, new Country("USA")));
 
         qb.from(personRoot).where(where);

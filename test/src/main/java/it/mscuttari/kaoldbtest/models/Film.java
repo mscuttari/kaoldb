@@ -8,12 +8,8 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
-import it.mscuttari.kaoldb.annotations.OneToMany;
-import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -47,32 +43,26 @@ public abstract class Film {
     public Integer length;
 
     @Column(name = "restriction")
-    public FilmRestrictionType restriction;
-
-
-    /**
-     * Default constructor
-     */
-    public Film() {
-        this(null, null, null, null, null);
-    }
+    public FilmRestriction restriction;
 
 
     /**
      * Constructor
      *
-     * @param   title       title
-     * @param   year        year
-     * @param   genre       genre
-     * @param   director    director
-     * @param   length      length
+     * @param   title           title
+     * @param   year            year
+     * @param   genre           genre
+     * @param   director        director
+     * @param   length          length
+     * @param   restriction     restriction
      */
-    public Film(String title, Integer year, Genre genre, Person director, Integer length) {
+    public Film(String title, Integer year, Genre genre, Person director, Integer length, FilmRestriction restriction) {
         this.title = title;
         this.year = year;
         this.genre = genre;
         this.director = director;
         this.length = length;
+        this.restriction = restriction;
     }
 
 }

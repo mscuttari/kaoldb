@@ -37,8 +37,8 @@ class EntityObject {
     public Class<?> entityClass;
 
     /**
-     * Table name
-     * Null if the entity doesn't require a real table
+     * Table name.
+     * Null if the entity doesn't require a real table.
      */
     @Nullable
     public String tableName;
@@ -54,28 +54,28 @@ class EntityObject {
     public Collection<ColumnObject> primaryKeys;
 
     /**
-     * Inheritance type
-     * Null if the entity has no children
+     * Inheritance type.
+     * Null if the entity has no children.
      */
     @Nullable
     public InheritanceType inheritanceType;
 
     /**
-     * Discriminator column name
-     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}
+     * Discriminator column name.
+     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}.
      */
     public ColumnObject discriminatorColumn;
 
     /**
-     * Discriminator value
-     * Null if the entity has no parent
+     * Discriminator value.
+     * Null if the entity has no parent.
      */
     @Nullable
     public Object discriminatorValue;
 
     /**
-     * Parent entity
-     * Null if the entity has no parent
+     * Parent entity.
+     * Null if the entity has no parent.
      */
     @Nullable
     public EntityObject parent;

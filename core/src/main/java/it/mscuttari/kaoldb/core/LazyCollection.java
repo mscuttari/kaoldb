@@ -27,7 +27,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
      * @param   container   data container specified by the user
      * @param   query       query to be executed to load data
      */
-    public LazyCollection(S container, Query<T> query) {
+    protected LazyCollection(S container, Query<T> query) {
         this.data = container;
         this.query = query;
     }

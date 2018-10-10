@@ -15,6 +15,7 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 import it.mscuttari.kaoldbtest.models.Country;
+import it.mscuttari.kaoldbtest.models.Film;
 import it.mscuttari.kaoldbtest.models.Person;
 import it.mscuttari.kaoldbtest.models.Person_;
 
@@ -51,8 +52,8 @@ public class DbFilmsTest {
     @Test
     public void persistPerson() {
         Person person = new Person(
-                "Robert",
-                "Downey Jr",
+                "First name",
+                "Last name",
                 Calendar.getInstance(),
                 new Country("USA")
         );
@@ -67,14 +68,18 @@ public class DbFilmsTest {
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot.eq(Person_.firstName, "Robert")
-                .and(personRoot.eq(Person_.lastName, "Downey Jr"))
+        Expression where = personRoot.eq(Person_.firstName, "First name")
+                .and(personRoot.eq(Person_.lastName, "Last name"))
                 .and(personRoot.eq(Person_.country, new Country("USA")));
 
         qb.from(personRoot).where(where);
 
         Person result = qb.build("p").getSingleResult();
         assertEquals(person, result);
+
+        for (Film film : result.directing) {
+            System.out.println("Test");
+        }
     }
 
 }

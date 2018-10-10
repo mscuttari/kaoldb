@@ -5,7 +5,6 @@ import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,16 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.QueryException;
-import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
@@ -126,6 +120,7 @@ class QueryImpl<M> implements Query<M> {
      * Eagerly load data linked to field annotated with {@link OneToOne} or {@link ManyToOne}
      *
      * @param   object      object got from the query
+     * @throws  QueryException if the data can't be assigned to the field
      */
     private void loadEagerData(M object) {
         if (object == null)
@@ -134,25 +129,25 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entity = db.getEntityObject(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
-        for (ColumnObject column : entity.columns) {
+        for (Field field : entity.relationships) {
             // Skip if field has already been used
-            if (usedFields.contains(column.field))
+            if (usedFields.contains(field))
                 continue;
 
             // Skip if the relationship type is not a one to one or many to one
-            if (column.relationshipType != ColumnObject.RelationshipType.ONE_TO_ONE &&
-                    column.relationshipType != ColumnObject.RelationshipType.MANY_TO_ONE)
+            if (!field.isAnnotationPresent(OneToOne.class) &&
+                    !field.isAnnotationPresent(ManyToOne.class))
                 continue;
 
             // Add the field to the used ones
-            usedFields.add(column.field);
+            usedFields.add(field);
 
             // Create the query
-            Class<?> linkedClass = column.field.getType();
+            Class<?> linkedClass = field.getType();
             QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
 
             // Create a fake property to be used for the join
-            Property property = new Property<>(entity.entityClass, linkedClass, column.field);
+            Property property = new Property<>(entity.entityClass, linkedClass, field);
 
             // Create the join
             Root<?> root = qb.getRoot(entity.entityClass, "source");
@@ -170,7 +165,12 @@ class QueryImpl<M> implements Query<M> {
             Query<?> query = qb.from(join).where(where).build("destination");
 
             // Run the query and assign the result to the object field
-            column.setValue(object, query.getSingleResult());
+            try {
+                field.set(object, query.getSingleResult());
+
+            } catch (IllegalAccessException e) {
+                throw new QueryException(e.getMessage());
+            }
         }
     }
 
@@ -188,33 +188,30 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entity = db.getEntityObject(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
-        for (ColumnObject column : entity.columns) {
+        for (Field field : entity.relationships) {
             // Skip if field has already been used
-            if (usedFields.contains(column.field))
+            if (usedFields.contains(field))
                 continue;
 
             // Skip if the relationship type is not a one to many or a many to many
-            if (column.relationshipType != ColumnObject.RelationshipType.ONE_TO_MANY &&
-                    column.relationshipType != ColumnObject.RelationshipType.MANY_TO_MANY)
+            if (!field.isAnnotationPresent(OneToMany.class) &&
+                    !field.isAnnotationPresent(ManyToMany.class))
                 continue;
 
             // Add the field to the used ones
-            usedFields.add(column.field);
+            usedFields.add(field);
 
             // Create the query
-            Class<?> linkedClass = column.type;
+            Class<?> linkedClass = ColumnObject.getFieldType(field);
             QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
             EntityObject linkedEntity = db.getEntityObject(linkedClass);
 
-            Root<?> root = qb.getRoot(entity.entityClass, "source");
-            Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
-
             // The only fields allowed to be Collections are @OneToMany or @ManyToMany annotated ones
-            OneToMany oneToManyAnnotation = column.field.getAnnotation(OneToMany.class);
-            ManyToMany manyToManyAnnotation = column.field.getAnnotation(ManyToMany.class);
+            OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
+            ManyToMany manyToManyAnnotation = field.getAnnotation(ManyToMany.class);
 
             if (oneToManyAnnotation == null && manyToManyAnnotation == null)
-                throw new QueryException("No mapping field found for relationship of field \"" + column.field.getName() + "\"");
+                throw new QueryException("No mapping field found for relationship of field \"" + field.getName() + "\"");
 
             // Get the mapping field
             String mappedByFieldName = oneToManyAnnotation != null ? oneToManyAnnotation.mappedBy() : manyToManyAnnotation.mappedBy();
@@ -224,7 +221,9 @@ class QueryImpl<M> implements Query<M> {
             Property property = new Property<>(linkedClass, entity.entityClass, mappedByField);
 
             // Create the join and equality constraints
+            Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
             Root<?> join = linkedClassRoot.innerJoin(entity.entityClass, "source", property);
+
             Expression where = null;
 
             for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
@@ -234,10 +233,16 @@ class QueryImpl<M> implements Query<M> {
             }
 
             // Build the query to be executed when needed
-            Query<?> query = qb.from(root).where(where).build("destination");
+            Query<?> query = qb.from(join).where(where).build("destination");
 
             // Get the collection instance
-            Object fieldValue = column.getValue(object);
+            Object fieldValue;
+
+            try {
+                fieldValue = field.get(object);
+            } catch (IllegalAccessException e) {
+                throw new QueryException(e.getMessage());
+            }
 
             // Create an appropriate lazy collection and assign it to the field
             LazyCollection<?, ?> lazyCollection;
@@ -255,7 +260,11 @@ class QueryImpl<M> implements Query<M> {
                 throw new QueryException("Wrong field type. @OneToMany and @ManyToMany fields must be Lists or Sets");
             }
 
-            column.setValue(object, lazyCollection);
+            try {
+                field.set(object, lazyCollection);
+            } catch (IllegalAccessException e) {
+                throw new QueryException(e.getMessage());
+            }
         }
     }
 

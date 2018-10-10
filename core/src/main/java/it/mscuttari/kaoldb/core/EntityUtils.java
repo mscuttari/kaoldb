@@ -1,10 +1,10 @@
 package it.mscuttari.kaoldb.core;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Pair;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 
 class EntityUtils {
 
@@ -32,7 +34,7 @@ class EntityUtils {
      * @param   classes     collection of all classes
      * @return  map between classes and entities objects
      */
-    static Map<Class<?>, EntityObject> createEntities(Collection<Class<?>> classes) {
+    public static Map<Class<?>, EntityObject> createEntities(Collection<Class<?>> classes) {
         Map<Class<?>, EntityObject> result = new HashMap<>();
 
         // First scan to get basic data
@@ -69,7 +71,7 @@ class EntityUtils {
      * @return  SQL query (null if no table should be created)
      */
     @Nullable
-    static String getCreateTableSql(EntityObject entity) {
+    public static String getCreateTableSQL(EntityObject entity) {
         // Skip entity if doesn't require a real table
         if (!entity.realTable) return null;
 
@@ -107,6 +109,44 @@ class EntityUtils {
 
 
     /**
+     * Get the SQL query to create a join table
+     *
+     * @param   db      join table annotation
+     * @param   field   field annotated with {@link JoinTable}
+     *
+     * @return  SQL query
+     */
+    @Nullable
+    public static String getCreateTableSQL(DatabaseObject db, Field field) {
+        if (!field.isAnnotationPresent(JoinTable.class))
+            return null;
+
+        JoinTable annotation = field.getAnnotation(JoinTable.class);
+        StringBuilder result = new StringBuilder();
+
+        // Table name
+        result.append("CREATE TABLE IF NOT EXISTS ").append(annotation.name()).append(" (");
+
+        // Columns
+        Collection<ColumnObject> columns = ColumnObject.getJoinTableColumns(db, field);
+        result.append(getColumnsSql(columns));
+
+        // Primary keys
+        String primaryKeysSql = getPrimaryKeysSql(annotation);
+
+        if (!primaryKeysSql.isEmpty())
+            result.append(", ").append(primaryKeysSql);
+
+        // Foreign keys
+        // TODO: to be implemented
+
+        result.append(");");
+
+        return result.toString();
+    }
+
+
+    /**
      * Get columns SQL statement to be inserted in the create table query
      *
      * Example: (column 1 INTEGER, column 2 REAL NOT NULL)
@@ -114,13 +154,13 @@ class EntityUtils {
      * @param   columns     collection of all columns
      * @return  SQL query
      */
-    @NotNull
+    @NonNull
     private static String getColumnsSql(Collection<ColumnObject> columns) {
         StringBuilder result = new StringBuilder();
         String prefix = "";
 
         for (ColumnObject column : columns) {
-            // Column tableName
+            // Column name
             result.append(prefix).append(column.name);
             prefix = ", ";
 
@@ -179,7 +219,7 @@ class EntityUtils {
      * @param   primaryKeys     collection of primary keys
      * @return  SQL query
      */
-    @NotNull
+    @NonNull
     private static String getPrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
         StringBuilder result = new StringBuilder();
         boolean empty = true;
@@ -200,6 +240,41 @@ class EntityUtils {
 
 
     /**
+     * Get primary keys SQL statement to be inserted in the create table query
+     *
+     * @param   annotation      join table annotation
+     * @return  SQL query
+     */
+    private static String getPrimaryKeysSql(JoinTable annotation) {
+        StringBuilder result = new StringBuilder();
+        boolean empty = true;
+        String prefix = "PRIMARY KEY(";
+
+        // Direct join columns
+        for (JoinColumn column : annotation.joinColumns()) {
+            result.append(prefix).append(column.name());
+            prefix = ", ";
+            empty = false;
+        }
+
+        // Inverse join columns
+        if (empty) prefix = "PRIMARY KEY(";
+
+        for (JoinColumn column : annotation.joinColumns()) {
+            result.append(prefix).append(column.name());
+            prefix = ", ";
+            empty = false;
+        }
+
+        if (!empty) {
+            result.append(")");
+        }
+
+        return result.toString();
+    }
+
+
+    /**
      * Get unique columns SQL statement to be inserted in the create table query
      *
      * Example: UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
@@ -207,7 +282,7 @@ class EntityUtils {
      * @param   uniqueColumns       list of unique columns
      * @return  SQL query
      */
-    @NotNull
+    @NonNull
     private static String getUniquesSql(List<List<ColumnObject>> uniqueColumns) {
         StringBuilder result = new StringBuilder();
         String prefixExternal = "";

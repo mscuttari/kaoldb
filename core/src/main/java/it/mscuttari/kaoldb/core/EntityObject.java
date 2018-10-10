@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
-import org.jetbrains.annotations.Nullable;
+import android.support.annotation.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -20,7 +20,10 @@ import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
@@ -80,10 +83,11 @@ class EntityObject {
     @Nullable
     public EntityObject parent;
 
-    /**
-     * Children entities
-     */
+    /** Children entities */
     public Collection<EntityObject> children;
+
+    /** Relationships */
+    public Collection<Field> relationships;
 
 
     /**
@@ -101,6 +105,7 @@ class EntityObject {
         this.children = new HashSet<>();
         searchParentAndChildren(this, classes, entitesMap);
         this.discriminatorValue = entityClass.isAnnotationPresent(DiscriminatorValue.class) ? entityClass.getAnnotation(DiscriminatorValue.class).value() : null;
+        this.relationships = getRelationships(entityClass);
     }
 
 
@@ -312,6 +317,34 @@ class EntityObject {
 
 
     /**
+     * Get entity relationships fields
+     *
+     * Each field is considered a relationship one if it is annotated with {@link OneToOne},
+     * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
+     *
+     * @param   entityClass     entity class
+     * @return  relationships fields
+     */
+    private static Collection<Field> getRelationships(Class<?> entityClass) {
+        Collection<Field> relationships = new ArrayList<>();
+
+        for (Field field : entityClass.getDeclaredFields()) {
+            field.setAccessible(true);
+
+            if (field.isAnnotationPresent(OneToOne.class) ||
+                    field.isAnnotationPresent(OneToMany.class) ||
+                    field.isAnnotationPresent(ManyToOne.class) ||
+                    field.isAnnotationPresent(ManyToMany.class)) {
+
+                relationships.add(field);
+            }
+        }
+
+        return Collections.unmodifiableCollection(relationships);
+    }
+
+
+    /**
      * Load columns
      *
      * @return  collection of all columns
@@ -399,14 +432,8 @@ class EntityObject {
             result.addAll(columns);
         }
 
-        // @JoinTable
-        Collection<Field> joinTableFields = getFieldsWithAnnotation(allFields, JoinTable.class);
-
-        for (Field field : joinTableFields) {
-            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(result, columns);
-            result.addAll(columns);
-        }
+        // Fields annotated with @JoinTable are skipped because they don't lead to new columns.
+        // In fact, the annotation should only map the existing table columns to the join table ones.
 
         return result;
     }
@@ -560,9 +587,9 @@ class EntityObject {
         if (this.realTable && this.tableName == null)
             throw new InvalidConfigException("Entity " + getName() + " can't have empty table name");
 
-        // Join columns consistence
+        // Fix join columns types
         for (ColumnObject column : this.columns) {
-            column.checkConsistence(entities);
+            column.fixType(entities);
         }
 
         // Fix discriminator value type
@@ -604,7 +631,7 @@ class EntityObject {
      */
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
-            return clazz.getDeclaredField(fieldName);
+            return clazz.getField(fieldName);
         } catch (NoSuchFieldException e) {
             throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"");
         }

@@ -6,13 +6,13 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
-import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.PostPersistListener;
@@ -50,13 +50,26 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     @Override
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.getEntities()) {
-            String createSQL = EntityUtils.getCreateTableSql(entity);
+            // Entity table
+            String entityTableCreateSQL = EntityUtils.getCreateTableSQL(entity);
 
-            if (createSQL != null) {
-                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
-                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
-                db.execSQL(createSQL);
+            if (entityTableCreateSQL != null) {
+                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                db.execSQL(entityTableCreateSQL);
                 LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
+            }
+
+            // Join tables
+            for (Field field : entity.relationships) {
+                String joinTableCreateSQL = EntityUtils.getCreateTableSQL(database, field);
+
+                if (joinTableCreateSQL != null) {
+                    LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                    System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                    db.execSQL(joinTableCreateSQL);
+                    LogUtils.i("[Entity \"" + entity.getName() + "\"] Join table created");
+                }
             }
         }
     }

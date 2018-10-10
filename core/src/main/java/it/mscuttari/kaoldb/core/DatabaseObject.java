@@ -199,6 +199,16 @@ class DatabaseObject {
 
 
     /**
+     * Get an unmodifiable {@link Map} between the classes and their entity objects
+     *
+     * @return mapped entities
+     */
+    public Map<Class<?>, EntityObject> getEntitiesMap() {
+        return Collections.unmodifiableMap(entities);
+    }
+
+
+    /**
      * Get an unmodifiable {@link Collection} of all entity objects
      * To set a map, use {@link #setEntitiesMap(Map)}
      *

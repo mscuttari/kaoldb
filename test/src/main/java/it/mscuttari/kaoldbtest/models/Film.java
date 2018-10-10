@@ -34,8 +34,12 @@ public abstract class Film {
     @JoinTable(
             name = "films_directors",
             joinColumns = {
-                    @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
-                    @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
+                    @JoinColumn(name = "ext_film_title", referencedColumnName = "title"),
+                    @JoinColumn(name = "ext_film_year", referencedColumnName = "year")
+            },
+            inverseJoinColumns = {
+                    @JoinColumn(name = "ext_director_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "ext_director_last_name", referencedColumnName = "last_name")
             })
     public Person director;
     

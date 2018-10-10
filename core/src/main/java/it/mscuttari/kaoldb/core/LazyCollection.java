@@ -12,12 +12,25 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import it.mscuttari.kaoldb.exceptions.LazyInitializationException;
+import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.interfaces.Query;
 
 abstract class LazyCollection<T, S extends Collection<T>> implements Collection<T> {
 
+    /**
+     * It is the container where the data is stored after being loaded.
+     * The container can be provided by the user when initializing the relationship field.
+     * If not provided, the subclassing should fallback using a default one.
+     */
     private final S data;
+
+    /**
+     * Query to be run to get the data from the database.
+     * It is determined during the {@link QueryImpl#createLazyCollections(Object)} process.
+     */
     private final Query<T> query;
+
+    /** Whether the query has been run or not */
     private boolean initialized = false;
 
 
@@ -26,8 +39,13 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
      *
      * @param   container   data container specified by the user
      * @param   query       query to be executed to load data
+     *
+     * @throws  PojoException if the container is null
      */
     protected LazyCollection(S container, Query<T> query) {
+        if (container == null)
+            throw new PojoException("Container is null");
+
         this.data = container;
         this.query = query;
     }
@@ -73,7 +91,9 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     private void initialize() {
         initialized = true;
         data.clear();
-        data.addAll(query.getResultList());
+
+        if (query != null)
+            data.addAll(query.getResultList());
     }
 
 

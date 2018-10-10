@@ -11,9 +11,11 @@ import it.mscuttari.kaoldb.interfaces.Root;
  */
 class From<X> implements Root<X> {
 
-    protected DatabaseObject db;
-    protected EntityObject entity;
-    private String alias;
+    protected final DatabaseObject db;
+    protected final EntityObject entity;
+    private final String alias;
+
+    // Used during the SQL string build to keep track of the visited roots
     private boolean hierarchyVisited = false;
 
 

@@ -15,7 +15,7 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 public final class KaolDB {
 
     private static KaolDB instance;
-    private Config config;
+    private final Config config;
 
 
     /**

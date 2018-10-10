@@ -29,7 +29,7 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
  */
 class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
-    private DatabaseObject database;
+    private final DatabaseObject database;
     private WeakReference<Context> context;
 
 

@@ -20,9 +20,10 @@ import it.mscuttari.kaoldb.interfaces.Root;
  */
 class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
-    private DatabaseObject db;
-    private Class<T> resultClass;
-    private EntityManagerImpl entityManager;
+    private final DatabaseObject db;
+    private final Class<T> resultClass;
+    private final EntityManagerImpl entityManager;
+
     private Root<?> from;
     private Expression where;
 

@@ -86,12 +86,8 @@ class PojoAdapter {
                                 String columnName = alias + entity.getName() + "." + column.name;
                                 value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
 
-                            } else if (column.relationshipType == ColumnObject.RelationshipType.ONE_TO_ONE || column.relationshipType == ColumnObject.RelationshipType.MANY_TO_ONE){
-                                // TODO: Eager / lazy load
-                                value = null;
-
                             } else {
-                                // @OneToMany and @ManyToMany annotated fields are populated later
+                                // Relationships are loaded separately
                                 value = null;
                             }
 
@@ -106,11 +102,9 @@ class PojoAdapter {
                 return result;
 
             } catch (InstantiationException e) {
-                e.printStackTrace();
                 throw new PojoException(e.getMessage());
 
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
                 throw new PojoException(e.getMessage());
             }
         }

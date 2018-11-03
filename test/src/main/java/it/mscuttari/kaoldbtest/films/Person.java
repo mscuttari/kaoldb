@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -71,7 +71,7 @@ class EntityUtils {
      * @return  SQL query (null if no table should be created)
      */
     @Nullable
-    public static String getCreateTableSQL(EntityObject entity) {
+    public static String getTableSql(EntityObject entity) {
         // Skip entity if doesn't require a real table
         if (!entity.realTable) return null;
 
@@ -84,19 +84,19 @@ class EntityUtils {
         result.append(getColumnsSql(entity.columns));
 
         // Primary keys
-        String primaryKeysSql = getPrimaryKeysSql(entity.primaryKeys);
+        String primaryKeysSql = getTablePrimaryKeysSql(entity.primaryKeys);
 
         if (!primaryKeysSql.isEmpty())
             result.append(", ").append(primaryKeysSql);
 
         // Unique keys (multiple columns)
-        String uniqueKeysSql = getUniquesSql(entity.getMultipleUniqueColumns());
+        String uniqueKeysSql = getTableUniquesSql(entity.getMultipleUniqueColumns());
 
         if (!uniqueKeysSql.isEmpty())
             result.append(", ").append(uniqueKeysSql);
 
         // Foreign keys
-        String foreignKeysSql = getForeignKeysSql(entity);
+        String foreignKeysSql = getTableForeignKeysSql(entity);
 
         if (!foreignKeysSql.isEmpty())
             result.append(", ").append(foreignKeysSql);
@@ -117,7 +117,7 @@ class EntityUtils {
      * @return  SQL query
      */
     @Nullable
-    public static String getCreateTableSQL(DatabaseObject db, Field field) {
+    public static String getJoinTableSql(DatabaseObject db, Field field) {
         if (!field.isAnnotationPresent(JoinTable.class))
             return null;
 
@@ -132,7 +132,7 @@ class EntityUtils {
         result.append(getColumnsSql(columns));
 
         // Primary keys
-        String primaryKeysSql = getPrimaryKeysSql(annotation);
+        String primaryKeysSql = getJoinTablePrimaryKeysSql(field);
 
         if (!primaryKeysSql.isEmpty())
             result.append(", ").append(primaryKeysSql);
@@ -220,7 +220,7 @@ class EntityUtils {
      * @return  SQL query
      */
     @NonNull
-    private static String getPrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
+    private static String getTablePrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
         StringBuilder result = new StringBuilder();
         boolean empty = true;
         String prefix = "PRIMARY KEY(";
@@ -242,11 +242,17 @@ class EntityUtils {
     /**
      * Get primary keys SQL statement to be inserted in the create table query
      *
-     * @param   annotation      join table annotation
+     * @param   field       field annotated with {@link JoinTable}
      * @return  SQL query
      */
-    private static String getPrimaryKeysSql(JoinTable annotation) {
+    @NonNull
+    private static String getJoinTablePrimaryKeysSql(Field field) {
+        if (!field.isAnnotationPresent(JoinTable.class))
+            return "";
+
         StringBuilder result = new StringBuilder();
+        JoinTable annotation = field.getAnnotation(JoinTable.class);
+
         boolean empty = true;
         String prefix = "PRIMARY KEY(";
 
@@ -283,7 +289,7 @@ class EntityUtils {
      * @return  SQL query
      */
     @NonNull
-    private static String getUniquesSql(List<List<ColumnObject>> uniqueColumns) {
+    private static String getTableUniquesSql(List<List<ColumnObject>> uniqueColumns) {
         StringBuilder result = new StringBuilder();
         String prefixExternal = "";
 
@@ -324,24 +330,50 @@ class EntityUtils {
      * @param   entity      entity object
      * @return  SQL constraints
      */
-    private static String getForeignKeysSql(EntityObject entity) {
+    private static String getTableForeignKeysSql(EntityObject entity) {
         StringBuilder result = new StringBuilder();
 
         Collection<String> constraints = new ArrayList<>();
 
         // Inheritance
-        String inheritanceSql = getInheritanceConstraints(entity);
+        String inheritanceSql = getTableInheritanceConstraints(entity);
 
         if (!inheritanceSql.isEmpty())
             constraints.add(inheritanceSql);
 
         // Relationships
-        String relationshipsSql = getRelationshipsConstraints(entity);
+        String relationshipsSql = getTableRelationshipsConstraints(entity);
 
         if (!relationshipsSql.isEmpty())
             constraints.add(relationshipsSql);
 
-        // Create unique SQL statement
+        // Create SQL statement
+        String separator = "";
+
+        for (String constraint : constraints) {
+            result.append(separator).append(constraint);
+            separator = ", ";
+        }
+
+        return result.toString();
+    }
+
+
+    @NonNull
+    private static String getJoinTableForeignKeysSql(Collection<ColumnObject> columns) {
+        StringBuilder result = new StringBuilder();
+
+        Collection<String> constraints = new ArrayList<>();
+
+        for (ColumnObject column : columns) {
+
+            // TODO: foreign key sql
+            String constraint = "";
+
+            //constraints.add();
+        }
+
+        // Create SQL statement
         String separator = "";
 
         for (String constraint : constraints) {
@@ -361,7 +393,7 @@ class EntityUtils {
      * @param   entity      entity object
      * @return  SQL constraint
      */
-    private static String getInheritanceConstraints(EntityObject entity) {
+    private static String getTableInheritanceConstraints(EntityObject entity) {
         StringBuilder result = new StringBuilder();
 
         if (entity.parent != null) {
@@ -423,7 +455,7 @@ class EntityUtils {
      * @param   entity      entity object
      * @return  SQL constraint
      */
-    private static String getRelationshipsConstraints(EntityObject entity) {
+    private static String getTableRelationshipsConstraints(EntityObject entity) {
         StringBuilder result = new StringBuilder();
 
         // TODO: to be implemented

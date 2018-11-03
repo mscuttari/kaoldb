@@ -36,21 +36,37 @@ class PojoAdapter {
     /**
      * Convert cursor to POJO (plain old java object)
      *
+     * The conversion automatically search for the child class according to the discriminator value.
+     * In fact, the method starts with a first part with the aim of going down through the hierarchy
+     * tree in order to retrieve the leaf class representing the real object class.
+     * Then, the second part creates an instance of that class and populates its basic fields with
+     * the data contained in the cursor.
+     *
+     * @param   db              database object
      * @param   c               cursor
      * @param   cursorMap       map between cursor column names and column indexes
-     * @param   resultClass     entity class of the POJO
-     * @param   entity          entity representing the POJO
+     *                          (for more details see {@link QueryImpl#getCursorColumnMap(Cursor)})
+     * @param   resultClass     desired result class (if it has children, it will be just a super
+     *                          class of the result object)
      *
      * @return  populated object
      *
      * @throws  PojoException   if the child class is not found (wrong discriminator column value)
      *                          or if it can not be instantiated
      */
+    @SuppressWarnings("unchecked")
     @Nullable
-    public static <T> T cursorToObject(Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, EntityObject entity, String alias) {
-        if (entity.children.size() != 0) {
-            // Go down to child class
-            int columnIndex = c.getColumnIndex(entity.discriminatorColumn.name);
+    public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, String alias) {
+        // Starting entity
+        EntityObject entity = db.getEntityObject(resultClass);
+
+        // Go down to the child class.
+        // Each iteration will go one step down through the hierarchy tree.
+
+        while (entity.children.size() != 0) {
+            // Get the discriminator value
+            String discriminatorColumnName = alias + entity.entityClass.getSimpleName() + "." + entity.discriminatorColumn.name;
+            int columnIndex = cursorMap.get(discriminatorColumnName);
             Object discriminatorValue = null;
 
             if (entity.discriminatorColumn.type.equals(Integer.class)) {
@@ -59,54 +75,65 @@ class PojoAdapter {
                 discriminatorValue = c.getString(columnIndex);
             }
 
+            // Determine the child class according to the discriminator value specified
+            boolean childClassFound = false;
+
             for (EntityObject child : entity.children) {
-                if (child.discriminatorValue != null && child.discriminatorValue.equals(discriminatorValue)) {
-                    return cursorToObject(c, cursorMap, resultClass, child, alias);
+                // Just a security check
+                if (child.discriminatorValue == null)
+                    continue;
+
+                // Comparison with the child class discriminator value
+                if (child.discriminatorValue.equals(discriminatorValue)) {
+                    childClassFound = true;
+                    entity = child;
+                    break;
                 }
             }
 
-            throw new PojoException("Child class not found");
+            if (!childClassFound)
+                throw new PojoException("Child class not found");
+        }
 
-        } else {
-            if (!resultClass.equals(entity.entityClass))
-                throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.getName());
+        // Just a security check
+        if (!resultClass.isAssignableFrom(entity.entityClass))
+            throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.getName());
 
-            // Populate child class
-            try {
-                T result = resultClass.newInstance();
+        // Populate child class
+        try {
+            T result = (T) entity.entityClass.newInstance();
 
-                while (entity != null) {
-                    if (entity.realTable) {
-                        for (ColumnObject column : entity.columns) {
-                            if (column.field == null) continue;
+            while (entity != null) {
+                if (entity.realTable) {
+                    for (ColumnObject column : entity.columns) {
+                        if (column.field == null) continue;
 
-                            Object value;
+                        Object value;
 
-                            if (column.relationshipType == ColumnObject.RelationshipType.NONE) {
-                                String columnName = alias + entity.getName() + "." + column.name;
-                                value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
+                        if (column.relationshipType == ColumnObject.RelationshipType.NONE) {
+                            String columnName = alias + entity.getName() + "." + column.name;
+                            value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
 
-                            } else {
-                                // Relationships are loaded separately
-                                value = null;
-                            }
-
-                            column.field.setAccessible(true);
-                            column.field.set(result, value);
+                        } else {
+                            // Relationships are loaded separately
+                            value = null;
                         }
-                    }
 
-                    entity = entity.parent;
+                        column.field.setAccessible(true);
+                        column.field.set(result, value);
+                    }
                 }
 
-                return result;
-
-            } catch (InstantiationException e) {
-                throw new PojoException(e.getMessage());
-
-            } catch (IllegalAccessException e) {
-                throw new PojoException(e.getMessage());
+                entity = entity.parent;
             }
+
+            return result;
+
+        } catch (InstantiationException e) {
+            throw new PojoException(e.getMessage());
+
+        } catch (IllegalAccessException e) {
+            throw new PojoException(e.getMessage());
         }
     }
 
@@ -349,6 +376,10 @@ class PojoAdapter {
      *                                  (not normally reachable situation)
      */
     private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db) {
+        // Null data is considered to be existing
+        if (obj == null)
+            return true;
+
         Class<?> clazz = obj.getClass();
 
         // Primitive data can't be stored alone in the database because they have no table associated.

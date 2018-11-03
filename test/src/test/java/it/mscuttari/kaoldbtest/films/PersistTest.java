@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldbtest;
+package it.mscuttari.kaoldbtest.films;
 
 import org.junit.After;
 import org.junit.Before;
@@ -14,15 +14,12 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
-import it.mscuttari.kaoldbtest.models.Country;
-import it.mscuttari.kaoldbtest.models.Film;
-import it.mscuttari.kaoldbtest.models.Person;
-import it.mscuttari.kaoldbtest.models.Person_;
+import it.mscuttari.kaoldbtest.R;
 
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-public class DbFilmsTest {
+public class PersistTest {
 
     private KaolDB kdb;
     private static final String databaseName = "films";
@@ -52,8 +49,8 @@ public class DbFilmsTest {
     @Test
     public void persistPerson() {
         Person person = new Person(
-                "First name",
-                "Last name",
+                "Robert",
+                "Downey Jr.",
                 Calendar.getInstance(),
                 new Country("USA")
         );
@@ -68,18 +65,49 @@ public class DbFilmsTest {
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot.eq(Person_.firstName, "First name")
-                .and(personRoot.eq(Person_.lastName, "Last name"))
-                .and(personRoot.eq(Person_.country, new Country("USA")));
+        Expression where = personRoot
+                .eq(Person_.firstName, "Robert")
+                .and(personRoot.eq(Person_.lastName, "Downey Jr."));
 
         qb.from(personRoot).where(where);
 
         Person result = qb.build("p").getSingleResult();
         assertEquals(person, result);
+    }
 
-        for (Film film : result.directing) {
-            System.out.println("Test");
-        }
+
+    @Test
+    public void persistFantasyFilm() {
+        Person director = new Person(
+                "David",
+                "Yates",
+                null,
+                null
+        );
+
+        FantasyFilm film = new FantasyFilm(
+                "Fantastic Beasts and Where to Find Them",
+                2016,
+                director,
+                133,
+                null
+        );
+
+        em.persist(director);
+        em.persist(film.genre);
+        em.persist(film);
+
+        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
+        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
+
+        Expression where = filmRoot
+                .eq(Film_.title, "Fantastic Beasts and Where to Find Them")
+                .and(filmRoot.eq(Film_.year, 2016));
+
+        qb.from(filmRoot).where(where);
+
+        Film result = qb.build("f").getSingleResult();
+        assertEquals(film, result);
     }
 
 }

@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
 
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
@@ -13,7 +13,7 @@ public final class ThrillerFilm extends Film {
      * Default constructor
      */
     public ThrillerFilm() {
-        this(null, null, null, null, null, FilmRestriction.MIN14);
+        this(null, null, null, null, FilmRestriction.MIN14);
     }
 
 
@@ -22,13 +22,12 @@ public final class ThrillerFilm extends Film {
      *
      * @param   title           title
      * @param   year            year
-     * @param   genre           genre
      * @param   director        director
      * @param   length          length
      * @param   restriction     restriction
      */
-    public ThrillerFilm(String title, Integer year, Genre genre, Person director, Integer length, FilmRestriction restriction) {
-        super(title, year, genre, director, length, restriction);
+    public ThrillerFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
+        super(title, year, new Genre("Thriller"), director, length, restriction);
     }
 
 }

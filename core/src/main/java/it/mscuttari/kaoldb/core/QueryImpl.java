@@ -1,6 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -69,11 +70,10 @@ class QueryImpl<M> implements Query<M> {
         Cursor c = db.rawQuery(sql, null);
 
         List<M> result = new ArrayList<>(c.getCount());
-        EntityObject entityObject = this.db.getEntityObject(resultClass);
+        Map<String, Integer> cursorMap = getCursorColumnMap(c);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            Map<String, Integer> cursorMap = getCursorColumnMap(c);
-            M object = PojoAdapter.cursorToObject(c, cursorMap, resultClass, entityObject, alias);
+            M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
             loadEagerData(object);
             createLazyCollections(object);
             result.add(object);
@@ -129,48 +129,53 @@ class QueryImpl<M> implements Query<M> {
         EntityObject entity = db.getEntityObject(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
-        for (Field field : entity.relationships) {
-            // Skip if field has already been used
-            if (usedFields.contains(field))
-                continue;
+        while (entity != null) {
+            for (Field field : entity.relationships) {
+                // Skip if field has already been used
+                if (usedFields.contains(field))
+                    continue;
 
-            // Skip if the relationship type is not a one to one or many to one
-            if (!field.isAnnotationPresent(OneToOne.class) &&
-                    !field.isAnnotationPresent(ManyToOne.class))
-                continue;
+                // Skip if the relationship type is not a one to one or many to one
+                if (!field.isAnnotationPresent(OneToOne.class) &&
+                        !field.isAnnotationPresent(ManyToOne.class))
+                    continue;
 
-            // Add the field to the used ones
-            usedFields.add(field);
+                // Add the field to the used ones
+                usedFields.add(field);
 
-            // Create the query
-            Class<?> linkedClass = field.getType();
-            QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
+                // Create the query
+                Class<?> linkedClass = field.getType();
+                QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
 
-            // Create a fake property to be used for the join
-            Property property = new Property<>(entity.entityClass, linkedClass, field);
+                // Create a fake property to be used for the join
+                Property property = new Property<>(entity.entityClass, linkedClass, field);
 
-            // Create the join
-            Root<?> root = qb.getRoot(entity.entityClass, "source");
-            @SuppressWarnings("unchecked") Root<?> join = root.innerJoin(linkedClass, "destination", property);
+                // Create the join
+                Root<?> root = qb.getRoot(entity.entityClass, "source");
+                @SuppressWarnings("unchecked") Root<?> join = root.innerJoin(linkedClass, "destination", property);
 
-            Expression where = null;
+                Expression where = null;
 
-            for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
-                Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
-                Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
-                where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
+                for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
+                    Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
+                    Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
+                    where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
+                }
+
+                // Build the query
+                Query<?> query = qb.from(join).where(where).build("destination");
+
+                // Run the query and assign the result to the object field
+                try {
+                    field.set(object, query.getSingleResult());
+
+                } catch (IllegalAccessException e) {
+                    throw new QueryException(e.getMessage());
+                }
             }
 
-            // Build the query
-            Query<?> query = qb.from(join).where(where).build("destination");
-
-            // Run the query and assign the result to the object field
-            try {
-                field.set(object, query.getSingleResult());
-
-            } catch (IllegalAccessException e) {
-                throw new QueryException(e.getMessage());
-            }
+            // Load the fields of the parent entities
+            entity = entity.parent;
         }
     }
 

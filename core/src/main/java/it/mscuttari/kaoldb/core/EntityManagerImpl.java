@@ -51,7 +51,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.getEntities()) {
             // Entity table
-            String entityTableCreateSQL = EntityUtils.getCreateTableSQL(entity);
+            String entityTableCreateSQL = EntityUtils.getTableSql(entity);
 
             if (entityTableCreateSQL != null) {
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
@@ -62,7 +62,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
             // Join tables
             for (Field field : entity.relationships) {
-                String joinTableCreateSQL = EntityUtils.getCreateTableSQL(database, field);
+                String joinTableCreateSQL = EntityUtils.getJoinTableSql(database, field);
 
                 if (joinTableCreateSQL != null) {
                     LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);

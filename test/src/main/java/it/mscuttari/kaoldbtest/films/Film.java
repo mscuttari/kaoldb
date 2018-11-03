@@ -1,4 +1,6 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
+
+import java.util.Arrays;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
@@ -8,6 +10,7 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.Table;
@@ -31,16 +34,10 @@ public abstract class Film {
     public Genre genre;
 
     @ManyToOne
-    @JoinTable(
-            name = "films_directors",
-            joinColumns = {
-                    @JoinColumn(name = "ext_film_title", referencedColumnName = "title"),
-                    @JoinColumn(name = "ext_film_year", referencedColumnName = "year")
-            },
-            inverseJoinColumns = {
-                    @JoinColumn(name = "ext_director_first_name", referencedColumnName = "first_name"),
-                    @JoinColumn(name = "ext_director_last_name", referencedColumnName = "last_name")
-            })
+    @JoinColumns({
+            @JoinColumn(name = "director_first_name", referencedColumnName = "first_name"),
+            @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
+    })
     public Person director;
     
     @Column(name = "length")
@@ -67,6 +64,49 @@ public abstract class Film {
         this.director = director;
         this.length = length;
         this.restriction = restriction;
+    }
+
+
+    @Override
+    public int hashCode() {
+        Object[] x = {title, year};
+        return Arrays.hashCode(x);
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) return false;
+        if (obj == this) return true;
+
+        if (!(obj instanceof Film)) return false;
+        Film o = (Film) obj;
+
+        if (title != null && !title.equals(o.title)) return false;
+        if (title == null && o.title != null) return false;
+
+        if (year != null && !year.equals(o.year)) return false;
+        if (year == null && o.year != null) return false;
+
+        if (genre != null && !genre.equals(o.genre)) return false;
+        if (genre == null && o.genre != null) return false;
+
+        if (director != null && !director.equals(o.director)) return false;
+        if (director == null && o.director != null) return false;
+
+        if (length != null && !length.equals(o.length)) return false;
+        if (length == null && o.length != null) return false;
+
+        if (restriction != null && !restriction.equals(o.restriction)) return false;
+        if (restriction == null && o.restriction != null) return false;
+
+        return true;
+    }
+
+
+    @Override
+    public String toString() {
+        return "[title: " + title + ", year: " + year + "]";
     }
 
 }

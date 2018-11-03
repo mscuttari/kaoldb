@@ -1,11 +1,7 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
 
-import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
-import it.mscuttari.kaoldb.annotations.Inheritance;
-import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -17,7 +13,7 @@ public final class FantasyFilm extends Film {
      * Default constructor
      */
     public FantasyFilm() {
-        this(null, null, null, null, null, FilmRestriction.NONE);
+        this(null, null, null, null, FilmRestriction.NONE);
     }
 
 
@@ -26,13 +22,12 @@ public final class FantasyFilm extends Film {
      *
      * @param   title           title
      * @param   year            year
-     * @param   genre           genre
      * @param   director        director
      * @param   length          length
      * @param   restriction     restriction
      */
-    public FantasyFilm(String title, Integer year, Genre genre, Person director, Integer length, FilmRestriction restriction) {
-        super(title, year, genre, director, length, restriction);
+    public FantasyFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
+        super(title, year, new Genre("Fantasy"), director, length, restriction);
     }
 
 }

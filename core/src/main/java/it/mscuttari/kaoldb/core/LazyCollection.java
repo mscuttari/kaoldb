@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import it.mscuttari.kaoldb.exceptions.LazyInitializationException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.interfaces.Query;
 
@@ -52,21 +51,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Get string representation of the data
-     *
-     * @return  string representation
-     * @throws  LazyInitializationException if the data has not been loaded yet
-     */
-    @Override
-    public String toString() {
-        if (initialized)
-            return data.toString();
-
-        throw new LazyInitializationException("Collection not initialized yet");
-    }
-
-
-    /**
      * Get data container
      *
      * @return  data container (may not be initialized yet)
@@ -94,6 +78,30 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
         if (query != null)
             data.addAll(query.getResultList());
+    }
+
+
+    @Override
+    public int hashCode() {
+        checkInitialization();
+        return data.hashCode();
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof LazyCollection))
+            return false;
+
+        checkInitialization();
+        return data.equals(((LazyCollection) obj).data);
+    }
+
+
+    @Override
+    public String toString() {
+        checkInitialization();
+        return data.toString();
     }
 
 

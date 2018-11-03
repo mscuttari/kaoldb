@@ -1,7 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 

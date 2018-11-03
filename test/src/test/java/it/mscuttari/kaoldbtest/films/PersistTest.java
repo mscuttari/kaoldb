@@ -47,6 +47,22 @@ public class PersistTest {
 
 
     @Test
+    public void persistCountry() {
+        Country country = new Country("Italy");
+
+        em.persist(country);
+
+        QueryBuilder<Country> qb = em.getQueryBuilder(Country.class);
+        Root<Country> countryRoot = qb.getRoot(Country.class, "c");
+        Expression where = countryRoot.eq(Country_.name, country.name);
+
+        qb.from(countryRoot).where(where);
+
+        assertEquals(country, qb.build("c").getSingleResult());
+    }
+
+
+    @Test
     public void persistPerson() {
         Person person = new Person(
                 "Robert",
@@ -65,14 +81,29 @@ public class PersistTest {
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
         Root<Person> personRoot = qb.getRoot(Person.class, "p");
 
-        Expression where = personRoot
-                .eq(Person_.firstName, "Robert")
-                .and(personRoot.eq(Person_.lastName, "Downey Jr."));
+        qb.from(personRoot).where(
+                personRoot.eq(Person_.firstName, person.firstName)
+                        .and(personRoot.eq(Person_.lastName, person.lastName))
+        );
 
-        qb.from(personRoot).where(where);
+        assertEquals(person, qb.build("p").getSingleResult());
+    }
 
-        Person result = qb.build("p").getSingleResult();
-        assertEquals(person, result);
+
+    @Test
+    public void persistGenre() {
+        Genre genre = new Genre("Adventure");
+
+        em.persist(genre);
+
+        QueryBuilder<Genre> qb = em.getQueryBuilder(Genre.class);
+        Root<Genre> genreRoot = qb.getRoot(Genre.class, "g");
+        Expression where = genreRoot.eq(Genre_.name, genre.name);
+
+        qb.from(genreRoot).where(where);
+
+        Genre result = qb.build("g").getSingleResult();
+        assertEquals(genre, result);
     }
 
 
@@ -81,9 +112,13 @@ public class PersistTest {
         Person director = new Person(
                 "David",
                 "Yates",
-                null,
-                null
+                Calendar.getInstance(),
+                new Country("UK")
         );
+
+        director.birthDate.set(Calendar.YEAR, 1963);
+        director.birthDate.set(Calendar.MONTH, Calendar.OCTOBER);
+        director.birthDate.set(Calendar.DAY_OF_MONTH, 8);
 
         FantasyFilm film = new FantasyFilm(
                 "Fantastic Beasts and Where to Find Them",
@@ -93,21 +128,84 @@ public class PersistTest {
                 null
         );
 
+        em.persist(director.country);
         em.persist(director);
+
         em.persist(film.genre);
         em.persist(film);
 
-        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
-        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
+        // Polymorphic query
+        QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
+        Root<Film> filmRoot = filmQb.getRoot(Film.class, "f");
 
-        Expression where = filmRoot
-                .eq(Film_.title, "Fantastic Beasts and Where to Find Them")
-                .and(filmRoot.eq(Film_.year, 2016));
+        filmQb.from(filmRoot).where(
+                filmRoot.eq(Film_.title, film.title)
+                        .and(filmRoot.eq(Film_.year, film.year))
+        );
 
-        qb.from(filmRoot).where(where);
+        assertEquals(film, filmQb.build("f").getSingleResult());
 
-        Film result = qb.build("f").getSingleResult();
-        assertEquals(film, result);
+        // Specific query
+        QueryBuilder<FantasyFilm> fantasyFilmQb = em.getQueryBuilder(FantasyFilm.class);
+        Root<FantasyFilm> fantasyFilmRoot = fantasyFilmQb.getRoot(FantasyFilm.class, "f");
+
+        fantasyFilmQb.from(fantasyFilmRoot).where(
+                fantasyFilmRoot.eq(FantasyFilm_.title, film.title)
+                        .and(fantasyFilmRoot.eq(FantasyFilm_.year, film.year))
+        );
+
+        assertEquals(film, fantasyFilmQb.build("f").getSingleResult());
+    }
+
+
+    @Test
+    public void persistThrillerFilm() {
+        Person director = new Person(
+                "Christopher",
+                "Nolan",
+                Calendar.getInstance(),
+                new Country("UK")
+        );
+
+        director.birthDate.set(Calendar.YEAR, 1970);
+        director.birthDate.set(Calendar.MONTH, Calendar.JULY);
+        director.birthDate.set(Calendar.DAY_OF_MONTH, 30);
+
+        ThrillerFilm film = new ThrillerFilm(
+                "Memento",
+                2000,
+                director,
+                113,
+                null
+        );
+
+        em.persist(director.country);
+        em.persist(director);
+
+        em.persist(film.genre);
+        em.persist(film);
+
+        // Polymorphic query
+        QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
+        Root<Film> filmRoot = filmQb.getRoot(Film.class, "f");
+
+        filmQb.from(filmRoot).where(
+                filmRoot.eq(Film_.title, film.title)
+                        .and(filmRoot.eq(Film_.year, film.year))
+        );
+
+        assertEquals(film, filmQb.build("f").getSingleResult());
+
+        // Specific query
+        QueryBuilder<ThrillerFilm> thrillerFilmQb = em.getQueryBuilder(ThrillerFilm.class);
+        Root<ThrillerFilm> thrillerFilmRoot = filmQb.getRoot(ThrillerFilm.class, "f");
+
+        thrillerFilmQb.from(thrillerFilmRoot).where(
+                thrillerFilmRoot.eq(ThrillerFilm_.title, film.title)
+                        .and(thrillerFilmRoot.eq(ThrillerFilm_.year, film.year))
+        );
+
+        assertEquals(film, thrillerFilmQb.build("f").getSingleResult());
     }
 
 }

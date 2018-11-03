@@ -633,7 +633,7 @@ class EntityObject {
         try {
             return clazz.getField(fieldName);
         } catch (NoSuchFieldException e) {
-            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"");
+            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
         }
     }
 

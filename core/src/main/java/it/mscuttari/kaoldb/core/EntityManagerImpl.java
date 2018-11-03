@@ -75,41 +75,57 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
+    /**
+     * Called when the database needs to be upgraded
+     *
+     * @param   db          database.
+     * @param   oldVersion  old database version
+     * @param   newVersion  new database version
+     *
+     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        DatabaseSchemaMigrator migrator;
-
         try {
-            migrator = database.getSchemaMigrator().newInstance();
-        } catch (IllegalAccessException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        }
+            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+            migrator.onUpgrade(db, oldVersion, newVersion);
 
-        migrator.onUpgrade(db, oldVersion, newVersion);
+        } catch (IllegalAccessException e) {
+            throw new DatabaseManagementException(e);
+
+        } catch (InstantiationException e) {
+            throw new DatabaseManagementException(e);
+        }
 
         LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
+    /**
+     * Called when the database needs to be downgraded
+     *
+     * @param   db          database.
+     * @param   oldVersion  old database version
+     * @param   newVersion  new database version
+     *
+     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+     */
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        DatabaseSchemaMigrator migrator;
-
         try {
-            migrator = database.getSchemaMigrator().newInstance();
-        } catch (IllegalAccessException  e) {
-            throw new DatabaseManagementException(e.getMessage());
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        }
+            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+            migrator.onDowngrade(db, oldVersion, newVersion);
 
-        migrator.onDowngrade(db, oldVersion, newVersion);
+        } catch (IllegalAccessException e) {
+            throw new DatabaseManagementException(e);
+
+        } catch (InstantiationException e) {
+            throw new DatabaseManagementException(e);
+        }
 
         LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
     }

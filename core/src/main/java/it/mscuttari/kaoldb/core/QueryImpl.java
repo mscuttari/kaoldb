@@ -167,9 +167,8 @@ class QueryImpl<M> implements Query<M> {
                 // Run the query and assign the result to the object field
                 try {
                     field.set(object, query.getSingleResult());
-
                 } catch (IllegalAccessException e) {
-                    throw new QueryException(e.getMessage());
+                    throw new QueryException(e);
                 }
             }
 
@@ -182,7 +181,8 @@ class QueryImpl<M> implements Query<M> {
     /**
      * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields
      *
-     * @param   object      object got from the query
+     * @param   object          object got from the query
+     * @throws  QueryException  if the lazy field can't be accessed
      */
     @SuppressWarnings("unchecked")
     private void createLazyCollections(M object) {
@@ -245,7 +245,7 @@ class QueryImpl<M> implements Query<M> {
             try {
                 fieldValue = field.get(object);
             } catch (IllegalAccessException e) {
-                throw new QueryException(e.getMessage());
+                throw new QueryException(e);
             }
 
             // Create an appropriate lazy collection and assign it to the field
@@ -267,7 +267,7 @@ class QueryImpl<M> implements Query<M> {
             try {
                 field.set(object, lazyCollection);
             } catch (IllegalAccessException e) {
-                throw new QueryException(e.getMessage());
+                throw new QueryException(e);
             }
         }
     }

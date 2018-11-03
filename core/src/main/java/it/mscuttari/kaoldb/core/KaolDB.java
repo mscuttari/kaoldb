@@ -68,13 +68,12 @@ public final class KaolDB {
     public void setConfig(Context context, int resId) {
         // Load configuration file
         LogUtils.d("Loading the configuration file. Resource ID: " + resId);
-        XmlResourceParser xml = null;
+        XmlResourceParser xml;
 
         try {
             xml = context.getResources().getXml(resId);
         } catch (Exception e) {
-            LogUtils.e("Can't load the configuration file. Error message: " + e.getMessage());
-            e.printStackTrace();
+            throw new KaolDBException("Can't load the configuration file", e);
         }
 
         // Parse configuration file
@@ -82,9 +81,10 @@ public final class KaolDB {
 
         try {
             getConfig().parseConfigFile(xml);
+
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new ConfigParseException(e.getMessage());
+            throw new ConfigParseException(e);
+
         } finally {
             if (xml != null)
                 xml.close();

@@ -417,8 +417,8 @@ class ColumnObject {
 
         try {
             return (T) field.get(obj);
-        } catch (Exception e) {
-            throw new QueryException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new QueryException(e);
         }
     }
 
@@ -437,7 +437,7 @@ class ColumnObject {
         try {
             field.set(obj, value);
         } catch (IllegalAccessException e) {
-            throw new QueryException(e.getMessage());
+            throw new QueryException(e);
         }
     }
 

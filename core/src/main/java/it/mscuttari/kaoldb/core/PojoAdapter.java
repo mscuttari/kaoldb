@@ -130,10 +130,10 @@ class PojoAdapter {
             return result;
 
         } catch (InstantiationException e) {
-            throw new PojoException(e.getMessage());
+            throw new PojoException(e);
 
         } catch (IllegalAccessException e) {
-            throw new PojoException(e.getMessage());
+            throw new PojoException(e);
         }
     }
 
@@ -220,6 +220,7 @@ class PojoAdapter {
      *
      * @throws  QueryException  if the discriminator value has been manually set but is not
      *                          compatible with the child entity class
+     * @throws  QueryException  if the field associated with the discriminator value can't be accessed
      */
     public static ContentValues objectToContentValues(Context context, DatabaseObject db, EntityObject currentEntity, EntityObject childEntity, Object obj) {
         ContentValues cv = new ContentValues();
@@ -264,11 +265,13 @@ class PojoAdapter {
                         currentEntity.discriminatorColumn.field.set(obj, discriminator);
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
                     }
 
                     insertJoinColumnIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinColumn)discriminatorColumnAnnotation);
@@ -296,11 +299,13 @@ class PojoAdapter {
                         }
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
                     }
 
                     insertJoinColumnsIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinColumns)discriminatorColumnAnnotation);
@@ -328,11 +333,13 @@ class PojoAdapter {
                         }
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
+
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e.getMessage());
+                        throw new QueryException(e);
                     }
 
                     insertJoinTableIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinTable)discriminatorColumnAnnotation);
@@ -450,6 +457,8 @@ class PojoAdapter {
      * @param   cv      {@link ContentValues} to be populated
      * @param   obj     {@link Object} to be persisted which contains the field
      * @param   field   {@link Field} linked to the table column to be populated
+     *
+     * @throws  QueryException if the field can't be accessed
      */
     private static void insertColumnIntoContentValues(ContentValues cv, Object obj, Field field, Column annotation) {
         try {
@@ -457,8 +466,8 @@ class PojoAdapter {
             Object value = field.get(obj);
             insertDataIntoContentValues(cv, annotation.name(), value);
 
-        } catch (Exception e) {
-            throw new QueryException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new QueryException(e);
         }
     }
 
@@ -470,6 +479,8 @@ class PojoAdapter {
      * @param   obj     {@link Object} to be persisted which contains the field
      * @param   db      {@link DatabaseObject} of the the database the entity belongs to
      * @param   field   {@link Field} linked to the table column to be populated
+     *
+     * @throws  QueryException if the field can't be accessed
      */
     private static void insertJoinColumnIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumn annotation) {
         try {
@@ -489,8 +500,8 @@ class PojoAdapter {
                 insertDataIntoContentValues(cv, annotation.name(), value);
             }
 
-        } catch (Exception e) {
-            throw new QueryException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new QueryException(e);
         }
     }
 
@@ -500,8 +511,10 @@ class PojoAdapter {
      *
      * @param   cv      {@link ContentValues} to be populated
      * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
      * @param   field   {@link Field} linked to the table column to be populated
+     *
+     * @throws  QueryException if the field can't be accessed
      */
     private static void insertJoinColumnsIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumns annotation) {
         for (JoinColumn joinColumnAnnotation : annotation.value()) {
@@ -515,8 +528,10 @@ class PojoAdapter {
      *
      * @param   cv      {@link ContentValues} to be populated
      * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belogns to
+     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
      * @param   field   {@link Field} linked to the table column to be populated
+     *
+     * @throws  QueryException if the field can't be accessed
      */
     private static void insertJoinTableIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinTable annotation) {
         for (JoinColumn joinColumnAnnotation : annotation.joinColumns()) {

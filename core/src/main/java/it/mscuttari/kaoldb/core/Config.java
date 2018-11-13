@@ -145,7 +145,7 @@ class Config {
         try {
             database.setVersion(Integer.valueOf(version));
         } catch (NumberFormatException e) {
-            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid version");
+            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid version", e);
         }
 
         // Schema migrator
@@ -161,7 +161,7 @@ class Config {
                 }
 
             } catch (ClassNotFoundException e) {
-                throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator");
+                throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator", e);
             }
         }
 
@@ -187,7 +187,7 @@ class Config {
                     LogUtils.i("[Database \"" + database.getName() + "\"]: found class " + clazz.getSimpleName());
 
                 } catch (ClassNotFoundException e) {
-                    throw new InvalidConfigException("[Database \"" + database.getName()+ "\"]: class " + xml.getText() + " not found");
+                    throw new InvalidConfigException("[Database \"" + database.getName()+ "\"]: class " + xml.getText() + " not found", e);
                 }
             }
 

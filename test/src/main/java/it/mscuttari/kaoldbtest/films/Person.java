@@ -1,14 +1,16 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -17,18 +19,21 @@ public class Person {
 
     @Id
     @Column(name = "first_name")
-    private String firstName;
+    public String firstName;
 
     @Id
     @Column(name = "last_name")
-    private String lastName;
+    public String lastName;
 
     @Column(name = "birth_date")
-    private Calendar birthDate;
+    public Calendar birthDate;
 
-    @JoinColumn(name = "country", referencedColumnName = "name")
     @ManyToOne
-    private Country country;
+    @JoinColumn(name = "country", referencedColumnName = "name")
+    public Country country;
+
+    @OneToMany(mappedBy = "director")
+    public Collection<Film> directing = new ArrayList<>();
 
 
     /**
@@ -89,46 +94,6 @@ public class Person {
     @Override
     public String toString() {
         return "[first name: " + firstName + ", last name: " + lastName + ", birth date: " + birthDate.getTimeInMillis() + "]";
-    }
-
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-
-    public String getLastName() {
-        return lastName;
-    }
-
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-
-    public Calendar getBirthDate() {
-        return birthDate;
-    }
-
-
-    public void setBirthDate(Calendar birthDate) {
-        this.birthDate = birthDate;
-    }
-
-
-    public Country getCountry() {
-        return country;
-    }
-
-
-    public void setCountry(Country country) {
-        this.country = country;
     }
 
 }

@@ -188,13 +188,23 @@ class DatabaseObject {
      * @return  {@link EntityObject} of the entity
      * @throws  InvalidConfigException  if the entity has not been found in the mapped ones
      */
-    public EntityObject getEntityObject(Class<?> entityClass) {
+    public EntityObject getEntity(Class<?> entityClass) {
         EntityObject entityObject = entities.get(entityClass);
 
         if (entityObject == null)
             throw new InvalidConfigException("Entity " + entityClass.getSimpleName() + " not found");
 
         return entityObject;
+    }
+
+
+    /**
+     * Get an unmodifiable {@link Map} between the classes and their entity objects
+     *
+     * @return mapped entities
+     */
+    public Map<Class<?>, EntityObject> getEntitiesMap() {
+        return Collections.unmodifiableMap(entities);
     }
 
 

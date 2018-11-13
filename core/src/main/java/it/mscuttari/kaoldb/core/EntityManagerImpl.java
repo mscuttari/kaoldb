@@ -6,13 +6,13 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
-import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.PostPersistListener;
@@ -29,7 +29,7 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
  */
 class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
-    private DatabaseObject database;
+    private final DatabaseObject database;
     private WeakReference<Context> context;
 
 
@@ -50,53 +50,82 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     @Override
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.getEntities()) {
-            String createSQL = EntityUtils.getCreateTableSql(entity);
+            // Entity table
+            String entityTableCreateSQL = EntityUtils.getTableSql(database, entity);
 
-            if (createSQL != null) {
-                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
-                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + createSQL);
-                db.execSQL(createSQL);
+            if (entityTableCreateSQL != null) {
+                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                db.execSQL(entityTableCreateSQL);
                 LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
+            }
+
+            // Join tables
+            for (Field field : entity.relationships) {
+                String joinTableCreateSQL = EntityUtils.getJoinTableSql(database, field);
+
+                if (joinTableCreateSQL != null) {
+                    LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                    System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                    db.execSQL(joinTableCreateSQL);
+                    LogUtils.i("[Entity \"" + entity.getName() + "\"] Join table created");
+                }
             }
         }
     }
 
 
+    /**
+     * Called when the database needs to be upgraded
+     *
+     * @param   db          database.
+     * @param   oldVersion  old database version
+     * @param   newVersion  new database version
+     *
+     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        DatabaseSchemaMigrator migrator;
-
         try {
-            migrator = database.getSchemaMigrator().newInstance();
-        } catch (IllegalAccessException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        }
+            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+            migrator.onUpgrade(db, oldVersion, newVersion);
 
-        migrator.onUpgrade(db, oldVersion, newVersion);
+        } catch (IllegalAccessException e) {
+            throw new DatabaseManagementException(e);
+
+        } catch (InstantiationException e) {
+            throw new DatabaseManagementException(e);
+        }
 
         LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
+    /**
+     * Called when the database needs to be downgraded
+     *
+     * @param   db          database.
+     * @param   oldVersion  old database version
+     * @param   newVersion  new database version
+     *
+     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+     */
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        DatabaseSchemaMigrator migrator;
-
         try {
-            migrator = database.getSchemaMigrator().newInstance();
-        } catch (IllegalAccessException  e) {
-            throw new DatabaseManagementException(e.getMessage());
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e.getMessage());
-        }
+            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+            migrator.onDowngrade(db, oldVersion, newVersion);
 
-        migrator.onDowngrade(db, oldVersion, newVersion);
+        } catch (IllegalAccessException e) {
+            throw new DatabaseManagementException(e);
+
+        } catch (InstantiationException e) {
+            throw new DatabaseManagementException(e);
+        }
 
         LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
     }
@@ -138,7 +167,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      */
     private EntityObject getObjectEntity(Object obj) {
         Class<?> objectClass = obj.getClass();
-        return database.getEntityObject(objectClass);
+        return database.getEntity(objectClass);
     }
 
 

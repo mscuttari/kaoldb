@@ -16,9 +16,9 @@ class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
     }
 
 
-    private ExpressionType operation;
-    private Expression x;
-    private Expression y;
+    private final ExpressionType operation;
+    private final Expression x;
+    private final Expression y;
 
 
     /**

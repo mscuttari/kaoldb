@@ -1,8 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import android.support.annotation.NonNull;
 import android.util.Pair;
-
-import org.jetbrains.annotations.NotNull;
 
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -54,7 +53,7 @@ abstract class Join<X, Y> extends From<X> {
      *
      * @throws  QueryException  if the property field is not found in the first entity class
      */
-    Join(DatabaseObject db, @NotNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Property<Y, X> property) {
+    Join(DatabaseObject db, @NonNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Property<Y, X> property) {
         super(db, entityClass, alias);
 
         this.type = type;
@@ -75,7 +74,7 @@ abstract class Join<X, Y> extends From<X> {
      * @param   alias           second joined entity alias
      * @param   on              "on" expression
      */
-    Join(DatabaseObject db, @NotNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Expression on) {
+    Join(DatabaseObject db, @NonNull JoinType type, From<Y> from, Class<X> entityClass, String alias, Expression on) {
         super(db, entityClass, alias);
 
         this.type = type;
@@ -200,7 +199,7 @@ abstract class Join<X, Y> extends From<X> {
         String fullAlias = getFullAlias(alias, property.getFieldType());
         Expression result = null;
 
-        for (JoinColumn joinColumn : annotation.joinColumns()) {
+        for (JoinColumn joinColumn : annotation.inverseJoinColumns()) {
             Pair<String, String> columnsPair = new Pair<>(fullAlias + "." + joinColumn.referencedColumnName(), joinTableAlias + "." + joinColumn.name());
             Expression expression = columnsPairToExpression(columnsPair);
             result = result == null ? expression : result.and(expression);

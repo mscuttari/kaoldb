@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
-import org.jetbrains.annotations.Nullable;
+import android.support.annotation.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -18,9 +18,10 @@ import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
@@ -37,8 +38,8 @@ class EntityObject {
     public Class<?> entityClass;
 
     /**
-     * Table name
-     * Null if the entity doesn't require a real table
+     * Table name.
+     * Null if the entity doesn't require a real table.
      */
     @Nullable
     public String tableName;
@@ -46,44 +47,51 @@ class EntityObject {
     /** Whether the entity has a real table or not */
     public boolean realTable;
 
-    /** Columns */
+    /** Columns of the table */
     public Collection<ColumnObject> columns;            // All columns
     public Map<String, ColumnObject> columnsNameMap;    // All columns mapped by column name
 
-    /** Primary keys */
+    /** Primary keys of the table (subset of {@link #columns}) */
     public Collection<ColumnObject> primaryKeys;
 
     /**
-     * Inheritance type
-     * Null if the entity has no children
+     * Inheritance type.
+     * Null if the entity has no children.
      */
     @Nullable
     public InheritanceType inheritanceType;
 
     /**
-     * Discriminator column name
-     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}
+     * Discriminator column name.
+     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}.
      */
     public ColumnObject discriminatorColumn;
 
     /**
-     * Discriminator value
-     * Null if the entity has no parent
+     * Discriminator value.
+     * Null if the entity has no parent.
      */
     @Nullable
     public Object discriminatorValue;
 
     /**
-     * Parent entity
-     * Null if the entity has no parent
+     * Parent entity.
+     * Null if the entity has no parent.
      */
     @Nullable
     public EntityObject parent;
 
-    /**
-     * Children entities
-     */
+    /** Children entities */
     public Collection<EntityObject> children;
+
+    /**
+     * Relationships
+     *
+     * The collection contains the fields declared in {@link #entityClass} (superclasses are
+     * excluded) that are annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne}
+     * or {@link ManyToMany}.
+     */
+    public Collection<Field> relationships;
 
 
     /**
@@ -91,16 +99,17 @@ class EntityObject {
      *
      * @param   entityClass     entity class
      * @param   classes         collection of all classes
-     * @param   entitesMap      map between entity classes and objects
+     * @param   entitiesMap      map between entity classes and objects
      */
-    private EntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitesMap) {
+    private EntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
         this.entityClass = entityClass;
         this.tableName = getTableName(entityClass, classes);
         this.realTable = isRealTable(entityClass, classes);
         this.inheritanceType = getInheritanceType(entityClass);
         this.children = new HashSet<>();
-        searchParentAndChildren(this, classes, entitesMap);
+        searchParentAndChildren(this, classes, entitiesMap);
         this.discriminatorValue = entityClass.isAnnotationPresent(DiscriminatorValue.class) ? entityClass.getAnnotation(DiscriminatorValue.class).value() : null;
+        this.relationships = getRelationships(entityClass);
     }
 
 
@@ -139,7 +148,7 @@ class EntityObject {
 
     @Override
     public int hashCode() {
-        return getName().hashCode();
+        return entityClass.hashCode();
     }
 
 
@@ -312,6 +321,34 @@ class EntityObject {
 
 
     /**
+     * Get entity relationships fields
+     *
+     * Each field is considered a relationship one if it is annotated with {@link OneToOne},
+     * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
+     *
+     * @param   entityClass     entity class
+     * @return  relationships fields
+     */
+    private static Collection<Field> getRelationships(Class<?> entityClass) {
+        Collection<Field> relationships = new ArrayList<>();
+
+        for (Field field : entityClass.getDeclaredFields()) {
+            field.setAccessible(true);
+
+            if (field.isAnnotationPresent(OneToOne.class) ||
+                    field.isAnnotationPresent(OneToMany.class) ||
+                    field.isAnnotationPresent(ManyToOne.class) ||
+                    field.isAnnotationPresent(ManyToMany.class)) {
+
+                relationships.add(field);
+            }
+        }
+
+        return Collections.unmodifiableCollection(relationships);
+    }
+
+
+    /**
      * Load columns
      *
      * @return  collection of all columns
@@ -373,7 +410,11 @@ class EntityObject {
 
 
     /**
-     * Get From columns (only of the current class)
+     * Get join columns (only of the current class)
+     *
+     * The join columns are derived from:
+     *  -   Fields annotated with {@link OneToOne} that are owning side
+     *  -   Fields annotated with {@link ManyToOne}
      *
      * @param   allFields       collection of all class fields
      * @return  collection of From columns
@@ -381,32 +422,31 @@ class EntityObject {
     private Collection<ColumnObject> getJoinColumns(Field[] allFields) {
         Collection<ColumnObject> result = new HashSet<>();
 
-        // @JoinColumn
-        Collection<Field> joinColumnFields = getFieldsWithAnnotation(allFields, JoinColumn.class);
+        // OneToOne
+        Collection<Field> oneToOneFields = getFieldsWithAnnotation(allFields, OneToOne.class);
 
-        for (Field field : joinColumnFields) {
+        for (Field field : oneToOneFields) {
+            OneToOne annotation = field.getAnnotation(OneToOne.class);
+
+            if (!annotation.mappedBy().isEmpty())
+                continue;
+
             Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
             checkColumnUniqueness(result, columns);
             result.addAll(columns);
         }
 
-        // @JoinColumns
-        Collection<Field> joinColumnsFields = getFieldsWithAnnotation(allFields, JoinColumns.class);
+        // ManyToOne
+        Collection<Field> manyToOneFields = getFieldsWithAnnotation(allFields, ManyToOne.class);
 
-        for (Field field : joinColumnsFields) {
+        for (Field field : manyToOneFields) {
             Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
             checkColumnUniqueness(result, columns);
             result.addAll(columns);
         }
 
-        // @JoinTable
-        Collection<Field> joinTableFields = getFieldsWithAnnotation(allFields, JoinTable.class);
-
-        for (Field field : joinTableFields) {
-            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(result, columns);
-            result.addAll(columns);
-        }
+        // Fields annotated with @OneToMany and @ManyToMany are skipped because they don't lead to new columns.
+        // In fact, those annotations should only map the existing table columns to the join table ones.
 
         return result;
     }
@@ -458,8 +498,8 @@ class EntityObject {
      *
      * @return  list of unique columns sets
      */
-    List<List<ColumnObject>> getMultipleUniqueColumns() {
-        List<List<ColumnObject>> result = new ArrayList<>();
+    Collection<Collection<ColumnObject>> getMultipleUniqueColumns() {
+        Collection<Collection<ColumnObject>> result = new ArrayList<>();
 
         // Single unique column constraints
         Collection<ColumnObject> columns = getColumns();
@@ -495,7 +535,7 @@ class EntityObject {
         // Children constraints (in case of SINGLE_TABLE inheritance strategy)
         if (inheritanceType == InheritanceType.SINGLE_TABLE) {
             for (EntityObject child : children) {
-                List<List<ColumnObject>> childConstrains = child.getMultipleUniqueColumns();
+                Collection<Collection<ColumnObject>> childConstrains = child.getMultipleUniqueColumns();
                 result.addAll(childConstrains);
             }
         }
@@ -560,9 +600,9 @@ class EntityObject {
         if (this.realTable && this.tableName == null)
             throw new InvalidConfigException("Entity " + getName() + " can't have empty table name");
 
-        // Join columns consistence
+        // Fix join columns types
         for (ColumnObject column : this.columns) {
-            column.checkConsistence(entities);
+            column.fixType(entities);
         }
 
         // Fix discriminator value type
@@ -604,29 +644,10 @@ class EntityObject {
      */
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
-            return clazz.getDeclaredField(fieldName);
+            return clazz.getField(fieldName);
         } catch (NoSuchFieldException e) {
-            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"");
+            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
         }
-    }
-
-
-    /**
-     * Get all the primary keys, including the parent entities ones
-     *
-     * @return  primary keys
-     */
-    public Collection<ColumnObject> getAllPrimaryKeys() {
-        Collection<ColumnObject> result = new HashSet<>();
-        EntityObject entity = this;
-
-        // Navigate up in the hierarchy tree
-        while (entity != null) {
-            result.addAll(entity.primaryKeys);
-            entity = entity.parent;
-        }
-
-        return Collections.unmodifiableCollection(result);
     }
 
 }

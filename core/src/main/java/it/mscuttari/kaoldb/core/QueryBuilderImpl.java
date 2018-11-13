@@ -20,9 +20,10 @@ import it.mscuttari.kaoldb.interfaces.Root;
  */
 class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
-    private DatabaseObject db;
-    private Class<T> resultClass;
-    private EntityManagerImpl entityManager;
+    private final DatabaseObject db;
+    private final Class<T> resultClass;
+    private final EntityManagerImpl entityManager;
+
     private Root<?> from;
     private Expression where;
 
@@ -140,7 +141,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         List<String> selectColumns = new ArrayList<>();
 
         // Current entity
-        EntityObject entity = db.getEntityObject(resultClass);
+        EntityObject entity = db.getEntity(resultClass);
         for (ColumnObject column : entity.columns) {
             selectColumns.add(alias + entity.getName() + "." + column.name + " AS \"" + alias + entity.getName() + "." + column.name + "\"");
         }

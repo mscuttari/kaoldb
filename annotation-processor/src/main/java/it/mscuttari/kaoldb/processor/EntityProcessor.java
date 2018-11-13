@@ -181,14 +181,19 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
      * @param   element     entity element
      * @throws  ProcessorException if the class doesn't have a default constructor
      */
-    private void checkForDefaultConstructor(TypeElement element) throws ProcessorException {
+    private static void checkForDefaultConstructor(TypeElement element) throws ProcessorException {
+        // No need for a default constructor for abstract classes
+        if (element.getModifiers().contains(Modifier.ABSTRACT))
+            return;
+
+        // Iterate through constructors to search for one with no arguments
         for (ExecutableElement cons : ElementFilter.constructorsIn(element.getEnclosedElements())) {
             if (cons.getParameters().isEmpty())
                 return;
         }
 
         // Couldn't find any default constructor here
-        throw new ProcessorException("Entity " + element.getSimpleName() + " doesn't have a default constructor", element);
+        throw new ProcessorException("Entity \"" + element.getSimpleName() + "\" doesn't have a default constructor", element);
     }
 
 }

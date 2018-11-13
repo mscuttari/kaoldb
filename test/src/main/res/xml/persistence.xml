@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <databases>
     <database name="films" version="1" migrator="it.mscuttari.kaoldbtest.database.TestDbMigrator">
-        <class>it.mscuttari.kaoldbtest.models.Country</class>
-        <class>it.mscuttari.kaoldbtest.models.FantasyFilm</class>
-        <class>it.mscuttari.kaoldbtest.models.Film</class>
-        <class>it.mscuttari.kaoldbtest.models.Genre</class>
-        <class>it.mscuttari.kaoldbtest.models.Person</class>
-        <class>it.mscuttari.kaoldbtest.models.ThrillerFilm</class>
+        <class>it.mscuttari.kaoldbtest.films.Country</class>
+        <class>it.mscuttari.kaoldbtest.films.FantasyFilm</class>
+        <class>it.mscuttari.kaoldbtest.films.Film</class>
+        <class>it.mscuttari.kaoldbtest.films.Genre</class>
+        <class>it.mscuttari.kaoldbtest.films.Person</class>
+        <class>it.mscuttari.kaoldbtest.films.ThrillerFilm</class>
     </database>
 </databases>

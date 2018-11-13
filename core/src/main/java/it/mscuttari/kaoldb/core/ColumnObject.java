@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,8 +57,8 @@ class ColumnObject {
     /**
      * Column type
      *
-     * This is null until the entities relationships has not been checked with the
-     * {@link EntityObject#checkConsistence(Map)} method
+     * This field may contain a wrong value until the entities relationships has not been
+     * checked with the {@link EntityObject#checkConsistence(Map)} method
      */
     public Class<?> type;
 
@@ -84,11 +85,13 @@ class ColumnObject {
      * @param   field               field which has the {@link Column} annotation
      */
     private ColumnObject(Column columnAnnotation, Field field) {
+        field.setAccessible(true);
+
         this.field = field;
         this.columnAnnotation = columnAnnotation;
         this.name = getColumnName(columnAnnotation, field);
         this.primaryKey = field.isAnnotationPresent(Id.class);
-        this.type = field.getType();
+        this.type = getFieldType(field);
         this.nullable = columnAnnotation.nullable();
         this.unique = columnAnnotation.unique();
         this.defaultValue = columnAnnotation.defaultValue();
@@ -104,12 +107,14 @@ class ColumnObject {
      * @param   field                   field which has the {@link JoinColumn} annotation
      */
     private ColumnObject(JoinColumn joinColumnAnnotation, Field field) {
+        field.setAccessible(true);
+
         this.field = field;
         this.columnAnnotation = joinColumnAnnotation;
         this.name = getColumnName(joinColumnAnnotation, field);
-        this.type = null;
+        this.type = getFieldType(field);
         this.nullable = joinColumnAnnotation.nullable();
-        this.primaryKey = field.isAnnotationPresent(Id.class);
+        this.primaryKey = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
         this.unique = joinColumnAnnotation.unique();
         this.defaultValue = joinColumnAnnotation.defaultValue();
         this.customColumnDefinition = joinColumnAnnotation.columnDefinition();
@@ -172,15 +177,49 @@ class ColumnObject {
             }
 
         } else if (field.isAnnotationPresent(JoinTable.class)) {
-            // @JoinTable
-            JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+            // Fields annotated with @JoinTable are skipped because they don't lead to new columns.
+            // In fact, the annotation should only map the existing table columns to the join table
+            // ones, which are created separately
 
-            for (JoinColumn joinColumnAnnotation : joinTableAnnotation.joinColumns()) {
-                result.add(new ColumnObject(joinColumnAnnotation, field));
-            }
+            return result;
+
         } else {
             // No annotation found
             throw new InvalidConfigException("No column annotation found for field " + field.getName());
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Get the columns of a join table
+     *
+     * All the entities must be already mapped
+     *
+     * @param   db          database object
+     * @param   field       field owning the join table annotation
+     *
+     * @return  columns of a join table
+     */
+    public static Collection<ColumnObject> getJoinTableColumns(DatabaseObject db, Field field) {
+        Collection<ColumnObject> result = new HashSet<>();
+        JoinTable annotation = field.getAnnotation(JoinTable.class);
+        if (annotation == null) return result;  // Just a security check
+
+        // Direct join columns
+        for (JoinColumn joinColumn : annotation.joinColumns()) {
+            result.add(new ColumnObject(joinColumn, field));
+        }
+
+        // Inverse join columns
+        for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
+            result.add(new ColumnObject(inverseJoinColumn, field));
+        }
+
+        // Fix columns types
+        for (ColumnObject column : result) {
+            column.fixType(db.getEntitiesMap());
         }
 
         return result;
@@ -211,7 +250,9 @@ class ColumnObject {
 
         } else if (annotation instanceof JoinColumn) {
             JoinColumn joinColumn = (JoinColumn) annotation;
-            if (!joinColumn.name().isEmpty()) return joinColumn.name();
+
+            if (!joinColumn.name().isEmpty())
+                return joinColumn.name();
         }
 
         LogUtils.w(field.getName() + ": column name not specified, using the default one based on field name");
@@ -226,6 +267,25 @@ class ColumnObject {
 
 
     /**
+     * Get field type
+     *
+     * If the field is annotated with {@link OneToMany} or {@link ManyToMany}, the returned class
+     * is the collection elements one
+     *
+     * @param   field   field
+     * @return  field type
+     */
+    public static Class<?> getFieldType(Field field) {
+        if (field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(ManyToMany.class)) {
+            ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
+            return (Class<?>) collectionType.getActualTypeArguments()[0];
+        }
+
+        return field.getType();
+    }
+
+
+    /**
      * Get the relationship type of a field
      *
      * @param   field       field to be analyzed
@@ -234,10 +294,13 @@ class ColumnObject {
     private static RelationshipType getRelationshipType(Field field) {
         if (field.isAnnotationPresent(OneToOne.class)) {
             return RelationshipType.ONE_TO_ONE;
+
         } else if (field.isAnnotationPresent(OneToMany.class)) {
             return RelationshipType.ONE_TO_MANY;
+
         } else if (field.isAnnotationPresent(ManyToOne.class)) {
             return RelationshipType.MANY_TO_ONE;
+
         } else if (field.isAnnotationPresent(ManyToMany.class)) {
             return RelationshipType.MANY_TO_MANY;
         }
@@ -247,54 +310,102 @@ class ColumnObject {
 
 
     /**
-     * Check column consistence
+     * Fix column name and type according to its origin
      *
-     * Method called during the mapping consistence check
+     * This method called during the mapping consistence check
      *
      * @see EntityObject#checkConsistence(Map)
      *
      * @param   entities        map of all entities
      * @throws  InvalidConfigException if the configuration is invalid
      */
-    public void checkConsistence(Map<Class<?>, EntityObject> entities) {
+    public void fixType(Map<Class<?>, EntityObject> entities) {
         // Class doesn't have column field
         if (this.field == null)
             return;
 
-        // Check references
-        if (this.columnAnnotation instanceof JoinColumn) {
-            // @JoinColumn
-            Class<?> referencedClass = this.field.getType();
-            EntityObject referencedEntity = entities.get(referencedClass);
+        // Determine the correct column type
 
-            if (referencedEntity == null)
-                throw new InvalidConfigException("Field " + this.field.getName() + ": " + referencedClass.getSimpleName() + " is not an entity");
+        if (!(this.columnAnnotation instanceof JoinColumn)) {
+            // No need if the column is not used to join two entities
+            return;
+        }
 
-            String referencedColumnName = ((JoinColumn) this.columnAnnotation).referencedColumnName();
-            ColumnObject referencedColumn = null;
+        Class<?> referencedClass = null;
+        String referencedColumnName = null;
 
-            while (referencedEntity != null && referencedColumn == null) {
-                referencedColumn = referencedEntity.columnsNameMap.get(referencedColumnName);
-                referencedEntity = referencedEntity.parent;
+        if (this.field.isAnnotationPresent(JoinColumn.class) || this.field.isAnnotationPresent(JoinColumns.class)) {
+            // The linked column directly belongs to the linked entity class, so to determine the
+            // column type is sufficient to search for that foreign key and get its type
+
+            referencedColumnName = ((JoinColumn) this.columnAnnotation).referencedColumnName();
+            referencedClass = this.type;
+
+        } else if (this.field.isAnnotationPresent(JoinTable.class)) {
+            // The linked column belongs to a middle join table, so to determine the column type
+            // we need to first determine that column class. Its class is indeed derived from the
+            // foreign key of the second entity
+
+            referencedColumnName = ((JoinColumn) this.columnAnnotation).referencedColumnName();
+            JoinTable joinTableAnnotation = this.field.getAnnotation(JoinTable.class);
+
+            // We need to determine if the column is a direct or inverse join column.
+            // If it is a direct join column, the column type is the same of the field enclosing class.
+            // If it is an inverse join column, the column type is the field one.
+
+            boolean direct = false;
+
+            // Search in the direct join columns.
+            // If not found, then the column must be an inverse join one.
+
+            for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                if (joinColumn.equals(this.columnAnnotation)) {
+                    direct = true;
+                    break;
+                }
             }
 
-            if (referencedColumn == null)
-                throw new InvalidConfigException("Field " + field.getName() + ": referenced column " + referencedColumnName + " not found");
-
-            this.type = referencedColumn.type;
+            if (direct) {
+                referencedClass = this.field.getDeclaringClass();
+            } else {
+                referencedClass = getFieldType(this.field);
+            }
         }
+
+        if (referencedClass == null) {
+            // Normally not reachable. Just a security check
+            throw new InvalidConfigException("Field \"" + this.field.getName() + "\": can't determine the referenced class");
+        }
+
+        // Search the referenced column
+        EntityObject referencedEntity = entities.get(referencedClass);
+
+        if (referencedEntity == null)
+            throw new InvalidConfigException("Field \"" + this.field.getName() + "\": \"" + referencedClass.getSimpleName() + "\" is not an entity");
+
+        ColumnObject referencedColumn = null;
+
+        while (referencedEntity != null && referencedColumn == null) {
+            referencedColumn = referencedEntity.columnsNameMap.get(referencedColumnName);
+            referencedEntity = referencedEntity.parent;
+        }
+
+        if (referencedColumn == null)
+            throw new InvalidConfigException("Field \"" + this.field.getName() + "\": referenced column \"" + referencedColumnName + "\" not found");
+
+        this.type = referencedColumn.type;
     }
 
 
     /**
-     * Get column value
+     * Get field value
      *
      * @param   obj     object to get the value from
      * @param   <T>     object class
      *
-     * @return  column value
+     * @return  field value
      *
-     * @throws QueryException if the field can't be accessed
+     * @throws  QueryException if the field can't be accessed
      */
     @SuppressWarnings("unchecked")
     public <T> T getValue(Object obj) {
@@ -306,8 +417,27 @@ class ColumnObject {
 
         try {
             return (T) field.get(obj);
-        } catch (Exception e) {
-            throw new QueryException(e.getMessage());
+        } catch (IllegalAccessException e) {
+            throw new QueryException(e);
+        }
+    }
+
+
+    /**
+     * Set field value
+     *
+     * @param   obj     object containing the field to be set
+     * @param   value   value to be set
+     *
+     * @throws  QueryException if the field can't be accessed
+     */
+    public void setValue(Object obj, Object value) {
+        field.setAccessible(true);
+
+        try {
+            field.set(obj, value);
+        } catch (IllegalAccessException e) {
+            throw new QueryException(e);
         }
     }
 

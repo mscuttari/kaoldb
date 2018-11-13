@@ -18,12 +18,12 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
  */
 public final class Property<M, T> {
 
-    private Class<M> entityClass;
-    private Class<? super M> fieldParentClass;
-    private Class<T> fieldType;
-    private String fieldName;
-    private Class<? extends Annotation> columnAnnotation;
-    private Class<? extends Annotation> relationshipAnnotation;
+    private final Class<M> entityClass;
+    private final Class<? super M> fieldParentClass;
+    private final Class<T> fieldType;
+    private final String fieldName;
+    private final Class<? extends Annotation> columnAnnotation;
+    private final Class<? extends Annotation> relationshipAnnotation;
 
 
     /**

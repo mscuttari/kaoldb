@@ -1,10 +1,13 @@
-package it.mscuttari.kaoldbtest.models;
+package it.mscuttari.kaoldbtest.films;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
+import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
@@ -13,7 +16,11 @@ public class Country {
 
     @Id
     @Column(name = "name")
-    private String name;
+    public String name;
+
+
+    @OneToMany(mappedBy = "country")
+    public Collection<Person> people = new ArrayList<>();
 
 
     /**
@@ -59,16 +66,6 @@ public class Country {
     @Override
     public String toString() {
         return "[name: " + name + "]";
-    }
-
-
-    public String getName() {
-        return name;
-    }
-
-
-    public void setName(String name) {
-        this.name = name;
     }
 
 }

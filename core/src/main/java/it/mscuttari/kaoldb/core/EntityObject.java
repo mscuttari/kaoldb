@@ -115,34 +115,46 @@ class EntityObject {
 
     @Override
     public String toString() {
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
-        result += "Class: " + getName() + ", ";
+        result.append("Class: ")
+                .append(getName())
+                .append(", ");
 
-        if (this.parent != null)
-            result += "Parent: " + this.parent.getName() + ", ";
-
-        result += "Children: [";
-        for (EntityObject child : this.children) {
-            //noinspection StringConcatenationInLoop
-            result += child.getName() + ", ";
+        if (this.parent != null) {
+            result.append("Parent: ")
+                    .append(this.parent.getName())
+                    .append(", ");
         }
-        result += "], ";
 
-        result += "Columns: " + this.columns + ", ";
-        result += "Primary keys: " + this.primaryKeys;
+        result.append("Children: [");
 
-        return result;
+        for (EntityObject child : this.children) {
+            result.append(child.getName()).append(", ");
+        }
+
+        result.append("], ");
+
+        result.append("Columns: ")
+                .append(this.columns)
+                .append(", ");
+
+        result.append("Primary keys: ")
+                .append(this.primaryKeys);
+
+        return result.toString();
     }
 
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof EntityObject)) return false;
-        EntityObject entityObject = (EntityObject)obj;
-        if (entityClass == null && entityObject.entityClass == null) return true;
-        if (entityClass != null) return entityClass.equals(entityObject.entityClass);
-        return false;
+        if (obj == null || !(obj instanceof EntityObject))
+            return false;
+
+        EntityObject entityObject = (EntityObject) obj;
+
+        return (entityClass == null && entityObject.entityClass == null) ||
+                (entityClass != null && entityClass.equals(entityObject.entityClass));
     }
 
 
@@ -390,12 +402,13 @@ class EntityObject {
 
 
     /**
-     * Get normal columns (only of the current class)
+     * Get normal columns (only of the current class).
+     * By normal columns are intended the one originated from a {@link Column} annotated field.
      *
-     * @param   allFields       collection of all class fields
-     * @return  collection of columns
+     * @param   allFields       all the class fields
+     * @return  columns
      */
-    private Collection<ColumnObject> getNormalColumns(Field[] allFields) {
+    private static Collection<ColumnObject> getNormalColumns(Field[] allFields) {
         Collection<Field> fields = getFieldsWithAnnotation(allFields, Column.class);
         Collection<ColumnObject> result = new HashSet<>(fields.size());
 
@@ -419,7 +432,7 @@ class EntityObject {
      * @param   allFields       collection of all class fields
      * @return  collection of From columns
      */
-    private Collection<ColumnObject> getJoinColumns(Field[] allFields) {
+    private static Collection<ColumnObject> getJoinColumns(Field[] allFields) {
         Collection<ColumnObject> result = new HashSet<>();
 
         // OneToOne
@@ -464,7 +477,7 @@ class EntityObject {
      *
      * @throws InvalidConfigException if any column has already been defined
      */
-    private void checkColumnUniqueness(Collection<ColumnObject> startingColumns, Collection<ColumnObject> columnsToBeAdded) {
+    private static void checkColumnUniqueness(Collection<ColumnObject> startingColumns, Collection<ColumnObject> columnsToBeAdded) {
         if (Collections.disjoint(startingColumns, columnsToBeAdded))
             return;
 
@@ -489,7 +502,7 @@ class EntityObject {
                 result.add(column);
         }
 
-        return result;
+        return Collections.unmodifiableCollection(result);
     }
 
 
@@ -621,10 +634,11 @@ class EntityObject {
 
 
     /**
-     * Get field of a class given its name
+     * Get field of a class given its name.
+     * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
      * @param   fieldName   field name
-     * @return  field
+     * @return  accessible field
      * @throws  MappingException if there is no field in the class with the specified name
      */
     public Field getField(String fieldName) {
@@ -633,18 +647,22 @@ class EntityObject {
 
 
     /**
-     * Get field of a class given its name
+     * Get field of a class given its name.
+     * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
      * @param   clazz       class the field belongs to
      * @param   fieldName   field name
      *
-     * @return  field
+     * @return  accessible field
      *
      * @throws  MappingException if there is no field in the class with the specified name
      */
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
-            return clazz.getField(fieldName);
+            Field field = clazz.getField(fieldName);
+            field.setAccessible(true);
+            return field;
+
         } catch (NoSuchFieldException e) {
             throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
         }

@@ -5,7 +5,12 @@ import java.util.Set;
 
 import it.mscuttari.kaoldb.interfaces.Query;
 
-public class LazySet<T> extends LazyCollection<T, Set<T>> {
+/**
+ * Lazy collection implementation using a {@link Set} as data container
+ *
+ * @param   <T>     POJO class
+ */
+class LazySet<T> extends LazyCollection<T, Set<T>> {
 
     /**
      * Constructor

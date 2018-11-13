@@ -6,6 +6,7 @@ import android.support.annotation.RequiresApi;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -14,6 +15,13 @@ import java.util.stream.Stream;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.interfaces.Query;
 
+/**
+ * This class allows to temporarily skip the relationships data load and run the associated queries
+ * only when needed
+ *
+ * @param   <T>     POJO class
+ * @param   <S>     container type (e.g. {@link List})
+ */
 abstract class LazyCollection<T, S extends Collection<T>> implements Collection<T> {
 
     /**

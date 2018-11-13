@@ -28,6 +28,12 @@ class EntityUtils {
     /**
      * Generate entities mapping
      *
+     * The mapping is done in three steps:
+     *  1.  Get the basic data in order to establish the paternity relationships
+     *  2.  Determine the columns of each table (own columns and inherited ones)
+     *  3.  Check the consistency of the previously found information that can not be checked
+     *      at compile time through the annotation processors and fix the join columns types
+     *
      * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
      * mapping consistence
      *
@@ -66,6 +72,10 @@ class EntityUtils {
 
     /**
      * Get the SQL query to create an entity table
+     *
+     * The result can be used to create just the table directly linked to the provided entity.
+     * Optional join tables that are related to eventual internal fields must be managed
+     * separately and in a second moment (after the creation of all the normal tables).
      *
      * @param   db          database object
      * @param   entity      entity object
@@ -123,6 +133,9 @@ class EntityUtils {
     /**
      * Get the SQL query to create a join table
      *
+     * All the normal tables must have been created before running the executing the result of
+     * this method, as it will create foreign keys pointing to their columns.
+     *
      * @param   db      join table annotation
      * @param   field   field annotated with {@link JoinTable}
      *
@@ -168,7 +181,24 @@ class EntityUtils {
     /**
      * Get columns SQL statement to be inserted in the create table query
      *
-     * Example: (column 1 INTEGER, column 2 REAL NOT NULL)
+     * The columns definition takes into consideration the following parameters:
+     *  -   Name.
+     *  -   Column definition: if specified, the following parameters are skipped.
+     *  -   Type: the column type determination is based on the field type and with respect of
+     *            the following associations:
+     *                  int || Integer      =>  INTEGER
+     *                  long || Long        =>  INTEGER
+     *                  float || Float      =>  REAL
+     *                  double || Double    =>  REAL
+     *                  String              =>  TEXT
+     *                  Date || Calendar    =>  INTEGER (date is stored as milliseconds from epoch)
+     *                  Enum                =>  TEXT (enum constant name)
+     *                  anything else       =>  BLOB
+     *  -   Nullability.
+     *  -   Uniqueness.
+     *  -   Default value.
+     *
+     * Example: (column 1 INTEGER UNIQUE, column 2 REAL NOT NULL)
      *
      * @param   columns     collection of all columns
      * @return  SQL query
@@ -234,7 +264,8 @@ class EntityUtils {
      * Get primary keys SQL statement to be inserted in the create table query
      *
      * This method is used to create the primary keys of a table directly associated to an entity.
-     * There is no counterpart for the join tables because that can be directly managed by this method.
+     * There is no counterpart for the join tables because that can be directly managed by this
+     * method.
      *
      * Example: PRIMARY KEY(column_1, column_2, column_3)
      *
@@ -264,12 +295,15 @@ class EntityUtils {
      *
      * This method is used to create the unique constraints defined using the
      * {@link UniqueConstraint} annotation.
-     * Differently from {@link #getJoinTablePrimaryKeysSql(Field)}, there is no counterpart for
-     * join tables because the unique constraints of a join table are given just by the primary keys.
+     * There is no counterpart for join tables because the unique constraints of a join table
+     * are given just by the primary keys.
      *
-     * Example: UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
+     * The parameter uniqueColumns is a collection of collections because each unique constraint
+     * can be made of multiple columns. For example, a collection such as
+     * [[column_1, column_2], [column_2, column_3, column_4]] would generate the statement
+     * UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
      *
-     * @param   uniqueColumns       list of unique columns
+     * @param   uniqueColumns       unique columns groups
      * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
@@ -278,16 +312,16 @@ class EntityUtils {
             return null;
 
         StringBuilder result = new StringBuilder();
-        String prefixExternal = "";
         boolean empty = true;
 
         for (Collection<ColumnObject> uniqueSet : uniqueColumns) {
             if (uniqueSet.size() == 0)
                 continue;
 
+            if (!empty) result.append(", ");
             empty = false;
-            result.append(prefixExternal).append("UNIQUE(");
-            prefixExternal = ", ";
+            result.append("UNIQUE(");
+
             String prefixInternal = "UNIQUE(";
 
             for (ColumnObject column : uniqueSet) {
@@ -498,6 +532,7 @@ class EntityUtils {
 
         String separator = "";
 
+        // Direct join columns
         for (JoinColumn joinColumn : annotation.joinColumns()) {
             EntityObject linkedEntity = db.getEntity(field.getDeclaringClass());
 
@@ -509,6 +544,7 @@ class EntityUtils {
             separator = ", ";
         }
 
+        // Inverse join columns
         for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
             ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
             EntityObject linkedEntity = db.getEntity((Class<?>) collectionType.getActualTypeArguments()[0]);

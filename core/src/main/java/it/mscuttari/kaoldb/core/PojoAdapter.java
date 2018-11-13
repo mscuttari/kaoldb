@@ -26,6 +26,13 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
+/**
+ * Utility class that allows to convert the query results into POJOs (Plain Old Java Object) and
+ * POJOs into data ready to be stored.
+ *
+ * @see #cursorToObject(DatabaseObject, Cursor, Map, Class, String) for Cursor => POJO
+ * @see #objectToContentValues(Context, DatabaseObject, EntityObject, EntityObject, Object) for POJO => ContentValues
+ */
 class PojoAdapter {
 
     private PojoAdapter() {
@@ -34,7 +41,7 @@ class PojoAdapter {
 
 
     /**
-     * Convert cursor to POJO (plain old java object)
+     * Convert cursor to POJO
      *
      * The conversion automatically search for the child class according to the discriminator value.
      * In fact, the method starts with a first part with the aim of going down through the hierarchy

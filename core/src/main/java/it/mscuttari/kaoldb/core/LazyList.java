@@ -13,6 +13,11 @@ import java.util.function.UnaryOperator;
 
 import it.mscuttari.kaoldb.interfaces.Query;
 
+/**
+ * Lazy collection implementation using a {@link List} as data container
+ *
+ * @param   <T>     POJO class
+ */
 class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
 
     /**

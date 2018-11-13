@@ -141,7 +141,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         List<String> selectColumns = new ArrayList<>();
 
         // Current entity
-        EntityObject entity = db.getEntityObject(resultClass);
+        EntityObject entity = db.getEntity(resultClass);
         for (ColumnObject column : entity.columns) {
             selectColumns.add(alias + entity.getName() + "." + column.name + " AS \"" + alias + entity.getName() + "." + column.name + "\"");
         }

@@ -51,7 +51,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.getEntities()) {
             // Entity table
-            String entityTableCreateSQL = EntityUtils.getTableSql(entity);
+            String entityTableCreateSQL = EntityUtils.getTableSql(database, entity);
 
             if (entityTableCreateSQL != null) {
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
@@ -167,7 +167,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      */
     private EntityObject getObjectEntity(Object obj) {
         Class<?> objectClass = obj.getClass();
-        return database.getEntityObject(objectClass);
+        return database.getEntity(objectClass);
     }
 
 

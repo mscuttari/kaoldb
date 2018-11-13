@@ -114,7 +114,7 @@ class ColumnObject {
         this.name = getColumnName(joinColumnAnnotation, field);
         this.type = getFieldType(field);
         this.nullable = joinColumnAnnotation.nullable();
-        this.primaryKey = field.isAnnotationPresent(Id.class);
+        this.primaryKey = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
         this.unique = joinColumnAnnotation.unique();
         this.defaultValue = joinColumnAnnotation.defaultValue();
         this.customColumnDefinition = joinColumnAnnotation.columnDefinition();

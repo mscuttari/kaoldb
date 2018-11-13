@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 
 public @interface JoinTable {
 
-    String name() default "";
+    String name();
     JoinColumn[] joinColumns();
     JoinColumn[] inverseJoinColumns();
     //UniqueConstraint[] uniqueConstraints() default {};

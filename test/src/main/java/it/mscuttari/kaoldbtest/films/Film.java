@@ -1,6 +1,7 @@
 package it.mscuttari.kaoldbtest.films;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
@@ -12,6 +13,7 @@ import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 
@@ -39,6 +41,20 @@ public abstract class Film {
             @JoinColumn(name = "director_last_name", referencedColumnName = "last_name")
     })
     public Person director;
+
+    @ManyToMany
+    @JoinTable(
+            name = "acting",
+            joinColumns = {
+                    @JoinColumn(name = "film_title", referencedColumnName = "title"),
+                    @JoinColumn(name = "film_year", referencedColumnName = "year")
+            },
+            inverseJoinColumns = {
+                    @JoinColumn(name = "actor_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "actor_last_name", referencedColumnName = "last_name")
+            }
+            )
+    public Collection<Person> actors;
     
     @Column(name = "length")
     public Integer length;

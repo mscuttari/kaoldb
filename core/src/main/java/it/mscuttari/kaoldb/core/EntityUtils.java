@@ -1,22 +1,22 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Pair;
+import android.text.TextUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 
 class EntityUtils {
 
@@ -67,39 +67,51 @@ class EntityUtils {
     /**
      * Get the SQL query to create an entity table
      *
+     * @param   db          database object
      * @param   entity      entity object
+     *
      * @return  SQL query (null if no table should be created)
      */
     @Nullable
-    public static String getTableSql(EntityObject entity) {
+    public static String getTableSql(DatabaseObject db, EntityObject entity) {
         // Skip entity if doesn't require a real table
-        if (!entity.realTable) return null;
+        if (!entity.realTable)
+            return null;
 
         StringBuilder result = new StringBuilder();
 
         // Table name
-        result.append("CREATE TABLE IF NOT EXISTS ").append(entity.tableName).append(" (");
+        result.append("CREATE TABLE IF NOT EXISTS ")
+                .append(entity.tableName)
+                .append(" (");
 
         // Columns
-        result.append(getColumnsSql(entity.columns));
+        String columnsSql = getColumnsSql(entity.columns);
+
+        if (columnsSql != null && !columnsSql.isEmpty()) {
+            result.append(getColumnsSql(entity.columns));
+        }
 
         // Primary keys
         String primaryKeysSql = getTablePrimaryKeysSql(entity.primaryKeys);
 
-        if (!primaryKeysSql.isEmpty())
+        if (primaryKeysSql != null && !primaryKeysSql.isEmpty()) {
             result.append(", ").append(primaryKeysSql);
+        }
 
         // Unique keys (multiple columns)
         String uniqueKeysSql = getTableUniquesSql(entity.getMultipleUniqueColumns());
 
-        if (!uniqueKeysSql.isEmpty())
+        if (uniqueKeysSql != null && !uniqueKeysSql.isEmpty()) {
             result.append(", ").append(uniqueKeysSql);
+        }
 
         // Foreign keys
-        String foreignKeysSql = getTableForeignKeysSql(entity);
+        String foreignKeysSql = getTableForeignKeysSql(db, entity);
 
-        if (!foreignKeysSql.isEmpty())
+        if (foreignKeysSql != null && !foreignKeysSql.isEmpty()) {
             result.append(", ").append(foreignKeysSql);
+        }
 
         result.append(");");
         //result.append(") WITHOUT ROWID;");
@@ -125,20 +137,27 @@ class EntityUtils {
         StringBuilder result = new StringBuilder();
 
         // Table name
-        result.append("CREATE TABLE IF NOT EXISTS ").append(annotation.name()).append(" (");
+        result.append("CREATE TABLE IF NOT EXISTS ")
+                .append(annotation.name())
+                .append(" (");
 
         // Columns
         Collection<ColumnObject> columns = ColumnObject.getJoinTableColumns(db, field);
         result.append(getColumnsSql(columns));
 
         // Primary keys
-        String primaryKeysSql = getJoinTablePrimaryKeysSql(field);
+        String primaryKeysSql = getTablePrimaryKeysSql(columns);
 
-        if (!primaryKeysSql.isEmpty())
+        if (primaryKeysSql != null && !primaryKeysSql.isEmpty()) {
             result.append(", ").append(primaryKeysSql);
+        }
 
         // Foreign keys
-        // TODO: to be implemented
+        String foreignKeysSql = getJoinTableForeignKeysSql(db, field);
+
+        if (foreignKeysSql != null && !foreignKeysSql.isEmpty()) {
+            result.append(", ").append(foreignKeysSql);
+        }
 
         result.append(");");
 
@@ -154,7 +173,7 @@ class EntityUtils {
      * @param   columns     collection of all columns
      * @return  SQL query
      */
-    @NonNull
+    @Nullable
     private static String getColumnsSql(Collection<ColumnObject> columns) {
         StringBuilder result = new StringBuilder();
         String prefix = "";
@@ -207,75 +226,35 @@ class EntityUtils {
             }
         }
 
-        return result.toString();
+        return result.length() == 0 ? null : result.toString();
     }
 
 
     /**
      * Get primary keys SQL statement to be inserted in the create table query
      *
+     * This method is used to create the primary keys of a table directly associated to an entity.
+     * There is no counterpart for the join tables because that can be directly managed by this method.
+     *
      * Example: PRIMARY KEY(column_1, column_2, column_3)
      *
      * @param   primaryKeys     collection of primary keys
-     * @return  SQL query
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
-    @NonNull
+    @Nullable
     private static String getTablePrimaryKeysSql(Collection<ColumnObject> primaryKeys) {
+        if (primaryKeys == null || primaryKeys.size() == 0)
+            return null;
+
         StringBuilder result = new StringBuilder();
-        boolean empty = true;
         String prefix = "PRIMARY KEY(";
 
         for (ColumnObject column : primaryKeys) {
             result.append(prefix).append(column.name);
             prefix = ", ";
-            empty = false;
         }
 
-        if (!empty) {
-            result.append(")");
-        }
-
-        return result.toString();
-    }
-
-
-    /**
-     * Get primary keys SQL statement to be inserted in the create table query
-     *
-     * @param   field       field annotated with {@link JoinTable}
-     * @return  SQL query
-     */
-    @NonNull
-    private static String getJoinTablePrimaryKeysSql(Field field) {
-        if (!field.isAnnotationPresent(JoinTable.class))
-            return "";
-
-        StringBuilder result = new StringBuilder();
-        JoinTable annotation = field.getAnnotation(JoinTable.class);
-
-        boolean empty = true;
-        String prefix = "PRIMARY KEY(";
-
-        // Direct join columns
-        for (JoinColumn column : annotation.joinColumns()) {
-            result.append(prefix).append(column.name());
-            prefix = ", ";
-            empty = false;
-        }
-
-        // Inverse join columns
-        if (empty) prefix = "PRIMARY KEY(";
-
-        for (JoinColumn column : annotation.joinColumns()) {
-            result.append(prefix).append(column.name());
-            prefix = ", ";
-            empty = false;
-        }
-
-        if (!empty) {
-            result.append(")");
-        }
-
+        result.append(")");
         return result.toString();
     }
 
@@ -283,182 +262,262 @@ class EntityUtils {
     /**
      * Get unique columns SQL statement to be inserted in the create table query
      *
+     * This method is used to create the unique constraints defined using the
+     * {@link UniqueConstraint} annotation.
+     * Differently from {@link #getJoinTablePrimaryKeysSql(Field)}, there is no counterpart for
+     * join tables because the unique constraints of a join table are given just by the primary keys.
+     *
      * Example: UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
      *
      * @param   uniqueColumns       list of unique columns
-     * @return  SQL query
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
-    @NonNull
-    private static String getTableUniquesSql(List<List<ColumnObject>> uniqueColumns) {
+    @Nullable
+    private static String getTableUniquesSql(Collection<Collection<ColumnObject>> uniqueColumns) {
+        if (uniqueColumns == null || uniqueColumns.size() == 0)
+            return null;
+
         StringBuilder result = new StringBuilder();
         String prefixExternal = "";
+        boolean empty = true;
 
-        for (List<ColumnObject> uniqueSet : uniqueColumns) {
-            StringBuilder uc = new StringBuilder();
-            boolean empty = true;
+        for (Collection<ColumnObject> uniqueSet : uniqueColumns) {
+            if (uniqueSet.size() == 0)
+                continue;
+
+            empty = false;
+            result.append(prefixExternal).append("UNIQUE(");
+            prefixExternal = ", ";
             String prefixInternal = "UNIQUE(";
 
             for (ColumnObject column : uniqueSet) {
-                uc.append(prefixInternal).append(column.name);
+                result.append(prefixInternal).append(column.name);
                 prefixInternal = ", ";
-
-                empty = false;
             }
 
-            if (empty) {
-                continue;
-            } else {
-                uc.append(")");
-            }
-
-            result.append(prefixExternal).append(uc);
-            prefixExternal = ", ";
+            result.append(")");
         }
 
-        return result.toString();
+        if (empty) {
+            return null;
+        } else {
+            return result.toString();
+        }
     }
 
 
     /**
      * Get the foreign keys SQL constraints to be inserted in the create table query
      *
+     * This method is used to create the foreign keys of a table directly associated to an entity.
+     * See {@link #getJoinTableForeignKeysSql(DatabaseObject, Field)} to do the same for a join table.
+     *
      * Example:
      * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
      * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
      * FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6)
      *
+     * @param   db          database object
      * @param   entity      entity object
-     * @return  SQL constraints
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
-    private static String getTableForeignKeysSql(EntityObject entity) {
-        StringBuilder result = new StringBuilder();
-
+    @Nullable
+    private static String getTableForeignKeysSql(DatabaseObject db, EntityObject entity) {
         Collection<String> constraints = new ArrayList<>();
 
         // Inheritance
         String inheritanceSql = getTableInheritanceConstraints(entity);
 
-        if (!inheritanceSql.isEmpty())
+        if (inheritanceSql != null && !inheritanceSql.isEmpty())
             constraints.add(inheritanceSql);
 
         // Relationships
-        String relationshipsSql = getTableRelationshipsConstraints(entity);
+        String relationshipsSql = getTableRelationshipsConstraints(db, entity);
 
-        if (!relationshipsSql.isEmpty())
+        if (relationshipsSql != null && !relationshipsSql.isEmpty())
             constraints.add(relationshipsSql);
 
         // Create SQL statement
-        String separator = "";
+        if (constraints.size() == 0)
+            return null;
 
-        for (String constraint : constraints) {
-            result.append(separator).append(constraint);
-            separator = ", ";
-        }
-
-        return result.toString();
-    }
-
-
-    @NonNull
-    private static String getJoinTableForeignKeysSql(Collection<ColumnObject> columns) {
-        StringBuilder result = new StringBuilder();
-
-        Collection<String> constraints = new ArrayList<>();
-
-        for (ColumnObject column : columns) {
-
-            // TODO: foreign key sql
-            String constraint = "";
-
-            //constraints.add();
-        }
-
-        // Create SQL statement
-        String separator = "";
-
-        for (String constraint : constraints) {
-            result.append(separator).append(constraint);
-            separator = ", ";
-        }
-
-        return result.toString();
+        return TextUtils.join(", ", constraints);
     }
 
 
     /**
      * Get the inheritance SQL constraint to be inserted in the create table query
      *
-     * Example: FOREIGN KEY (primary_key_1, primary_key_2) REFERENCES parent_table(primary_key_1, primary_key_2)
+     * Example: FOREIGN KEY (primary_key_1, primary_key_2)
+     *          REFERENCES parent_table(primary_key_1, primary_key_2)
+     *          ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      *
      * @param   entity      entity object
-     * @return  SQL constraint
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
+    @Nullable
     private static String getTableInheritanceConstraints(EntityObject entity) {
-        StringBuilder result = new StringBuilder();
+        if (entity.parent == null)
+            return null;
 
-        if (entity.parent != null) {
-            EntityObject parent = entity.parent;
+        EntityObject parent = entity.parent;
 
-            // Go up in hierarchy until there is a real table
-            while (parent != null && !parent.realTable)
-                parent = parent.parent;
+        // Go up in hierarchy until there is a real table
+        while (parent != null && !parent.realTable)
+            parent = parent.parent;
 
-            // Check if there's a real parent table (TABLE_PER_CLASS strategy makes this unknown)
-            if (parent != null) {
-                // List of associations between local column and foreign column
-                Collection<Pair<String, String>> associations = new HashSet<>(parent.primaryKeys.size());
+        // Check if there's a real parent table (TABLE_PER_CLASS strategy makes this unknown)
+        if (parent == null)
+            return null;
 
-                for (ColumnObject primaryKey : parent.primaryKeys) {
-                    associations.add(new Pair<>(primaryKey.name, primaryKey.name));
-                }
+        // Normally not happening
+        if (parent.primaryKeys.size() == 0)
+            return null;
 
-                if (associations.size() > 0) {
-                    String separator;
+        // Create associations
+        StringBuilder local = new StringBuilder();          // Local columns
+        StringBuilder referenced = new StringBuilder();     // Referenced columns
 
-                    result.append("FOREIGN KEY(");
+        String separator = "";
 
-                    // Local columns
-                    separator = "";
-                    for (Pair<String, String> association : associations) {
-                        result.append(separator).append(association.first);
-                        separator = ", ";
-                    }
+        for (ColumnObject primaryKey : parent.primaryKeys) {
+            local.append(separator).append(primaryKey.name);
+            referenced.append(separator).append(primaryKey.name);
 
-                    result.append(") REFERENCES ");
-
-                    // Referenced table name
-                    result.append(parent.tableName).append("(");
-
-                    // Referenced columns
-                    separator = "";
-                    for (Pair<String, String> association : associations) {
-                        result.append(separator).append(association.second);
-                        separator = ", ";
-                    }
-
-                    result.append(") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
-                }
-            }
+            separator = ", ";
         }
 
-        return result.toString();
+        return "FOREIGN KEY(" + local.toString() + ")" +
+                " REFERENCES " + parent.tableName + "(" + referenced.toString() + ")" +
+                " ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED";
     }
 
 
     /**
      * Get the relationships SQL constraints to be inserted in the create table query
      *
-     * Example:
-     * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
-     * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
+     * This method is used to create the foreign keys of a table directly associated to an entity.
+     * There is no counterpart of this method for join tables because their foreign keys are
+     * completely covered by {@link #getJoinTableForeignKeysSql(DatabaseObject, Field)}.
      *
+     * Example:
+     *  FOREIGN KEY (column_1, column_2)
+     *  REFERENCES referenced_table_1(referenced_column_1, referenced_column_2)
+     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *
+     *  FOREIGN KEY (column_3, column_4)
+     *  REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
+     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *
+     * @param   db          database object
      * @param   entity      entity object
-     * @return  SQL constraint
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
      */
-    private static String getTableRelationshipsConstraints(EntityObject entity) {
+    @Nullable
+    private static String getTableRelationshipsConstraints(DatabaseObject db, EntityObject entity) {
+        boolean empty = true;
         StringBuilder result = new StringBuilder();
 
-        // TODO: to be implemented
+        for (Field field : entity.relationships) {
+            // Join columns are present only if there is a @JoinColumn annotation or if
+            // there is a @JoinColumns annotation and its content is not empty.
+
+            if (!field.isAnnotationPresent(JoinColumn.class) &&
+                    ((!field.isAnnotationPresent(JoinColumns.class) || (field.isAnnotationPresent(JoinColumns.class) && field.getAnnotation(JoinColumns.class).value().length == 0))))
+                continue;
+
+            if (!empty) result.append(", ");
+            empty = false;
+
+            // Get the linked entity in order to get its table name
+            EntityObject linkedEntity = db.getEntity(field.getType());
+
+            // @JoinColumn
+            if (field.isAnnotationPresent(JoinColumn.class)) {
+                JoinColumn annotation = field.getAnnotation(JoinColumn.class);
+
+                result.append("FOREIGN KEY(").append(annotation.name()).append(")")
+                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(")
+                        .append(annotation.referencedColumnName()).append(")")
+                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+            }
+
+            // @JoinColumns
+            if (field.isAnnotationPresent(JoinColumns.class)) {
+                JoinColumns annotation = field.getAnnotation(JoinColumns.class);
+
+                StringBuilder local = new StringBuilder();          // Local columns
+                StringBuilder referenced = new StringBuilder();     // Referenced columns
+
+                String separator = "";
+
+                for (JoinColumn joinColumn : annotation.value()) {
+                    local.append(separator).append(joinColumn.name());
+                    referenced.append(separator).append(joinColumn.referencedColumnName());
+
+                    separator = ", ";
+                }
+
+                result.append("FOREIGN KEY(").append(local).append(")")
+                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(referenced).append(")")
+                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+            }
+        }
+
+        if (empty) {
+            return null;
+        } else {
+            return result.toString();
+        }
+    }
+
+
+    /**
+     * Get the foreign keys SQL constraints to be inserted in the create table query
+     *
+     * Differently from {@link #getTableForeignKeysSql(DatabaseObject, EntityObject)}, this method
+     * is used for the foreign keys of a join table
+     *
+     * @param   db          database object
+     * @param   field       field annotated with {@link JoinTable}
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    private static String getJoinTableForeignKeysSql(DatabaseObject db, Field field) {
+        if (field == null || !field.isAnnotationPresent(JoinTable.class))
+            return null;
+
+        StringBuilder result = new StringBuilder();
+        JoinTable annotation = field.getAnnotation(JoinTable.class);
+
+        if (annotation.joinColumns().length == 0 || annotation.inverseJoinColumns().length == 0)
+            return null;
+
+        String separator = "";
+
+        for (JoinColumn joinColumn : annotation.joinColumns()) {
+            EntityObject linkedEntity = db.getEntity(field.getDeclaringClass());
+
+            result.append(separator)
+                    .append("FOREIGN KEY(").append(joinColumn.name()).append(")")
+                    .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(joinColumn.referencedColumnName()).append(")")
+                    .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+
+            separator = ", ";
+        }
+
+        for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
+            ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
+            EntityObject linkedEntity = db.getEntity((Class<?>) collectionType.getActualTypeArguments()[0]);
+
+            result.append(separator)
+                    .append("FOREIGN KEY(").append(inverseJoinColumn.name()).append(")")
+                    .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(inverseJoinColumn.referencedColumnName()).append(")")
+                    .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+        }
 
         return result.toString();
     }

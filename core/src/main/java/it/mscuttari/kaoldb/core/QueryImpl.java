@@ -125,7 +125,7 @@ class QueryImpl<M> implements Query<M> {
         if (object == null)
             return;
 
-        EntityObject entity = db.getEntityObject(object.getClass());
+        EntityObject entity = db.getEntity(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
         while (entity != null) {
@@ -155,7 +155,7 @@ class QueryImpl<M> implements Query<M> {
 
                 Expression where = null;
 
-                for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
+                for (ColumnObject primaryKey : entity.primaryKeys) {
                     Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
                     Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
                     where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
@@ -189,7 +189,7 @@ class QueryImpl<M> implements Query<M> {
         if (object == null)
             return;
 
-        EntityObject entity = db.getEntityObject(object.getClass());
+        EntityObject entity = db.getEntity(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
         for (Field field : entity.relationships) {
@@ -208,7 +208,7 @@ class QueryImpl<M> implements Query<M> {
             // Create the query
             Class<?> linkedClass = ColumnObject.getFieldType(field);
             QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
-            EntityObject linkedEntity = db.getEntityObject(linkedClass);
+            EntityObject linkedEntity = db.getEntity(linkedClass);
 
             // The only fields allowed to be Collections are @OneToMany or @ManyToMany annotated ones
             OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
@@ -230,7 +230,7 @@ class QueryImpl<M> implements Query<M> {
 
             Expression where = null;
 
-            for (ColumnObject primaryKey : entity.getAllPrimaryKeys()) {
+            for (ColumnObject primaryKey : entity.primaryKeys) {
                 Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
                 Expression primaryKeyEquality = join.eq(primaryKeyProperty, primaryKey.getValue(object));
                 where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);

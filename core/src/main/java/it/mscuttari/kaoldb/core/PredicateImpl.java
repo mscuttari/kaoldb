@@ -504,11 +504,11 @@ class PredicateImpl extends ExpressionImpl {
                 property.getColumnAnnotation() == JoinColumns.class ||
                 property.getColumnAnnotation() == JoinTable.class) {
 
-            EntityObject referencedEntity = db.getEntityObject(property.getFieldType());
+            EntityObject referencedEntity = db.getEntity(property.getFieldType());
 
             String fullAlias = Join.getJoinFullAlias(alias, property.getFieldParentClass(), property.getFieldType());
 
-            for (ColumnObject primaryKey : referencedEntity.getAllPrimaryKeys()) {
+            for (ColumnObject primaryKey : referencedEntity.primaryKeys) {
                 String column = fullAlias + "." + primaryKey.name;
                 String primaryKeyValue = objectToString(primaryKey.getValue(obj));
 

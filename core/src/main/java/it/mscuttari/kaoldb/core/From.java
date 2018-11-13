@@ -28,7 +28,7 @@ class From<X> implements Root<X> {
      */
     From(DatabaseObject db, Class<X> entityClass, String alias) {
         this.db = db;
-        this.entity = db.getEntityObject(entityClass);
+        this.entity = db.getEntity(entityClass);
         this.alias = alias;
     }
 
@@ -43,7 +43,7 @@ class From<X> implements Root<X> {
         // Resolve hierarchy joins
         if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
             From<?> root = this;
-            EntityObject entity = db.getEntityObject(getEntityClass());
+            EntityObject entity = db.getEntity(getEntityClass());
 
             root = resolveParentInheritance(root, entity, alias);
             root = resolveChildrenInheritance(root, entity, alias);
@@ -131,7 +131,7 @@ class From<X> implements Root<X> {
     @Override
     public <Y, T> Expression eq(Property<X, T> x, Class<Y> yClass, String yAlias, Property<Y, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);
-        Variable<Y, T> b = new Variable<>(db, db.getEntityObject(yClass), yAlias, y);
+        Variable<Y, T> b = new Variable<>(db, db.getEntity(yClass), yAlias, y);
 
         return PredicateImpl.eq(db, a, b);
     }
@@ -236,7 +236,7 @@ class From<X> implements Root<X> {
 
                     root = new LeftJoin<>(db, root, child.entityClass, alias, on);
                     root.hierarchyVisited = true;
-                    root = resolveChildrenInheritance(root, db.getEntityObject(root.getEntityClass()), alias);
+                    root = resolveChildrenInheritance(root, db.getEntity(root.getEntityClass()), alias);
                 }
             }
         }

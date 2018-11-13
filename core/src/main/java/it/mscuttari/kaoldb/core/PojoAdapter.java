@@ -58,7 +58,7 @@ class PojoAdapter {
     @Nullable
     public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, String alias) {
         // Starting entity
-        EntityObject entity = db.getEntityObject(resultClass);
+        EntityObject entity = db.getEntity(resultClass);
 
         // Go down to the child class.
         // Each iteration will go one step down through the hierarchy tree.
@@ -399,7 +399,7 @@ class PojoAdapter {
 
         // Non-primitive data existence must be checked and so a select query is executed
         // The select query is based on the primary keys of the entity
-        EntityObject entity = db.getEntityObject(clazz);
+        EntityObject entity = db.getEntity(clazz);
 
         EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
         QueryBuilder<?> qb = em.getQueryBuilder(entity.entityClass);
@@ -490,7 +490,7 @@ class PojoAdapter {
             if (sourceObject == null) {
                 insertDataIntoContentValues(cv, annotation.name(), null);
             } else {
-                EntityObject destinationEntity = db.getEntityObject(sourceObject.getClass());
+                EntityObject destinationEntity = db.getEntity(sourceObject.getClass());
                 ColumnObject destinationColumn = destinationEntity.columnsNameMap.get(annotation.referencedColumnName());
 
                 if (destinationColumn.field == null) return;

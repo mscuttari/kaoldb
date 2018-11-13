@@ -188,7 +188,7 @@ class DatabaseObject {
      * @return  {@link EntityObject} of the entity
      * @throws  InvalidConfigException  if the entity has not been found in the mapped ones
      */
-    public EntityObject getEntityObject(Class<?> entityClass) {
+    public EntityObject getEntity(Class<?> entityClass) {
         EntityObject entityObject = entities.get(entityClass);
 
         if (entityObject == null)

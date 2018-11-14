@@ -7,16 +7,15 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
-import it.mscuttari.kaoldb.interfaces.PostPersistListener;
-import it.mscuttari.kaoldb.interfaces.PrePersistListener;
+import it.mscuttari.kaoldb.interfaces.PostActionListener;
+import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
@@ -171,29 +170,6 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-    /**
-     * Get the primary keys values at a specific entity level
-     *
-     * @param   entity      entity
-     * @param   obj         object
-     *
-     * @return  primary keys
-     */
-    private static Map<String, Object> getPrimaryKeys(EntityObject entity, Object obj) {
-        if (!entity.realTable)
-            return null;
-
-        Map<String, Object> result = new HashMap<>(entity.primaryKeys.size());
-
-        for (ColumnObject primaryKey : entity.primaryKeys) {
-            Object value = primaryKey.getValue(obj);
-            result.put(primaryKey.name, value);
-        }
-
-        return result;
-    }
-
-
     @Override
     public synchronized void persist(Object obj) {
         persist(obj, null, null);
@@ -201,11 +177,15 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
 
     @Override
-    public synchronized <T> void persist(T obj, PrePersistListener<T> prePersist, PostPersistListener<T> postPersist) {
-        if (prePersist != null) prePersist.prePersist(obj);
+    public synchronized <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist) {
+        if (prePersist != null)
+            prePersist.run(obj);
+
         EntityObject entity = getObjectEntity(obj);
         persist(obj, entity, null, false);
-        if (postPersist != null) postPersist.postPersist(obj);
+
+        if (postPersist != null)
+            postPersist.run(obj);
     }
 
 
@@ -229,8 +209,13 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         SQLiteDatabase db = getWritableDatabase();
 
         try {
-            if (!isInTransaction) db.beginTransaction();
-            if (cv.size() != 0) db.insert(currentEntity.tableName, null, cv);
+            if (!isInTransaction) {
+                db.beginTransaction();
+            }
+
+            if (cv.size() != 0) {
+                db.insert(currentEntity.tableName, null, cv);
+            }
 
         } finally {
             if (!isInTransaction) {
@@ -243,42 +228,151 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-    public synchronized void delete(Object obj, boolean isInTransaction) {
+    @Override
+    public void update(Object obj) {
+        update(obj, null, null);
+    }
+
+
+    @Override
+    public <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate) {
+        if (preUpdate != null)
+            preUpdate.run(obj);
+
         EntityObject entity = getObjectEntity(obj);
+        update(obj, entity, null, false);
+
+        if (postUpdate != null)
+            postUpdate.run(obj);
+    }
+
+
+    /**
+     * Update and object that is already persisted in the database
+     *
+     * @param   obj                 object to be updated
+     * @param   currentEntity       current entity
+     * @param   childEntity         child entity (used to determine the discriminator value)
+     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
+     */
+    private synchronized void update(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
+        // Extract the current entity data from the object to be persisted
+        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
+
+        // Do the same for its parent
+        if (currentEntity.parent != null)
+            update(obj, currentEntity.parent, currentEntity, true);
+
+        // Persist the object
         SQLiteDatabase db = getWritableDatabase();
-        if (!isInTransaction) db.beginTransaction();
 
         try {
-            while (entity != null) {
-                Map<String, Object> primaryKeys = getPrimaryKeys(entity, obj);
+            if (!isInTransaction) {
+                db.beginTransaction();
+            }
 
-                if (primaryKeys != null) {
-                    StringBuilder whereClause = new StringBuilder();
-                    String separator = "";
-                    String[] whereArgs = new String[primaryKeys.keySet().size()];
-                    int counter = 0;
+            if (cv.size() != 0) {
+                db.insert(currentEntity.tableName, null, cv);
 
-                    for (String key : primaryKeys.keySet()) {
-                        whereClause.append(separator).append(key);
-                        separator = " AND ";
-                        Object value = primaryKeys.get(key);
+                StringBuilder where = new StringBuilder();
+                List<String> whereArgs = new ArrayList<>(currentEntity.primaryKeys.size());
 
-                        if (value == null) {
-                            whereClause.append(" IS NULL");
-                        } else {
-                            whereClause.append("=?");
-                            whereArgs[counter++] = String.valueOf(value);
-                        }
-                    }
+                for (ColumnObject primaryKey : currentEntity.primaryKeys) {
+                    if (where.length() > 0)
+                        where.append(" AND ");
 
-                    db.delete(entity.tableName, whereClause.toString(), whereArgs);
+                    where.append(primaryKey.name).append(" = ?");
+                    whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
                 }
 
-                entity = entity.parent;
+                db.update(currentEntity.tableName,
+                        cv,
+                        where.toString(),
+                        whereArgs.toArray(new String[currentEntity.primaryKeys.size()])
+                );
             }
+
         } finally {
-            if (!isInTransaction) db.endTransaction();
-            db.close();
+            if (!isInTransaction) {
+                // End the transaction and close the database
+                db.setTransactionSuccessful();
+                db.endTransaction();
+                if (db.isOpen()) db.close();
+            }
+        }
+    }
+
+
+    @Override
+    public void remove(Object obj) {
+        remove(obj, null, null);
+    }
+
+
+    @Override
+    public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postURemove) {
+        if (preRemove != null)
+            preRemove.run(obj);
+
+        EntityObject entity = getObjectEntity(obj);
+        remove(obj, entity, null, false);
+
+        if (postURemove != null)
+            postURemove.run(obj);
+    }
+
+
+    /**
+     * Remove and object that is already persisted in the database
+     *
+     * @param   obj                 object to be removed
+     * @param   currentEntity       current entity
+     * @param   childEntity         child entity (used to determine the discriminator value)
+     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
+     */
+    private synchronized void remove(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
+        // Extract the current entity data from the object to be persisted
+        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
+
+        // Do the same for its parent
+        if (currentEntity.parent != null)
+            remove(obj, currentEntity.parent, currentEntity, true);
+
+        // Persist the object
+        SQLiteDatabase db = getWritableDatabase();
+
+        try {
+            if (!isInTransaction) {
+                db.beginTransaction();
+            }
+
+            if (cv.size() != 0) {
+                db.insert(currentEntity.tableName, null, cv);
+
+                StringBuilder where = new StringBuilder();
+                List<String> whereArgs = new ArrayList<>(currentEntity.primaryKeys.size());
+
+                for (ColumnObject primaryKey : currentEntity.primaryKeys) {
+                    if (where.length() > 0)
+                        where.append(" AND ");
+
+                    where.append(primaryKey.name).append(" = ?");
+                    whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
+                }
+
+                db.delete(currentEntity.tableName,
+                        where.toString(),
+                        whereArgs.toArray(new String[currentEntity.primaryKeys.size()])
+                );
+            }
+
+        } finally {
+            if (!isInTransaction) {
+                // End the transaction and close the database
+                db.setTransactionSuccessful();
+                db.endTransaction();
+                if (db.isOpen()) db.close();
+            }
         }
     }
 

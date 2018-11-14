@@ -23,7 +23,6 @@ public @interface ManyToOne {
      * Whether the association is optional.
      * If set to false then a non-null relationship must always exist.
      */
-    // TODO: implement
     boolean optional() default true;
 
 }

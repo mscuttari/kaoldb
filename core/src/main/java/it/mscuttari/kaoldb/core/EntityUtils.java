@@ -205,6 +205,9 @@ class EntityUtils {
      */
     @Nullable
     private static String getColumnsSql(Collection<ColumnObject> columns) {
+        if (columns == null || columns.size() == 0)
+            return null;
+
         StringBuilder result = new StringBuilder();
         String prefix = "";
 
@@ -214,7 +217,7 @@ class EntityUtils {
             prefix = ", ";
 
             // Custom column definition
-            if (!column.customColumnDefinition.isEmpty()) {
+            if (column.customColumnDefinition != null && !column.customColumnDefinition.isEmpty()) {
                 result.append(" ").append(column.customColumnDefinition);
                 continue;
             }
@@ -251,12 +254,12 @@ class EntityUtils {
             }
 
             // Default value
-            if (!column.defaultValue.isEmpty()) {
+            if (column.defaultValue != null && !column.defaultValue.isEmpty()) {
                 result.append(" DEFAULT ").append(column.defaultValue);
             }
         }
 
-        return result.length() == 0 ? null : result.toString();
+        return result.toString();
     }
 
 

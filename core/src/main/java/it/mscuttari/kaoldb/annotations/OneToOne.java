@@ -28,7 +28,6 @@ public @interface OneToOne {
      * Whether the association is optional.
      * If set to false then a non-null relationship must always exist.
      */
-    // TODO: implement
     boolean optional() default true;
 
 
@@ -36,7 +35,6 @@ public @interface OneToOne {
      * The field that owns the relationship.
      * This element is only specified on the inverse (non-owning) side of the association.
      */
-    // TODO: implement
     String mappedBy() default "";
 
 

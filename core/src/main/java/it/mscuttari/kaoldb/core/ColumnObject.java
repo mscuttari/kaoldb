@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import android.support.annotation.Nullable;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -25,34 +27,17 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
  */
 class ColumnObject {
 
-    /**
-     * Relationship types
-     *
-     * {@link #NONE}         <==> {@link #field} has no relationship annotation.
-     * {@link #ONE_TO_ONE}   <==> {@link #field} is annotated with {@link OneToOne}.
-     * {@link #ONE_TO_MANY}  <==> {@link #field} is annotated with {@link OneToMany}.
-     * {@link #MANY_TO_ONE}  <==> {@link #field} is annotated with {@link ManyToOne}.
-     * {@link #MANY_TO_MANY} <==> {@link #field} is annotated with {@link ManyToMany}.
-     */
-    public enum RelationshipType {
-        NONE,
-        ONE_TO_ONE,
-        ONE_TO_MANY,
-        MANY_TO_ONE,
-        MANY_TO_MANY
-    }
-
     /** Class column field */
     public Field field;
 
     /** Annotation of the column ({@link Column} or {@link JoinColumn}) */
     public Annotation columnAnnotation;
 
-    /** Relationship type */
-    public RelationshipType relationshipType;
-
     /** Column name */
     public String name;
+
+    /** Custom column definition */
+    public String customColumnDefinition;
 
     /**
      * Column type
@@ -74,9 +59,6 @@ class ColumnObject {
     /** Default value */
     public String defaultValue;
 
-    /** Custom column definition */
-    public String customColumnDefinition;
-
 
     /**
      * Constructor for fields annotated with {@link Column}
@@ -89,14 +71,14 @@ class ColumnObject {
 
         this.field = field;
         this.columnAnnotation = columnAnnotation;
-        this.name = getColumnName(columnAnnotation, field);
-        this.primaryKey = field.isAnnotationPresent(Id.class);
+
+        this.name = getName(field, columnAnnotation);
+        this.customColumnDefinition = getCustomColumnDefinition(columnAnnotation);
         this.type = getFieldType(field);
-        this.nullable = columnAnnotation.nullable();
+        this.nullable = isNullable(field, columnAnnotation);
+        this.primaryKey = isPrimaryKey(field);
         this.unique = columnAnnotation.unique();
-        this.defaultValue = columnAnnotation.defaultValue();
-        this.customColumnDefinition = columnAnnotation.columnDefinition();
-        this.relationshipType = getRelationshipType(field);
+        this.defaultValue = getDefaultValue(columnAnnotation);
     }
 
 
@@ -111,14 +93,14 @@ class ColumnObject {
 
         this.field = field;
         this.columnAnnotation = joinColumnAnnotation;
-        this.name = getColumnName(joinColumnAnnotation, field);
+
+        this.name = getName(field, joinColumnAnnotation);
+        this.customColumnDefinition = getCustomColumnDefinition(joinColumnAnnotation);
         this.type = getFieldType(field);
-        this.nullable = joinColumnAnnotation.nullable();
-        this.primaryKey = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
+        this.nullable = isNullable(field, joinColumnAnnotation);
+        this.primaryKey = isPrimaryKey(field);
         this.unique = joinColumnAnnotation.unique();
-        this.defaultValue = joinColumnAnnotation.defaultValue();
-        this.customColumnDefinition = joinColumnAnnotation.columnDefinition();
-        this.relationshipType = getRelationshipType(field);
+        this.defaultValue = getDefaultValue(joinColumnAnnotation);
     }
 
 
@@ -130,11 +112,13 @@ class ColumnObject {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof ColumnObject)) return false;
-        ColumnObject columnObject = (ColumnObject)obj;
-        if (name == null && columnObject.name == null) return true;
-        if (name != null) return name.equals(columnObject.name);
-        return false;
+        if (obj == null || !(obj instanceof ColumnObject))
+            return false;
+
+        ColumnObject columnObject = (ColumnObject) obj;
+
+        return (name == null && columnObject.name == null) ||
+                (name != null && name.equals(columnObject.name));
     }
 
 
@@ -238,18 +222,18 @@ class ColumnObject {
      *
      * Example: columnFieldName => column_field_name
      *
-     * @param   annotation      {@link Column} / {@link JoinColumn} annotation of the field
-     * @param   field           column field
+     * @param   field               column field
+     * @param   columnAnnotation    {@link Column} / {@link JoinColumn} annotation of the field
      *
      * @return  column name
      */
-    private static String getColumnName(Annotation annotation, Field field) {
-        if (annotation instanceof Column) {
-            Column column = (Column) annotation;
+    private static String getName(Field field, Annotation columnAnnotation) {
+        if (columnAnnotation instanceof Column) {
+            Column column = (Column) columnAnnotation;
             if (!column.name().isEmpty()) return column.name();
 
-        } else if (annotation instanceof JoinColumn) {
-            JoinColumn joinColumn = (JoinColumn) annotation;
+        } else if (columnAnnotation instanceof JoinColumn) {
+            JoinColumn joinColumn = (JoinColumn) columnAnnotation;
 
             if (!joinColumn.name().isEmpty())
                 return joinColumn.name();
@@ -263,6 +247,27 @@ class ColumnObject {
         c[0] = Character.toLowerCase(c[0]);
         fieldName = new String(c);
         return fieldName.replaceAll("([A-Z])", "_$1").toLowerCase();
+    }
+
+
+    /**
+     * Get custom column definition to be used during the table creation phase
+     *
+     * @param   columnAnnotation        {@link Column} / {@link JoinColumn} annotation of the field
+     * @return  SQL statement (null if there is no custom column definition)
+     */
+    @Nullable
+    private static String getCustomColumnDefinition(Annotation columnAnnotation) {
+        if (columnAnnotation instanceof Column) {
+            Column annotation = (Column) columnAnnotation;
+            return annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+
+        } else if (columnAnnotation instanceof JoinColumn) {
+            JoinColumn annotation = (JoinColumn) columnAnnotation;
+            return annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+        }
+
+        return null;
     }
 
 
@@ -286,26 +291,71 @@ class ColumnObject {
 
 
     /**
-     * Get the relationship type of a field
+     * Check whether the column is nullable or not
      *
-     * @param   field       field to be analyzed
-     * @return  {@link RelationshipType}
+     * @param   field               column field
+     * @param   columnAnnotation    {@link Column} / {@link JoinColumn} annotation of the field
+     *
+     * @return  true if the column is nullable; false otherwise
      */
-    private static RelationshipType getRelationshipType(Field field) {
-        if (field.isAnnotationPresent(OneToOne.class)) {
-            return RelationshipType.ONE_TO_ONE;
+    private static boolean isNullable(Field field, Annotation columnAnnotation) {
+        if (columnAnnotation instanceof Column) {
+            // Normal columns are nullable only if directly specified
+            return ((Column) columnAnnotation).nullable();
 
-        } else if (field.isAnnotationPresent(OneToMany.class)) {
-            return RelationshipType.ONE_TO_MANY;
+        } else if (columnAnnotation instanceof JoinColumn) {
+            JoinColumn joinColumnAnnotation = (JoinColumn) columnAnnotation;
 
-        } else if (field.isAnnotationPresent(ManyToOne.class)) {
-            return RelationshipType.MANY_TO_ONE;
+            // If the columns is nullable by itself, then the relationship optionality doesn't matter
+            if (joinColumnAnnotation.nullable())
+                return true;
 
-        } else if (field.isAnnotationPresent(ManyToMany.class)) {
-            return RelationshipType.MANY_TO_MANY;
+            // A non nullable may be null if the relationship is optional
+            if (field.isAnnotationPresent(OneToOne.class)) {
+                return field.getAnnotation(OneToOne.class).optional();
+            } else if (field.isAnnotationPresent(ManyToOne.class)) {
+                return field.getAnnotation(ManyToOne.class).optional();
+            }
         }
 
-        return RelationshipType.NONE;
+        // Normally not reachable
+        return false;
+    }
+
+
+    /**
+     * Check whether the column is a primary key for the table it belongs to
+     *
+     * It can be considered as a primary key if the field is annotated with {@link Id} (explicit
+     * primary key declaration) or if it is annotated with {@link JoinTable} (all the join table
+     * columns must be primary keys).
+     *
+     * @param   field       column field
+     * @return  true if the column is a primary key; false otherwise
+     */
+    private static boolean isPrimaryKey(Field field) {
+        return field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
+    }
+
+
+    /**
+     * Get column default value to be used during the table creation phase
+     *
+     * @param   columnAnnotation        {@link Column} / {@link JoinColumn} annotation of the field
+     * @return  SQL statement (null if there is no custom column definition)
+     */
+    @Nullable
+    private static String getDefaultValue(Annotation columnAnnotation) {
+        if (columnAnnotation instanceof Column) {
+            String defaultValue = ((Column) columnAnnotation).defaultValue();
+            return defaultValue.isEmpty() ? null : defaultValue;
+
+        } else if (columnAnnotation instanceof JoinColumn) {
+            String defaultValue = ((JoinColumn) columnAnnotation).defaultValue();
+            return defaultValue.isEmpty() ? null : defaultValue;
+        }
+
+        return null;
     }
 
 

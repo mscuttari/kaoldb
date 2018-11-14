@@ -87,8 +87,12 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
-     *  -   If specified, the {@link OneToOne#mappedBy()} field exists, is of correct type and is
-     *      annotated {@link OneToOne}.
+     *  -   In case of owning side, the field is also annotated with {@link JoinColumn},
+     *      {@link JoinColumns} or {@link JoinTable}.
+     *  -   In case of non-owning side, the field is not annotated with {@link JoinColumn},
+     *      {@link JoinColumns} or {@link JoinTable}.
+     *  -   If specified, the {@link OneToOne#mappedBy()} field exists, is of correct type, is
+     *      annotated {@link OneToOne} and its {@link OneToOne#mappedBy()} field is empty.
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -96,26 +100,38 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     private void checkOneToOneRelationship(Element field) throws ProcessorException {
         checkAnnotationCount(field);
 
-        // Check presence of @JoinColumn, @JoinColumns or @JoinTable
         OneToOne oneToOneAnnotation = field.getAnnotation(OneToOne.class);
 
-        if (oneToOneAnnotation.mappedBy().isEmpty()) {
-            JoinColumn joinColumnAnnotation   = field.getAnnotation(JoinColumn.class);
-            JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
-            JoinTable joinTableAnnotation     = field.getAnnotation(JoinTable.class);
+        JoinColumn joinColumnAnnotation   = field.getAnnotation(JoinColumn.class);
+        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+        JoinTable joinTableAnnotation     = field.getAnnotation(JoinTable.class);
 
+        if (oneToOneAnnotation.mappedBy().isEmpty()) {
+            // The owning side must be annotated with @JoinColumn, @JoinColumns or @JoinTable
             if (joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                 throw new ProcessorException("@OneToOne relationship doesn't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
 
         } else {
+            // The non-owning side must not be annotated with @JoinColumn, @JoinColumns or @JoinTable
+            if (joinColumnAnnotation != null || joinColumnsAnnotation != null || joinTableAnnotation != null)
+                throw new ProcessorException("The non-owning side of a @OneToOne relationship can't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
+
+            // Get the mapping field
             TypeMirror linkedType = field.asType();
             Element linkedField = getClassField(linkedType, oneToOneAnnotation.mappedBy());
 
+            // The mapping field must be of a compatible type
             if (!getTypeUtils().isAssignable(field.getEnclosingElement().asType(), linkedField.asType()))
                 throw new ProcessorException("Field \"" + oneToOneAnnotation.mappedBy() + "\" must be of type \"" + field.getEnclosingElement().getSimpleName() + "\"", linkedField);
 
-            if (linkedField.getAnnotation(OneToOne.class) == null)
+            // The mapping field must be annotated with @OneToOne and its mappedBy value must be empty
+            OneToOne linkedOneToOneAnnotation = linkedField.getAnnotation(OneToOne.class);
+
+            if (linkedOneToOneAnnotation == null)
                 throw new ProcessorException("Field \"" + oneToOneAnnotation.mappedBy() + "\" must be annotated with @OneToOne", linkedField);
+
+            if (!linkedOneToOneAnnotation.mappedBy().isEmpty())
+                throw new ProcessorException("Only one side of the @OneToOne relationship can be the owning one", field);
         }
     }
 

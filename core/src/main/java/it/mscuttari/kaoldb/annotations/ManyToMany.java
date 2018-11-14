@@ -22,7 +22,6 @@ public @interface ManyToMany {
     /**
      * The field that owns the relationship.
      */
-    // TODO: implement
     String mappedBy() default "";
 
 }

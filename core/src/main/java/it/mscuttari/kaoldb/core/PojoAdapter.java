@@ -18,6 +18,10 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToMany;
+import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
@@ -117,7 +121,11 @@ class PojoAdapter {
 
                         Object value;
 
-                        if (column.relationshipType == ColumnObject.RelationshipType.NONE) {
+                        if (!column.field.isAnnotationPresent(OneToOne.class) &&
+                                !column.field.isAnnotationPresent(OneToMany.class) &&
+                                !column.field.isAnnotationPresent(ManyToOne.class) &&
+                                !column.field.isAnnotationPresent(ManyToMany.class)) {
+
                             String columnName = alias + entity.getName() + "." + column.name;
                             value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
 

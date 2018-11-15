@@ -44,7 +44,8 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        ClassName propertyClass = ClassName.get("it.mscuttari.kaoldb.core", "Property");
+        ClassName singlePropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "SingleProperty");
+        ClassName collectionPropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "CollectionProperty");
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             if (classElement.getKind() != ElementKind.CLASS) {
@@ -94,13 +95,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                             continue;
 
-                        // Skip the field if it's annotated with @OneToMany or @ManyToMany
-                        OneToMany oneToManyAnnotation   = internalElement.getAnnotation(OneToMany.class);
-                        ManyToMany manyToManyAnnotation = internalElement.getAnnotation(ManyToMany.class);
-
-                        if (oneToManyAnnotation != null || manyToManyAnnotation != null)
-                            continue;
-
                         // Field column annotation
                         ClassName propertyColumnAnnotation;
 
@@ -119,20 +113,36 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
                         if (internalElement.getAnnotation(OneToOne.class) != null) {
                             propertyRelationshipAnnotation = ClassName.get(OneToOne.class);
+                        } else if (internalElement.getAnnotation(OneToMany.class) != null) {
+                            propertyRelationshipAnnotation = ClassName.get(OneToMany.class);
                         } else if (internalElement.getAnnotation(ManyToOne.class) != null) {
                             propertyRelationshipAnnotation = ClassName.get(ManyToOne.class);
+                        } else if (internalElement.getAnnotation(ManyToMany.class) != null) {
+                            propertyRelationshipAnnotation = ClassName.get(ManyToMany.class);
                         }
+
+                        boolean isCollectionProperty = internalElement.getAnnotation(OneToMany.class) != null ||
+                                internalElement.getAnnotation(ManyToMany.class) != null;
 
                         // Get field name and type
                         String fieldName = internalElement.getSimpleName().toString();
                         TypeName fieldType = ClassName.get(internalElement.asType());
 
-                        // Remove the diamond operator, if present ("Collection<Type>.class" is not allowed, but "Collection.class" is)
-                        if (fieldType instanceof ParameterizedTypeName)
-                            fieldType = ((ParameterizedTypeName) fieldType).rawType;
+                        if (isCollectionProperty) {
+                            // Remove the Collection class and get the type class ("Collection<Type>" is converted to "Type")
+                            while (fieldType instanceof ParameterizedTypeName)
+                                fieldType = ((ParameterizedTypeName) fieldType).typeArguments.get(0);
+
+                        } else {
+                            // Remove the diamond operator, if present ("Collection<Type>.class" is not allowed, but "Collection.class" is)
+                            if (fieldType instanceof ParameterizedTypeName)
+                                fieldType = ((ParameterizedTypeName) fieldType).rawType;
+                        }
 
                         // Create the property
-                        ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(propertyClass, classType, fieldType);
+                        ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(
+                                isCollectionProperty ? collectionPropertyClass : singlePropertyClass,
+                                classType, fieldType);
 
                         entityClass.addField(
                                 FieldSpec.builder(parameterizedField, fieldName)
@@ -145,8 +155,8 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                                                         "$S, " +
                                                         "$T.class, " +
                                                         (propertyRelationshipAnnotation == null ? "$S" : "$T.class") +
-                                                        ");",
-                                                propertyClass,
+                                                        ")",
+                                                isCollectionProperty ? collectionPropertyClass : singlePropertyClass,
                                                 classElement,
                                                 currentElement,
                                                 fieldType,

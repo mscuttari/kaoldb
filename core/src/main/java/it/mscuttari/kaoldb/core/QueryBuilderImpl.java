@@ -114,9 +114,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             if (leftData instanceof Property) {
                 Property property = (Property) leftData;
 
-                if (property.getColumnAnnotation() != null && property.getColumnAnnotation() != Column.class) {
+                if (property.columnAnnotation != null && property.columnAnnotation != Column.class) {
                     String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
-                    root = root.innerJoin(property.getFieldType(), alias, property);
+                    root = root.innerJoin(property.fieldType, alias, property);
                 }
             }
         }

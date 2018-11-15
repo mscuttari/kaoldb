@@ -323,7 +323,7 @@ class PredicateImpl extends ExpressionImpl {
         List<String> result = new ArrayList<>();
 
         // Fully qualified alias
-        String fullAlias = From.getFullAlias(alias, property.getFieldParentClass());
+        String fullAlias = From.getFullAlias(alias, property.fieldParentClass);
 
         // Get field
         Field field = property.getField();
@@ -385,8 +385,8 @@ class PredicateImpl extends ExpressionImpl {
         List<Pair<String, String>> result = new ArrayList<>();
 
         // Fully qualified aliases
-        String xFullAlias = From.getFullAlias(xAlias, xProperty.getFieldParentClass());
-        String yFullAlias = From.getFullAlias(yAlias, yProperty.getFieldParentClass());
+        String xFullAlias = From.getFullAlias(xAlias, xProperty.fieldParentClass);
+        String yFullAlias = From.getFullAlias(yAlias, yProperty.fieldParentClass);
 
         // Get fields
         Field xField = xProperty.getField();
@@ -488,10 +488,10 @@ class PredicateImpl extends ExpressionImpl {
             throw new QueryException("Invalid object class");
 
         // @Column
-        if (property.getColumnAnnotation() == Column.class) {
+        if (property.columnAnnotation == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
 
-            String fullAlias = From.getFullAlias(alias, property.getFieldParentClass());
+            String fullAlias = From.getFullAlias(alias, property.fieldParentClass);
             String column = fullAlias + "." + annotation.name();
 
             result.add(new Pair<>(column, objectToString(obj)));
@@ -500,13 +500,13 @@ class PredicateImpl extends ExpressionImpl {
         }
 
         // @JoinColumn, @JoinColumns, @JoinTable
-        if (property.getColumnAnnotation() == JoinColumn.class ||
-                property.getColumnAnnotation() == JoinColumns.class ||
-                property.getColumnAnnotation() == JoinTable.class) {
+        if (property.columnAnnotation == JoinColumn.class ||
+                property.columnAnnotation == JoinColumns.class ||
+                property.columnAnnotation == JoinTable.class) {
 
-            EntityObject referencedEntity = db.getEntity(property.getFieldType());
+            EntityObject referencedEntity = db.getEntity(property.fieldType);
 
-            String fullAlias = Join.getJoinFullAlias(alias, property.getFieldParentClass(), property.getFieldType());
+            String fullAlias = Join.getJoinFullAlias(alias, property.fieldParentClass, property.fieldType);
 
             for (ColumnObject primaryKey : referencedEntity.primaryKeys) {
                 String column = fullAlias + "." + primaryKey.name;

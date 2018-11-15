@@ -103,7 +103,7 @@ class From<X> implements Root<X> {
 
 
     @Override
-    public Expression isNull(Property<X, ?> field) {
+    public Expression isNull(SingleProperty<X, ?> field) {
         Variable<X, ?> a = new Variable<>(db, entity, alias, field);
 
         return PredicateImpl.isNull(db, a);
@@ -111,7 +111,7 @@ class From<X> implements Root<X> {
 
 
     @Override
-    public <T> Expression eq(Property<X, T> field, T value) {
+    public <T> Expression eq(SingleProperty<X, T> field, T value) {
         Variable<X, T> a = new Variable<>(db, entity, alias, field);
         Variable<?, T> b = new Variable<>(value);
 
@@ -120,7 +120,7 @@ class From<X> implements Root<X> {
 
 
     @Override
-    public <T> Expression eq(Property<X, T> x, Property<X, T> y) {
+    public <T> Expression eq(SingleProperty<X, T> x, SingleProperty<X, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);
         Variable<X, T> b = new Variable<>(db, entity, alias, y);
 
@@ -129,7 +129,7 @@ class From<X> implements Root<X> {
 
 
     @Override
-    public <Y, T> Expression eq(Property<X, T> x, Class<Y> yClass, String yAlias, Property<Y, T> y) {
+    public <Y, T> Expression eq(SingleProperty<X, T> x, Class<Y> yClass, String yAlias, SingleProperty<Y, T> y) {
         Variable<X, T> a = new Variable<>(db, entity, alias, x);
         Variable<Y, T> b = new Variable<>(db, db.getEntity(yClass), yAlias, y);
 
@@ -183,8 +183,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, parent, alias, new Property<>(parent.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, parent, alias, new SingleProperty<>(parent.entityClass, primaryKey.type, primaryKey.field));
                         Expression onParent = PredicateImpl.eq(db, a, b);
                         on = on == null ? onParent : on.and(onParent);
                     }
@@ -225,8 +225,8 @@ class From<X> implements Root<X> {
                         if (primaryKey.field == null)
                             throw new InvalidConfigException("Primary key field not found");
 
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new Property<>(entity.entityClass, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, child, alias, new Property<>(child.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, child, alias, new SingleProperty<>(child.entityClass, primaryKey.type, primaryKey.field));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }

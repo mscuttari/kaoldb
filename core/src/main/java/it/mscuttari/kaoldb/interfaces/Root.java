@@ -1,6 +1,7 @@
 package it.mscuttari.kaoldb.interfaces;
 
 import it.mscuttari.kaoldb.core.Property;
+import it.mscuttari.kaoldb.core.SingleProperty;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
 /**
@@ -94,7 +95,7 @@ public interface Root<X> {
      *
      * @return  expression
      */
-    Expression isNull(Property<X, ?> field);
+    Expression isNull(SingleProperty<X, ?> field);
 
 
     /**
@@ -106,7 +107,7 @@ public interface Root<X> {
      *
      * @return  expression
      */
-    <T> Expression eq(Property<X, T> field, T value);
+    <T> Expression eq(SingleProperty<X, T> field, T value);
 
 
     /**
@@ -118,7 +119,7 @@ public interface Root<X> {
      *
      * @return  expression
      */
-    <T> Expression eq(Property<X, T> x, Property<X, T> y);
+    <T> Expression eq(SingleProperty<X, T> x, SingleProperty<X, T> y);
 
 
     /**
@@ -135,6 +136,6 @@ public interface Root<X> {
      *
      * @throws  QueryException  if yClass is not an entity
      */
-    <Y, T> Expression eq(Property<X, T> x, Class<Y> yClass, String yAlias, Property<Y, T> y);
+    <Y, T> Expression eq(SingleProperty<X, T> x, Class<Y> yClass, String yAlias, SingleProperty<Y, T> y);
 
 }

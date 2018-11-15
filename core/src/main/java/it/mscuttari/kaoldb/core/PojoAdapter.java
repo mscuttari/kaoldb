@@ -427,7 +427,7 @@ class PojoAdapter {
                 throw new InvalidConfigException("Primary key column \"" + primaryKey.name + "\" has null field");
 
             // Create the property that the generated class would have because of the primary key field
-            Property property = new Property<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field);
+            SingleProperty property = new SingleProperty<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field);
 
             Object value = primaryKey.getValue(obj);
             Expression expression = root.eq(property, value);

@@ -98,17 +98,17 @@ abstract class Join<X, Y> extends From<X> {
         }
 
         // ON clause dependent on the property
-        if (property.getColumnAnnotation() == JoinColumn.class) {
+        if (property.columnAnnotation == JoinColumn.class) {
             // Two tables join
             Expression on = getTwoTablesOnClause(property.getField().getAnnotation(JoinColumn.class));
             return "(" + from + " " + type + " " + super.toString() + " ON " + on + ")";
 
-        } else if (property.getColumnAnnotation() == JoinColumns.class) {
+        } else if (property.columnAnnotation == JoinColumns.class) {
             // Two tables join
             Expression on = getTwoTablesOnClause(property.getField().getAnnotation(JoinColumns.class));
             return "(" + from + " " + type + " " + super.toString() + " ON " + on + ")";
 
-        } else if (property.getColumnAnnotation() == JoinTable.class) {
+        } else if (property.columnAnnotation == JoinTable.class) {
             // Three tables join
             JoinTable annotation = property.getField().getAnnotation(JoinTable.class);
             String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), from.getAlias(), alias);
@@ -120,7 +120,7 @@ abstract class Join<X, Y> extends From<X> {
                     type + " " + super.toString() + " ON " + onRight + ")";
         }
 
-        throw new QueryException("Invalid join field \"" + property.getFieldName() + "\"");
+        throw new QueryException("Invalid join field \"" + property.fieldName + "\"");
     }
 
 
@@ -196,7 +196,7 @@ abstract class Join<X, Y> extends From<X> {
      */
     private Expression getThreeTablesRightOnClause(JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), from.getAlias(), alias);
-        String fullAlias = getFullAlias(alias, property.getFieldType());
+        String fullAlias = getFullAlias(alias, property.fieldType);
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.inverseJoinColumns()) {

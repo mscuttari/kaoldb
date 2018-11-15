@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import android.support.annotation.Nullable;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
@@ -16,14 +18,33 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
  * @param   <M>     entity class
  * @param   <T>     data type
  */
-public final class Property<M, T> {
+public abstract class Property<M, T> {
 
-    private final Class<M> entityClass;
-    private final Class<? super M> fieldParentClass;
-    private final Class<T> fieldType;
-    private final String fieldName;
-    private final Class<? extends Annotation> columnAnnotation;
-    private final Class<? extends Annotation> relationshipAnnotation;
+    /** Current entity class */
+    final Class<M> entityClass;
+
+    /** The class the property originally belonged to */
+    final Class<? super M> fieldParentClass;
+
+    /** The class of the entity involved by the property */
+    final Class<T> fieldType;
+
+    /** Field name (as specified in the model) */
+    final String fieldName;
+
+    /**
+     * Column annotation class (used for a rapid column type lookup).
+     * It is one of {@link Column}, {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     */
+    final Class<? extends Annotation> columnAnnotation;
+
+    /**
+     * Relationship annotation class (used for a rapid relationship type lookup).
+     * It is one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
+     * It can also be null if the field doesn't has any relationship with other entities.
+     */
+    @Nullable
+    final Class<? extends Annotation> relationshipAnnotation;
 
 
     /**
@@ -55,13 +76,14 @@ public final class Property<M, T> {
     /**
      * Constructor
      *
-     * @param   entityClass             current entity class (the parent class is set to the set of the current class)
+     * @param   entityClass             current entity class
+     * @param   fieldParentClass        the class the property really belongs to
      * @param   fieldType               field type
      * @param   fieldName               field name
      * @param   columnAnnotation        column class
      * @param   relationshipAnnotation  relationship class
      */
-    public Property(Class<M> entityClass, Class<? super M> fieldParentClass, Class<T> fieldType, String fieldName, Class<? extends Annotation> columnAnnotation, Class<? extends Annotation> relationshipAnnotation) {
+    public Property(Class<M> entityClass, Class<? super M> fieldParentClass, Class<T> fieldType, String fieldName, Class<? extends Annotation> columnAnnotation, @Nullable Class<? extends Annotation> relationshipAnnotation) {
         this.entityClass = entityClass;
         this.fieldParentClass = fieldParentClass;
         this.fieldType = fieldType;
@@ -72,72 +94,12 @@ public final class Property<M, T> {
 
 
     /**
-     * Get entity class
-     *
-     * @return  entity class
-     */
-    public Class<M> getEntityClass() {
-        return entityClass;
-    }
-
-
-    /**
-     * Get parent class
-     *
-     * @return  parent class the property originally belonged to
-     */
-    public Class<? super M> getFieldParentClass() {
-        return fieldParentClass;
-    }
-
-
-    /**
-     * Get field type
-     *
-     * @return  field class
-     */
-    public Class<T> getFieldType() {
-        return fieldType;
-    }
-
-
-    /**
-     * Get field name
-     *
-     * @return  field name
-     */
-    public String getFieldName() {
-        return fieldName;
-    }
-
-
-    /**
-     * Get column annotation type
-     *
-     * @return  column annotation type
-     */
-    public Class<? extends Annotation> getColumnAnnotation() {
-        return columnAnnotation;
-    }
-
-
-    /**
-     * Get relationship annotation class
-     *
-     * @return  relationship annotation class
-     */
-    public Class<? extends Annotation> getRelationshipAnnotation() {
-        return relationshipAnnotation;
-    }
-
-
-    /**
      * Get field the property is linked to
      *
      * @return  field
      */
-    public Field getField() {
-        return EntityObject.getField(getEntityClass(), getFieldName());
+    Field getField() {
+        return EntityObject.getField(entityClass, fieldName);
     }
 
 
@@ -168,10 +130,14 @@ public final class Property<M, T> {
     /**
      * Get the relationship annotation class of a field
      *
+     * It can be one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and
+     * {@link ManyToMany}. It can also be null if none of the previous are specified.
+     *
      * @param   field   field to be analyzed
      * @return  class of the relationship annotation linked to the field
      *          (null if the field is not annotated with any relationship annotation)
      */
+    @Nullable
     private static Class<? extends Annotation> getRelationshipAnnotation(Field field) {
         if (field.isAnnotationPresent(OneToOne.class))
             return OneToOne.class;

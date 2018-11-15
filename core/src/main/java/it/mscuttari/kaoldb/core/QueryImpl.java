@@ -147,7 +147,7 @@ class QueryImpl<M> implements Query<M> {
                 QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
 
                 // Create a fake property to be used for the join
-                Property property = new Property<>(entity.entityClass, linkedClass, field);
+                Property property = new SingleProperty<>(entity.entityClass, linkedClass, field);
 
                 // Create the join
                 Root<?> root = qb.getRoot(entity.entityClass, "source");
@@ -156,7 +156,7 @@ class QueryImpl<M> implements Query<M> {
                 Expression where = null;
 
                 for (ColumnObject primaryKey : entity.primaryKeys) {
-                    Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
+                    SingleProperty primaryKeyProperty = new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field);
                     Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
                     where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
                 }
@@ -222,7 +222,7 @@ class QueryImpl<M> implements Query<M> {
             Field mappedByField = linkedEntity.getField(mappedByFieldName);
 
             // Create a fake property to be used for the equal predicate
-            Property property = new Property<>(linkedClass, entity.entityClass, mappedByField);
+            Property property = new SingleProperty<>(linkedClass, entity.entityClass, mappedByField);
 
             // Create the join and equality constraints
             Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
@@ -231,7 +231,7 @@ class QueryImpl<M> implements Query<M> {
             Expression where = null;
 
             for (ColumnObject primaryKey : entity.primaryKeys) {
-                Property primaryKeyProperty = new Property<>(entity.entityClass, primaryKey.type, primaryKey.field);
+                SingleProperty primaryKeyProperty = new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field);
                 Expression primaryKeyEquality = join.eq(primaryKeyProperty, primaryKey.getValue(object));
                 where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
             }

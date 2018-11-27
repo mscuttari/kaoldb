@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -72,6 +73,7 @@ class QueryImpl<M> implements Query<M> {
         Map<String, Integer> cursorMap = getCursorColumnMap(c);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+            //System.out.println("Cursor: " + DatabaseUtils.dumpCursorToString(c));
             M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
             loadEagerData(object);
             createLazyCollections(object);
@@ -155,7 +157,7 @@ class QueryImpl<M> implements Query<M> {
 
                 Expression where = null;
 
-                for (ColumnObject primaryKey : entity.primaryKeys) {
+                for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
                     SingleProperty primaryKeyProperty = new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field);
                     Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
                     where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
@@ -206,7 +208,15 @@ class QueryImpl<M> implements Query<M> {
             usedFields.add(field);
 
             // Create the query
-            Class<?> linkedClass = ColumnObject.getFieldType(field);
+            Class<?> linkedClass;
+
+            if (field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(ManyToMany.class)) {
+                ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
+                linkedClass = (Class<?>) collectionType.getActualTypeArguments()[0];
+            } else {
+                linkedClass = field.getType();
+            }
+
             QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
             EntityObject linkedEntity = db.getEntity(linkedClass);
 
@@ -230,7 +240,7 @@ class QueryImpl<M> implements Query<M> {
 
             Expression where = null;
 
-            for (ColumnObject primaryKey : entity.primaryKeys) {
+            for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
                 SingleProperty primaryKeyProperty = new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field);
                 Expression primaryKeyEquality = join.eq(primaryKeyProperty, primaryKey.getValue(object));
                 where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);

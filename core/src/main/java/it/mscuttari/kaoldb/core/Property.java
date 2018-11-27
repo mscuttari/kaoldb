@@ -1,10 +1,9 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.Nullable;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
+import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -43,8 +42,7 @@ public abstract class Property<M, T> {
      * It is one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      * It can also be null if the field doesn't has any relationship with other entities.
      */
-    @Nullable
-    final Class<? extends Annotation> relationshipAnnotation;
+    @Nullable final Class<? extends Annotation> relationshipAnnotation;
 
 
     /**

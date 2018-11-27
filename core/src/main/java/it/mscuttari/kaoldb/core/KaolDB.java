@@ -86,8 +86,7 @@ public final class KaolDB {
             throw new ConfigParseException(e);
 
         } finally {
-            if (xml != null)
-                xml.close();
+            xml.close();
         }
 
         LogUtils.i("Configuration loaded");
@@ -97,7 +96,7 @@ public final class KaolDB {
 
         for (String dbName : getConfig().getDatabaseMapping().keySet()) {
             DatabaseObject database = getConfig().getDatabaseMapping().get(dbName);
-            database.setEntitiesMap(EntityUtils.createEntities(database.getEntityClasses()));
+            database.setEntitiesMap(database.mapEntities(database.getEntityClasses()));
         }
 
         LogUtils.i("Entities mapped");

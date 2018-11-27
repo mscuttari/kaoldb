@@ -1,9 +1,9 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.Nullable;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+
+import androidx.annotation.Nullable;
 
 /**
  * @param   <M>     entity class

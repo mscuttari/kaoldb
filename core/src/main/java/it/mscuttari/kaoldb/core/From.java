@@ -1,7 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import it.mscuttari.kaoldb.annotations.InheritanceType;
-import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
@@ -179,10 +178,7 @@ class From<X> implements Root<X> {
                 if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
                     Expression on = null;
 
-                    for (ColumnObject primaryKey : parent.primaryKeys) {
-                        if (primaryKey.field == null)
-                            throw new InvalidConfigException("Primary key field not found");
-
+                    for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
                         Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
                         Variable<?, ?> b = new Variable<>(db, parent, alias, new SingleProperty<>(parent.entityClass, primaryKey.type, primaryKey.field));
                         Expression onParent = PredicateImpl.eq(db, a, b);
@@ -221,10 +217,7 @@ class From<X> implements Root<X> {
                 if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
                     Expression on = null;
 
-                    for (ColumnObject primaryKey : entity.primaryKeys) {
-                        if (primaryKey.field == null)
-                            throw new InvalidConfigException("Primary key field not found");
-
+                    for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
                         Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
                         Variable<?, ?> b = new Variable<>(db, child, alias, new SingleProperty<>(child.entityClass, primaryKey.type, primaryKey.field));
                         Expression onChild = PredicateImpl.eq(db, a, b);

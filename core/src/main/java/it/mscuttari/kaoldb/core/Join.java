@@ -1,8 +1,8 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.NonNull;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;

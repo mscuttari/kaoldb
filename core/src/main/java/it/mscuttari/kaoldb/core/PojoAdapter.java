@@ -4,16 +4,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.support.annotation.Nullable;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
+import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -116,7 +113,7 @@ class PojoAdapter {
 
             while (entity != null) {
                 if (entity.realTable) {
-                    for (ColumnObject column : entity.columns) {
+                    for (BaseColumnObject column : entity.columns) {
                         if (column.field == null) continue;
 
                         Object value;
@@ -257,14 +254,14 @@ class PojoAdapter {
 
             } else {
                 // The discriminator value has not been found. Adding it automatically
-                Annotation discriminatorColumnAnnotation = currentEntity.discriminatorColumn.columnAnnotation;
 
-                if (discriminatorColumnAnnotation instanceof Column) {
+                if (currentEntity.discriminatorColumn.field.isAnnotationPresent(Column.class)) {
                     // The discriminator column is linked to a field annotated with @Column
                     insertDataIntoContentValues(cv, currentEntity.discriminatorColumn.name, childEntity.discriminatorValue);
 
-                } else if (discriminatorColumnAnnotation instanceof JoinColumn) {
+                } else if (currentEntity.discriminatorColumn.field.isAnnotationPresent(JoinColumn.class)) {
                     // The discriminator column is linked to a field annotated with @JoinColumn
+                    JoinColumn joinColumnAnnotation = currentEntity.discriminatorColumn.field.getAnnotation(JoinColumn.class);
                     Class<?> discriminatorType = currentEntity.discriminatorColumn.field.getType();
                     Object discriminator;
 
@@ -273,7 +270,7 @@ class PojoAdapter {
                         discriminator = discriminatorType.newInstance();
 
                         // Set the child discriminator value
-                        Field discriminatorField = discriminatorType.getField(((JoinColumn)discriminatorColumnAnnotation).referencedColumnName());
+                        Field discriminatorField = discriminatorType.getField(joinColumnAnnotation.referencedColumnName());
                         discriminatorField.set(discriminator, childEntity.discriminatorValue);
 
                         // Assign the discriminator value to the object to be persisted
@@ -289,10 +286,11 @@ class PojoAdapter {
                         throw new QueryException(e);
                     }
 
-                    insertJoinColumnIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinColumn)discriminatorColumnAnnotation);
+                    currentEntity.discriminatorColumn.addToContentValues(cv, obj);
 
-                } else if (discriminatorColumnAnnotation instanceof JoinColumns) {
+                } else if (currentEntity.discriminatorColumn.field.isAnnotationPresent(JoinColumns.class)) {
                     // The discriminator column is linked to a field annotated with @JoinColumns
+                    JoinColumns joinColumnsAnnotation = currentEntity.discriminatorColumn.field.getAnnotation(JoinColumns.class);
                     Class<?> discriminatorType = currentEntity.discriminatorColumn.field.getType();
                     Object discriminator;
 
@@ -300,7 +298,7 @@ class PojoAdapter {
                         // Create the discriminator object containing the discriminator column
                         discriminator = discriminatorType.newInstance();
 
-                        for (JoinColumn joinColumn : ((JoinColumns)discriminatorColumnAnnotation).value()) {
+                        for (JoinColumn joinColumn : joinColumnsAnnotation.value()) {
                             if (joinColumn.name().equals(currentEntity.discriminatorColumn.name)) {
                                 // Set the child discriminator value
                                 Field discriminatorField = discriminatorType.getField(joinColumn.referencedColumnName());
@@ -323,9 +321,9 @@ class PojoAdapter {
                         throw new QueryException(e);
                     }
 
-                    insertJoinColumnsIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinColumns)discriminatorColumnAnnotation);
+                    currentEntity.discriminatorColumn.addToContentValues(cv, obj);
 
-                } else if (discriminatorColumnAnnotation instanceof JoinTable) {
+                } else if (currentEntity.discriminatorColumn.field.isAnnotationPresent(JoinTable.class)) {
                     // The discriminator column is linked to a field annotated with @JoinTable
                     Class<?> discriminatorType = currentEntity.discriminatorColumn.field.getType();
                     Object discriminator;
@@ -334,6 +332,7 @@ class PojoAdapter {
                         // Create the discriminator object containing the discriminator column
                         discriminator = discriminatorType.newInstance();
 
+                        JoinTable discriminatorColumnAnnotation = currentEntity.discriminatorColumn.field.getAnnotation(JoinTable.class);
                         for (JoinColumn joinColumn : ((JoinTable)discriminatorColumnAnnotation).joinColumns()) {
                             if (joinColumn.name().equals(currentEntity.discriminatorColumn.name)) {
                                 // Set the child discriminator value
@@ -357,26 +356,20 @@ class PojoAdapter {
                         throw new QueryException(e);
                     }
 
-                    insertJoinTableIntoContentValues(cv, obj, db, currentEntity.discriminatorColumn.field, (JoinTable)discriminatorColumnAnnotation);
+                    currentEntity.discriminatorColumn.addToContentValues(cv, obj);
                 }
             }
         }
 
 
-        // Fields
-        List<Field> fields = new ArrayList<>();
+        // Columns
+        for (BaseColumnObject column : currentEntity.columns) {
+            Object fieldValue = column.getValue(obj);
 
-        for (ColumnObject column : currentEntity.columns) {
-            if (column.field != null && !fields.contains(column.field)) {
-                fields.add(column.field);
+            if (!checkDataExistence(fieldValue, context, db))
+                throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
 
-                Object fieldValue = column.getValue(obj);
-
-                if (!checkDataExistence(fieldValue, context, db))
-                    throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
-
-                insertFieldIntoContentValues(cv, obj, db, column.field);
-            }
+            column.addToContentValues(cv, obj);
         }
 
         return cv;
@@ -422,10 +415,7 @@ class PojoAdapter {
 
         Expression where = null;
 
-        for (ColumnObject primaryKey : entity.primaryKeys) {
-            if (primaryKey.field == null)
-                throw new InvalidConfigException("Primary key column \"" + primaryKey.name + "\" has null field");
-
+        for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
             // Create the property that the generated class would have because of the primary key field
             SingleProperty property = new SingleProperty<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field);
 
@@ -439,119 +429,6 @@ class PojoAdapter {
         // Run the query and check if its result is not an empty set
         Object queryResult = qb.from(root).where(where).build("de").getSingleResult();
         return queryResult != null;
-    }
-
-
-    /**
-     * Insert {@link Field} value into {@link ContentValues}
-     *
-     * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     {@link Object} to be persisted whose class contains the {@code field}
-     * @param   db      {@link DatabaseObject} of the database the entity belongs to
-     * @param   field   {@link Field} linked to the table column to be populated
-     */
-    private static void insertFieldIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field) {
-        if (field.isAnnotationPresent(Column.class)) {
-            insertColumnIntoContentValues(cv, obj, field, field.getAnnotation(Column.class));
-
-        } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            insertJoinColumnIntoContentValues(cv, obj, db, field, field.getAnnotation(JoinColumn.class));
-
-        } else if (field.isAnnotationPresent(JoinColumns.class)) {
-            insertJoinColumnsIntoContentValues(cv, obj, db, field, field.getAnnotation(JoinColumns.class));
-
-        } else if (field.isAnnotationPresent(JoinTable.class)) {
-            insertJoinTableIntoContentValues(cv, obj, db, field, field.getAnnotation(JoinTable.class));
-        }
-    }
-
-
-    /**
-     * Insert {@link Column} field into {@link ContentValues}
-     *
-     * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   field   {@link Field} linked to the table column to be populated
-     *
-     * @throws  QueryException if the field can't be accessed
-     */
-    private static void insertColumnIntoContentValues(ContentValues cv, Object obj, Field field, Column annotation) {
-        try {
-            field.setAccessible(true);
-            Object value = field.get(obj);
-            insertDataIntoContentValues(cv, annotation.name(), value);
-
-        } catch (IllegalAccessException e) {
-            throw new QueryException(e);
-        }
-    }
-
-
-    /**
-     * Insert {@link JoinColumn} field into {@link ContentValues}
-     *
-     * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
-     * @param   field   {@link Field} linked to the table column to be populated
-     *
-     * @throws  QueryException if the field can't be accessed
-     */
-    private static void insertJoinColumnIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumn annotation) {
-        try {
-            field.setAccessible(true);
-            Object sourceObject = field.get(obj);
-
-            if (sourceObject == null) {
-                insertDataIntoContentValues(cv, annotation.name(), null);
-            } else {
-                EntityObject destinationEntity = db.getEntity(sourceObject.getClass());
-                ColumnObject destinationColumn = destinationEntity.columnsNameMap.get(annotation.referencedColumnName());
-
-                if (destinationColumn.field == null) return;
-                destinationColumn.field.setAccessible(true);
-                Object value = destinationColumn.field.get(sourceObject);
-
-                insertDataIntoContentValues(cv, annotation.name(), value);
-            }
-
-        } catch (IllegalAccessException e) {
-            throw new QueryException(e);
-        }
-    }
-
-
-    /**
-     * Insert {@link JoinColumns} field into {@link ContentValues}
-     *
-     * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
-     * @param   field   {@link Field} linked to the table column to be populated
-     *
-     * @throws  QueryException if the field can't be accessed
-     */
-    private static void insertJoinColumnsIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinColumns annotation) {
-        for (JoinColumn joinColumnAnnotation : annotation.value()) {
-            insertJoinColumnIntoContentValues(cv, obj, db, field, joinColumnAnnotation);
-        }
-    }
-
-
-    /**
-     * Insert {@link JoinTable} field into {@link ContentValues}
-     *
-     * @param   cv      {@link ContentValues} to be populated
-     * @param   obj     {@link Object} to be persisted which contains the field
-     * @param   db      {@link DatabaseObject} of the the database the entity belongs to
-     * @param   field   {@link Field} linked to the table column to be populated
-     *
-     * @throws  QueryException if the field can't be accessed
-     */
-    private static void insertJoinTableIntoContentValues(ContentValues cv, Object obj, DatabaseObject db, Field field, JoinTable annotation) {
-        for (JoinColumn joinColumnAnnotation : annotation.joinColumns()) {
-            insertJoinColumnIntoContentValues(cv, obj, db, field, joinColumnAnnotation);
-        }
     }
 
 
@@ -570,7 +447,7 @@ class PojoAdapter {
      * @param   columnName  column name
      * @param   value       value
      */
-    private static void insertDataIntoContentValues(ContentValues cv, String columnName, Object value) {
+    public static void insertDataIntoContentValues(ContentValues cv, String columnName, Object value) {
         if (value == null) {
             cv.putNull(columnName);
 

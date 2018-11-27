@@ -1,8 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -12,6 +10,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.interfaces.Query;
 

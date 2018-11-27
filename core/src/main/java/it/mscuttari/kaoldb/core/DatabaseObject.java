@@ -8,6 +8,7 @@ import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class DatabaseObject {
@@ -227,6 +228,51 @@ class DatabaseObject {
     public void setEntitiesMap(Map<Class<?>, EntityObject> map) {
         this.entities.clear();
         this.entities.putAll(map);
+    }
+
+
+    /**
+     * Generate entities mapping
+     *
+     * The mapping is done in three steps:
+     *  1.  Get the basic data in order to establish the paternity relationships
+     *  2.  Determine the columns of each table (own columns and inherited ones)
+     *  3.  Check the consistency of the previously found information that can not be checked
+     *      at compile time through the annotation processors and fix the join columns types
+     *
+     * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
+     * mapping consistence
+     *
+     * @param   classes     collection of all classes
+     * @return  map between classes and entities objects
+     */
+    public Map<Class<?>, EntityObject> mapEntities(Collection<Class<?>> classes) {
+        Map<Class<?>, EntityObject> result = new HashMap<>();
+
+        // First scan to get basic data
+        LogUtils.v("Entities mapping: first scan to get basic data");
+
+        for (Class<?> entityClass : classes) {
+            if (result.containsKey(entityClass)) continue;
+            EntityObject entity = EntityObject.entityClassToEntityObject(this, entityClass, classes, result);
+            result.put(entityClass, entity);
+        }
+
+        // Second scan to assign static data
+        LogUtils.v("Entities mapping: second scan to assign static data");
+
+        for (EntityObject entity : result.values()) {
+            entity.setupColumns();
+        }
+
+        // Third scan to check consistence
+        LogUtils.v("Entities mapping: third scan to check data consistence");
+
+        for (EntityObject entity : result.values()) {
+            entity.checkConsistence(result);
+        }
+
+        return result;
     }
 
 }

@@ -8,8 +8,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
@@ -50,7 +52,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     public void onCreate(SQLiteDatabase db) {
         for (EntityObject entity : database.getEntities()) {
             // Entity table
-            String entityTableCreateSQL = EntityUtils.getTableSql(database, entity);
+            String entityTableCreateSQL = entity.getSQL();
 
             if (entityTableCreateSQL != null) {
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
@@ -61,9 +63,13 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
             // Join tables
             for (Field field : entity.relationships) {
-                String joinTableCreateSQL = EntityUtils.getJoinTableSql(database, field);
+                if (!field.isAnnotationPresent(JoinTable.class))
+                    continue;
 
-                if (joinTableCreateSQL != null) {
+                JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
+                String joinTableCreateSQL = joinTableObject.getSQL();
+
+                if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
                     LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
                     System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
                     db.execSQL(joinTableCreateSQL);
@@ -275,9 +281,10 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
                 db.insert(currentEntity.tableName, null, cv);
 
                 StringBuilder where = new StringBuilder();
-                List<String> whereArgs = new ArrayList<>(currentEntity.primaryKeys.size());
+                Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
+                List<String> whereArgs = new ArrayList<>(primaryKeys.size());
 
-                for (ColumnObject primaryKey : currentEntity.primaryKeys) {
+                for (BaseColumnObject primaryKey : primaryKeys) {
                     if (where.length() > 0)
                         where.append(" AND ");
 
@@ -288,7 +295,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
                 db.update(currentEntity.tableName,
                         cv,
                         where.toString(),
-                        whereArgs.toArray(new String[currentEntity.primaryKeys.size()])
+                        whereArgs.toArray(new String[primaryKeys.size()])
                 );
             }
 
@@ -350,9 +357,10 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
                 db.insert(currentEntity.tableName, null, cv);
 
                 StringBuilder where = new StringBuilder();
-                List<String> whereArgs = new ArrayList<>(currentEntity.primaryKeys.size());
+                Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
+                List<String> whereArgs = new ArrayList<>(primaryKeys.size());
 
-                for (ColumnObject primaryKey : currentEntity.primaryKeys) {
+                for (BaseColumnObject primaryKey : primaryKeys) {
                     if (where.length() > 0)
                         where.append(" AND ");
 
@@ -362,7 +370,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
 
                 db.delete(currentEntity.tableName,
                         where.toString(),
-                        whereArgs.toArray(new String[currentEntity.primaryKeys.size()])
+                        whereArgs.toArray(new String[primaryKeys.size()])
                 );
             }
 

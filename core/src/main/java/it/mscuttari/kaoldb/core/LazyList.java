@@ -1,8 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +9,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.UnaryOperator;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import it.mscuttari.kaoldb.interfaces.Query;
 
 /**

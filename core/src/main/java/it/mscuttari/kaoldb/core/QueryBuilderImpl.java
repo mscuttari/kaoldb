@@ -142,7 +142,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         // Current entity
         EntityObject entity = db.getEntity(resultClass);
-        for (ColumnObject column : entity.columns) {
+        for (BaseColumnObject column : entity.columns) {
             selectColumns.add(alias + entity.getName() + "." + column.name + " AS \"" + alias + entity.getName() + "." + column.name + "\"");
         }
 
@@ -150,7 +150,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         EntityObject parent = entity.parent;
 
         while (parent != null) {
-            for (ColumnObject column : parent.columns) {
+            for (BaseColumnObject column : parent.columns) {
                 selectColumns.add(alias + parent.getName() + "." + column.name + " AS \"" + alias + parent.getName() + "." + column.name + "\"");
             }
 
@@ -208,7 +208,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         List<String> result = new ArrayList<>();
 
         for (EntityObject child : entity.children) {
-            for (ColumnObject column : child.columns) {
+            for (BaseColumnObject column : child.columns) {
                 result.add(alias + child.getName() + "." + column.name + " AS \"" + alias + child.getName() + "." + column.name + "\"");
             }
 

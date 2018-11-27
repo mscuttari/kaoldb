@@ -1,23 +1,25 @@
 package it.mscuttari.kaoldb.core;
 
-import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
@@ -34,52 +36,47 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
  */
 class EntityObject {
 
+    /** Database the entity belongs to */
+    @NonNull public final DatabaseObject db;
+
     /** Entity class */
-    public Class<?> entityClass;
+    @NonNull public final Class<?> entityClass;
 
     /**
      * Table name.
      * Null if the entity doesn't require a real table.
      */
-    @Nullable
-    public String tableName;
+    @Nullable public final String tableName;
 
     /** Whether the entity has a real table or not */
-    public boolean realTable;
+    public final boolean realTable;
 
     /** Columns of the table */
-    public Collection<ColumnObject> columns;            // All columns
-    public Map<String, ColumnObject> columnsNameMap;    // All columns mapped by column name
-
-    /** Primary keys of the table (subset of {@link #columns}) */
-    public Collection<ColumnObject> primaryKeys;
+    public Columns columns;
 
     /**
      * Inheritance type.
      * Null if the entity has no children.
      */
-    @Nullable
-    public InheritanceType inheritanceType;
+    @Nullable public InheritanceType inheritanceType;
 
     /**
-     * Discriminator column name.
+     * Discriminator column.
      * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence(Map)}.
      */
-    public ColumnObject discriminatorColumn;
+    public BaseColumnObject discriminatorColumn;
 
     /**
      * Discriminator value.
      * Null if the entity has no parent.
      */
-    @Nullable
-    public Object discriminatorValue;
+    @Nullable public Object discriminatorValue;
 
     /**
      * Parent entity.
      * Null if the entity has no parent.
      */
-    @Nullable
-    public EntityObject parent;
+    @Nullable public EntityObject parent;
 
     /** Children entities */
     public Collection<EntityObject> children;
@@ -97,17 +94,19 @@ class EntityObject {
     /**
      * Constructor
      *
+     * @param   db              database the entity belongs to
      * @param   entityClass     entity class
      * @param   classes         collection of all classes
-     * @param   entitiesMap      map between entity classes and objects
+     * @param   entitiesMap     map between entity classes and objects
      */
-    private EntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+    private EntityObject(DatabaseObject db, Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+        this.db = db;
         this.entityClass = entityClass;
         this.tableName = getTableName(entityClass, classes);
         this.realTable = isRealTable(entityClass, classes);
         this.inheritanceType = getInheritanceType(entityClass);
         this.children = new HashSet<>();
-        searchParentAndChildren(this, classes, entitiesMap);
+        searchParentAndChildren(entitiesMap);
         this.discriminatorValue = entityClass.isAnnotationPresent(DiscriminatorValue.class) ? entityClass.getAnnotation(DiscriminatorValue.class).value() : null;
         this.relationships = getRelationships(entityClass);
     }
@@ -140,7 +139,7 @@ class EntityObject {
                 .append(", ");
 
         result.append("Primary keys: ")
-                .append(this.primaryKeys);
+                .append(this.columns.getPrimaryKeys());
 
         return result.toString();
     }
@@ -148,7 +147,7 @@ class EntityObject {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof EntityObject))
+        if (!(obj instanceof EntityObject))
             return false;
 
         EntityObject entityObject = (EntityObject) obj;
@@ -167,14 +166,15 @@ class EntityObject {
     /**
      * Get entity object given entity class
      *
+     * @param   db              database the entity belongs to
      * @param   entityClass     model class
      * @param   classes         collection of all classes
      * @param   entitiesMap     map between entity classes and objects
      *
      * @return  table object
      */
-    static EntityObject entityClassToEntityObject(Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
-        return new EntityObject(entityClass, classes, entitiesMap);
+    static EntityObject entityClassToEntityObject(DatabaseObject db, Class<?> entityClass, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+        return new EntityObject(db, entityClass, classes, entitiesMap);
     }
 
 
@@ -272,8 +272,8 @@ class EntityObject {
             case SINGLE_TABLE:
             case JOINED:
                 Class<?> parentClass = entityClass.getSuperclass();
-                InheritanceType parentInheritancetype = getInheritanceType(parentClass);
-                return parentInheritancetype != InheritanceType.SINGLE_TABLE;
+                InheritanceType parentInheritanceType = getInheritanceType(parentClass);
+                return parentInheritanceType != InheritanceType.SINGLE_TABLE;
         }
 
         throw new KaolDBException("Inheritance type not found");
@@ -281,53 +281,33 @@ class EntityObject {
 
 
     /**
-     * Get the fields with a specific annotation
-     *
-     * @param   fields              fields array to search in
-     * @param   annotationClass     desired annotation class
-     *
-     * @return  collection of fields with the annotation specified
-     */
-    private static Collection<Field> getFieldsWithAnnotation(Field[] fields, Class<? extends Annotation> annotationClass) {
-        Collection<Field> result = new ArrayList<>();
-
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(annotationClass))
-                result.add(field);
-        }
-
-        return result;
-    }
-
-
-    /**
      * Search and assign parent and children
      *
-     * @param   entity          entity to search for parent and children
-     * @param   classes         collection of all classes
      * @param   entitiesMap     map between entity classes and objects
      */
-    private static void searchParentAndChildren(EntityObject entity, Collection<Class<?>> classes, Map<Class<?>, EntityObject> entitiesMap) {
+    private void searchParentAndChildren(Map<Class<?>, EntityObject> entitiesMap) {
+        Collection<Class<?>> classes = db.getEntityClasses();
+
         // Parent
-        Class<?> superClass = entity.entityClass.getSuperclass();
+        Class<?> superClass = entityClass.getSuperclass();
         EntityObject parent = null;
 
         while (superClass != Object.class && parent == null) {
             parent = entitiesMap.get(superClass);
 
             if (parent == null && classes.contains(superClass)) {
-                parent = entityClassToEntityObject(superClass, classes, entitiesMap);
+                parent = entityClassToEntityObject(db, superClass, classes, entitiesMap);
                 entitiesMap.put(parent.entityClass, parent);
             }
 
             superClass = superClass.getSuperclass();
         }
 
-        entity.parent = parent;
+        this.parent = parent;
 
         // Children
-        if (entity.parent != null) {
-            entity.parent.children.add(entity);
+        if (this.parent != null) {
+            this.parent.children.add(this);
         }
     }
 
@@ -363,37 +343,48 @@ class EntityObject {
     /**
      * Load columns
      *
+     * By normal columns are intended the one originated from a {@link Column} annotated field.
+     *
+     * The join columns are derived from:
+     *  -   Fields annotated with {@link OneToOne} that are owning side
+     *  -   Fields annotated with {@link ManyToOne}
+     *
      * @return  collection of all columns
      * @throws  InvalidConfigException in case of multiple column declaration
      */
-    private Collection<ColumnObject> getColumns() {
+    private Columns getColumns() {
         Field[] allFields = this.entityClass.getDeclaredFields();
+        Columns result = new Columns();
 
-        // Normal columns
-        Collection<ColumnObject> normalColumns = getNormalColumns(allFields);
-        Collection<ColumnObject> result = new HashSet<>(normalColumns);
+        for (Field field : allFields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                result.addAll(Columns.entityFieldToColumns(db, this, field));
 
-        // Join columns
-        Collection<ColumnObject> joinColumns = getJoinColumns(allFields);
+            } else if (field.isAnnotationPresent(OneToOne.class)) {
+                OneToOne annotation = field.getAnnotation(OneToOne.class);
 
-        if (!Collections.disjoint(result, joinColumns))
-            throw new InvalidConfigException("Class " + getName() + ": some columns are defined more than once");
+                if (!annotation.mappedBy().isEmpty())
+                    continue;
 
-        result.addAll(joinColumns);
+                result.addAll(Columns.entityFieldToColumns(db, this, field));
+
+            } else if (field.isAnnotationPresent(ManyToOne.class)) {
+                result.addAll(Columns.entityFieldToColumns(db, this, field));
+            }
+
+            // Fields annotated with @OneToMany and @ManyToMany are skipped because they don't lead to new columns.
+            // In fact, those annotations should only map the existing table columns to the join table ones.
+        }
 
         // Parent inherited primary keys (in case of JOINED inheritance strategy)
         if (this.parent != null && this.parent.inheritanceType == InheritanceType.JOINED) {
-            Collection<ColumnObject> parentPrimaryKeys = this.parent.getPrimaryKeys();
-            checkColumnUniqueness(result, parentPrimaryKeys);
-            result.addAll(parentPrimaryKeys);
+            result.addAll(this.parent.getColumns().getPrimaryKeys());
         }
 
         // Children columns (in case of SINGLE_TABLE inheritance strategy)
         if (this.inheritanceType == InheritanceType.SINGLE_TABLE) {
             for (EntityObject child : children) {
-                Collection<ColumnObject> childColumns = child.getColumns();
-                checkColumnUniqueness(result, childColumns);
-                result.addAll(childColumns);
+                result.addAll(child.getColumns());
             }
         }
 
@@ -402,120 +393,16 @@ class EntityObject {
 
 
     /**
-     * Get normal columns (only of the current class).
-     * By normal columns are intended the one originated from a {@link Column} annotated field.
-     *
-     * @param   allFields       all the class fields
-     * @return  columns
-     */
-    private static Collection<ColumnObject> getNormalColumns(Field[] allFields) {
-        Collection<Field> fields = getFieldsWithAnnotation(allFields, Column.class);
-        Collection<ColumnObject> result = new HashSet<>(fields.size());
-
-        for (Field field : fields) {
-            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(result, columns);
-            result.addAll(columns);
-        }
-
-        return result;
-    }
-
-
-    /**
-     * Get join columns (only of the current class)
-     *
-     * The join columns are derived from:
-     *  -   Fields annotated with {@link OneToOne} that are owning side
-     *  -   Fields annotated with {@link ManyToOne}
-     *
-     * @param   allFields       collection of all class fields
-     * @return  collection of From columns
-     */
-    private static Collection<ColumnObject> getJoinColumns(Field[] allFields) {
-        Collection<ColumnObject> result = new HashSet<>();
-
-        // OneToOne
-        Collection<Field> oneToOneFields = getFieldsWithAnnotation(allFields, OneToOne.class);
-
-        for (Field field : oneToOneFields) {
-            OneToOne annotation = field.getAnnotation(OneToOne.class);
-
-            if (!annotation.mappedBy().isEmpty())
-                continue;
-
-            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(result, columns);
-            result.addAll(columns);
-        }
-
-        // ManyToOne
-        Collection<Field> manyToOneFields = getFieldsWithAnnotation(allFields, ManyToOne.class);
-
-        for (Field field : manyToOneFields) {
-            Collection<ColumnObject> columns = ColumnObject.fieldToObject(field);
-            checkColumnUniqueness(result, columns);
-            result.addAll(columns);
-        }
-
-        // Fields annotated with @OneToMany and @ManyToMany are skipped because they don't lead to new columns.
-        // In fact, those annotations should only map the existing table columns to the join table ones.
-
-        return result;
-    }
-
-
-    /**
-     * Ensures that all the given columns are not already defined.
-     * Used during the columns mapping phase
-     *
-     * @see #getNormalColumns(Field[])
-     * @see #getJoinColumns(Field[])
-     *
-     * @param   startingColumns     collection where the columns have to be searched
-     * @param   columnsToBeAdded    collection of the columns to be added
-     *
-     * @throws InvalidConfigException if any column has already been defined
-     */
-    private static void checkColumnUniqueness(Collection<ColumnObject> startingColumns, Collection<ColumnObject> columnsToBeAdded) {
-        if (Collections.disjoint(startingColumns, columnsToBeAdded))
-            return;
-
-        for (ColumnObject column : columnsToBeAdded) {
-            if (startingColumns.contains(column))
-                throw new InvalidConfigException("Column " + column.name + " already defined");
-        }
-    }
-
-
-    /**
-     * Get primary keys
-     *
-     * @return  collection of primary keys
-     */
-    private Collection<ColumnObject> getPrimaryKeys() {
-        Collection<ColumnObject> result = new HashSet<>();
-        Collection<ColumnObject> columns = getColumns();
-
-        for (ColumnObject column : columns) {
-            if (column.primaryKey)
-                result.add(column);
-        }
-
-        return Collections.unmodifiableCollection(result);
-    }
-
-
-    /**
-     * Get multiple unique columns (specified in the @Table annotation)
+     * Get the unique columns sets (both the unique columns specified in the @Table annotation)
      *
      * @return  list of unique columns sets
+     * @see Table#uniqueConstraints()
      */
-    Collection<Collection<ColumnObject>> getMultipleUniqueColumns() {
-        Collection<Collection<ColumnObject>> result = new ArrayList<>();
+    private Collection<Collection<BaseColumnObject>> getMultipleUniqueColumns() {
+        Collection<Collection<BaseColumnObject>> result = new ArrayList<>();
 
         // Single unique column constraints
-        Collection<ColumnObject> columns = getColumns();
+        Columns columns = getColumns();
 
         // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
         if (entityClass.isAnnotationPresent(Table.class)) {
@@ -523,17 +410,10 @@ class EntityObject {
             UniqueConstraint[] uniqueConstraints = table.uniqueConstraints();
 
             for (UniqueConstraint uniqueConstraint : uniqueConstraints) {
-                List<ColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
+                List<BaseColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
 
                 for (String columnName : uniqueConstraint.columnNames()) {
-                    ColumnObject column = null;
-
-                    for (ColumnObject co : columns) {
-                        if (columnName.equals(co.name)) {
-                            column = co;
-                            break;
-                        }
-                    }
+                    BaseColumnObject column = columns.getNamesMap().get(columnName);
 
                     if (column == null)
                         throw new InvalidConfigException("Unique constraint: column " + columnName + " not found");
@@ -548,7 +428,7 @@ class EntityObject {
         // Children constraints (in case of SINGLE_TABLE inheritance strategy)
         if (inheritanceType == InheritanceType.SINGLE_TABLE) {
             for (EntityObject child : children) {
-                Collection<Collection<ColumnObject>> childConstrains = child.getMultipleUniqueColumns();
+                Collection<Collection<BaseColumnObject>> childConstrains = child.getMultipleUniqueColumns();
                 result.addAll(childConstrains);
             }
         }
@@ -564,17 +444,6 @@ class EntityObject {
         // Columns
         this.columns = getColumns();
 
-        // Map between column name and column object
-        Map<String, ColumnObject> columnsNameMap = new HashMap<>(this.columns.size());
-        this.columnsNameMap = Collections.unmodifiableMap(columnsNameMap);
-
-        for (ColumnObject column : this.columns) {
-            columnsNameMap.put(column.name, column);
-        }
-
-        // Primary keys
-        this.primaryKeys = getPrimaryKeys();
-
         // Discriminator column
         if (this.children.size() != 0) {
             if (!this.entityClass.isAnnotationPresent(Inheritance.class))
@@ -587,7 +456,7 @@ class EntityObject {
             if (discriminatorColumnAnnotation.name().isEmpty())
                 throw new InvalidConfigException("Class " + getName() + ": empty discriminator column");
 
-            this.discriminatorColumn = columnsNameMap.get(discriminatorColumnAnnotation.name());
+            this.discriminatorColumn = columns.getNamesMap().get(discriminatorColumnAnnotation.name());
 
             if (discriminatorColumn == null)
                 throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
@@ -614,7 +483,7 @@ class EntityObject {
             throw new InvalidConfigException("Entity " + getName() + " can't have empty table name");
 
         // Fix join columns types
-        for (ColumnObject column : this.columns) {
+        for (ColumnsContainer column : this.columns) {
             column.fixType(entities);
         }
 
@@ -665,6 +534,308 @@ class EntityObject {
 
         } catch (NoSuchFieldException e) {
             throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
+        }
+    }
+
+
+    /**
+     * Get the SQL query to create an entity table
+     *
+     * The result can be used to create just the table directly linked to the provided entity.
+     * Optional join tables that are related to eventual internal fields must be managed
+     * separately and in a second moment (after the creation of all the normal tables).
+     *
+     * @return  SQL query (null if no table should be created)
+     */
+    @Nullable
+    public String getSQL() {
+        // Skip entity if doesn't require a real table
+        if (!realTable)
+            return null;
+
+        StringBuilder result = new StringBuilder();
+
+        // Table name
+        result.append("CREATE TABLE IF NOT EXISTS ")
+                .append(tableName)
+                .append(" (");
+
+        // Columns
+        String columnSql = columns.getSQL();
+
+        if (columnSql != null && !columnSql.isEmpty())
+            result.append(columnSql);
+
+        // Primary keys
+        String primaryKeysSql = getTablePrimaryKeysSql(columns.getPrimaryKeys());
+
+        if (primaryKeysSql != null && !primaryKeysSql.isEmpty()) {
+            result.append(", ").append(primaryKeysSql);
+        }
+
+        // Unique keys (multiple columns)
+        String uniqueKeysSql = getTableUniquesSql(getMultipleUniqueColumns());
+
+        if (uniqueKeysSql != null && !uniqueKeysSql.isEmpty()) {
+            result.append(", ").append(uniqueKeysSql);
+        }
+
+        // Foreign keys
+        String foreignKeysSql = getTableForeignKeysSql();
+
+        if (foreignKeysSql != null && !foreignKeysSql.isEmpty()) {
+            result.append(", ").append(foreignKeysSql);
+        }
+
+        result.append(");");
+        //result.append(") WITHOUT ROWID;");
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get primary keys SQL statement to be inserted in the create table query
+     *
+     * This method is used to create the primary keys of a table directly associated to an entity.
+     * There is no counterpart for the join tables because that can be directly managed by this
+     * method.
+     *
+     * Example: PRIMARY KEY(column_1, column_2, column_3)
+     *
+     * @param   primaryKeys     collection of primary keys
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    public static String getTablePrimaryKeysSql(Collection<BaseColumnObject> primaryKeys) {
+        if (primaryKeys == null || primaryKeys.size() == 0)
+            return null;
+
+        StringBuilder result = new StringBuilder();
+        String prefix = "PRIMARY KEY(";
+
+        for (BaseColumnObject column : primaryKeys) {
+            result.append(prefix).append(column.name);
+            prefix = ", ";
+        }
+
+        result.append(")");
+        return result.toString();
+    }
+
+
+
+    /**
+     * Get unique columns SQL statement to be inserted in the create table query
+     *
+     * This method is used to create the unique constraints defined using the
+     * {@link UniqueConstraint} annotation.
+     * There is no counterpart for join tables because the unique constraints of a join table
+     * are given just by the primary keys.
+     *
+     * The parameter uniqueColumns is a collection of collections because each unique constraint
+     * can be made of multiple columns. For example, a collection such as
+     * [[column_1, column_2], [column_2, column_3, column_4]] would generate the statement
+     * UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
+     *
+     * @param   uniqueColumns       unique columns groups
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    private static String getTableUniquesSql(Collection<Collection<BaseColumnObject>> uniqueColumns) {
+        if (uniqueColumns == null || uniqueColumns.size() == 0)
+            return null;
+
+        StringBuilder result = new StringBuilder();
+        boolean empty = true;
+
+        for (Collection<BaseColumnObject> uniqueSet : uniqueColumns) {
+            if (uniqueSet.size() == 0)
+                continue;
+
+            if (!empty) result.append(", ");
+            empty = false;
+            result.append("UNIQUE(");
+
+            String prefixInternal = "UNIQUE(";
+
+            for (BaseColumnObject column : uniqueSet) {
+                result.append(prefixInternal).append(column.name);
+                prefixInternal = ", ";
+            }
+
+            result.append(")");
+        }
+
+        if (empty) {
+            return null;
+        } else {
+            return result.toString();
+        }
+    }
+
+
+
+
+    /**
+     * Get the foreign keys SQL constraints to be inserted in the create table query
+     *
+     * This method is used to create the foreign keys of a table directly associated to an entity.
+     * See {@link } to do the same for a join table.
+     *
+     * Example:
+     * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
+     * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
+     * FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6)
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    private String getTableForeignKeysSql() {
+        Collection<String> constraints = new ArrayList<>();
+
+        // Inheritance
+        String inheritanceSql = getTableInheritanceConstraints();
+
+        if (inheritanceSql != null && !inheritanceSql.isEmpty())
+            constraints.add(inheritanceSql);
+
+        // Relationships
+        String relationshipsSql = getTableRelationshipsConstraints();
+
+        if (relationshipsSql != null && !relationshipsSql.isEmpty())
+            constraints.add(relationshipsSql);
+
+        // Create SQL statement
+        if (constraints.size() == 0)
+            return null;
+
+        return TextUtils.join(", ", constraints);
+    }
+
+
+    /**
+     * Get the inheritance SQL constraint to be inserted in the create table query
+     *
+     * Example: FOREIGN KEY (primary_key_1, primary_key_2)
+     *          REFERENCES parent_table(primary_key_1, primary_key_2)
+     *          ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    private String getTableInheritanceConstraints() {
+        if (this.parent == null)
+            return null;
+
+        EntityObject parent = this.parent;
+
+        // Go up in hierarchy until there is a real table
+        while (parent != null && !parent.realTable)
+            parent = parent.parent;
+
+        // Check if there's a real parent table (TABLE_PER_CLASS strategy makes this unknown)
+        if (parent == null)
+            return null;
+
+        Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
+
+        // Normally not happening
+        if (parentPrimaryKeys.size() == 0)
+            return null;
+
+        // Create associations
+        StringBuilder local = new StringBuilder();          // Local columns
+        StringBuilder referenced = new StringBuilder();     // Referenced columns
+
+        String separator = "";
+
+        for (BaseColumnObject primaryKey : parentPrimaryKeys) {
+            local.append(separator).append(primaryKey.name);
+            referenced.append(separator).append(primaryKey.name);
+
+            separator = ", ";
+        }
+
+        return "FOREIGN KEY(" + local.toString() + ")" +
+                " REFERENCES " + parent.tableName + "(" + referenced.toString() + ")" +
+                " ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED";
+    }
+
+
+    /**
+     * Get the relationships SQL constraints to be inserted in the create table query
+     *
+     * This method is used to create the foreign keys of a table directly associated to an entity.
+     * There is no counterpart of this method for join tables because their foreign keys are
+     * completely covered by {@link }.
+     *
+     * Example:
+     *  FOREIGN KEY (column_1, column_2)
+     *  REFERENCES referenced_table_1(referenced_column_1, referenced_column_2)
+     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *
+     *  FOREIGN KEY (column_3, column_4)
+     *  REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
+     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *
+     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     */
+    @Nullable
+    private String getTableRelationshipsConstraints() {
+        boolean empty = true;
+        StringBuilder result = new StringBuilder();
+
+        for (Field field : relationships) {
+            // Join columns are present only if there is a @JoinColumn annotation or if
+            // there is a @JoinColumns annotation and its content is not empty.
+
+            if (!field.isAnnotationPresent(JoinColumn.class) &&
+                    ((!field.isAnnotationPresent(JoinColumns.class) || (field.isAnnotationPresent(JoinColumns.class) && field.getAnnotation(JoinColumns.class).value().length == 0))))
+                continue;
+
+            if (!empty) result.append(", ");
+            empty = false;
+
+            // Get the linked entity in order to get its table name
+            EntityObject linkedEntity = db.getEntity(field.getType());
+
+            // @JoinColumn
+            if (field.isAnnotationPresent(JoinColumn.class)) {
+                JoinColumn annotation = field.getAnnotation(JoinColumn.class);
+
+                result.append("FOREIGN KEY(").append(annotation.name()).append(")")
+                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(")
+                        .append(annotation.referencedColumnName()).append(")")
+                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+            }
+
+            // @JoinColumns
+            if (field.isAnnotationPresent(JoinColumns.class)) {
+                JoinColumns annotation = field.getAnnotation(JoinColumns.class);
+
+                StringBuilder local = new StringBuilder();          // Local columns
+                StringBuilder referenced = new StringBuilder();     // Referenced columns
+
+                String separator = "";
+
+                for (JoinColumn joinColumn : annotation.value()) {
+                    local.append(separator).append(joinColumn.name());
+                    referenced.append(separator).append(joinColumn.referencedColumnName());
+
+                    separator = ", ";
+                }
+
+                result.append("FOREIGN KEY(").append(local).append(")")
+                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(referenced).append(")")
+                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+            }
+        }
+
+        if (empty) {
+            return null;
+        } else {
+            return result.toString();
         }
     }
 

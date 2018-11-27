@@ -508,7 +508,7 @@ class PredicateImpl extends ExpressionImpl {
 
             String fullAlias = Join.getJoinFullAlias(alias, property.fieldParentClass, property.fieldType);
 
-            for (ColumnObject primaryKey : referencedEntity.primaryKeys) {
+            for (BaseColumnObject primaryKey : referencedEntity.columns.getPrimaryKeys()) {
                 String column = fullAlias + "." + primaryKey.name;
                 String primaryKeyValue = objectToString(primaryKey.getValue(obj));
 

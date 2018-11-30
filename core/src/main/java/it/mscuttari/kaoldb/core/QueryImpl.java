@@ -2,7 +2,6 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteCursor;
-import android.database.sqlite.SQLiteDatabase;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -13,6 +12,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
@@ -64,24 +66,43 @@ class QueryImpl<M> implements Query<M> {
 
 
     @Override
-    public List<M> getResultList() {
-        SQLiteDatabase db = entityManager.getReadableDatabase();
+    public synchronized List<M> getResultList() {
+        entityManager.dbHelper.open();
+        Cursor c = entityManager.dbHelper.select(sql, null);
 
-        Cursor c = db.rawQuery(sql, null);
-
+        // Prepare a result list of the same size of the cursor rows amount
+        // (it's just a small performance improvement done in order to prevent the collection rescaling)
         List<M> result = new ArrayList<>(c.getCount());
+
+        // Map the cursor columns
         Map<String, Integer> cursorMap = getCursorColumnMap(c);
 
+        // This collection represent the tasks which will be concurrently executed in order
+        // to eagerly load the many to one and one to one relationships
+        Collection<Future<?>> futures = new ArrayList<>();
+
+        // Iterate among the rows and convert them to POJOs
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            //System.out.println("Cursor: " + DatabaseUtils.dumpCursorToString(c));
             M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
-            loadEagerData(object);
+            futures.addAll(loadEagerData(object));
             createLazyCollections(object);
             result.add(object);
         }
 
+        // Wait for all the data to be retrieved
+        for (Future future : futures) {
+            try {
+                future.get();
+
+            } catch (ExecutionException e) {
+                throw new QueryException(e.getCause());
+            } catch (InterruptedException e) {
+                throw new QueryException(e.getCause());
+            }
+        }
+
         c.close();
-        db.close();
+        entityManager.dbHelper.close();
 
         return result;
     }
@@ -121,11 +142,16 @@ class QueryImpl<M> implements Query<M> {
      * Eagerly load data linked to field annotated with {@link OneToOne} or {@link ManyToOne}
      *
      * @param   object      object got from the query
+     * @return  collection of futures, each of them representing the asynchronous query task
      * @throws  QueryException if the data can't be assigned to the field
      */
-    private void loadEagerData(M object) {
+    private Collection<Future<?>> loadEagerData(final M object) {
+        Collection<Future<?>> futures = new ArrayList<>();
+
         if (object == null)
-            return;
+            return futures;
+
+        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
         EntityObject entity = db.getEntity(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
@@ -144,39 +170,49 @@ class QueryImpl<M> implements Query<M> {
                 // Add the field to the used ones
                 usedFields.add(field);
 
-                // Create the query
-                Class<?> linkedClass = field.getType();
-                QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
+                // Run the query in a different thread
+                EntityObject currentEntity = entity;
 
-                // Create a fake property to be used for the join
-                Property property = new SingleProperty<>(entity.entityClass, linkedClass, field);
+                Future<?> future = executorService.submit(() -> {
+                    // Create the query
+                    Class<?> linkedClass = field.getType();
+                    QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
 
-                // Create the join
-                Root<?> root = qb.getRoot(entity.entityClass, "source");
-                @SuppressWarnings("unchecked") Root<?> join = root.innerJoin(linkedClass, "destination", property);
+                    // Create a fake property to be used for the join
+                    Property property = new SingleProperty<>(currentEntity.entityClass, linkedClass, field);
 
-                Expression where = null;
+                    // Create the join
+                    Root<?> root = qb.getRoot(currentEntity.entityClass, "source");
+                    Root<?> join = root.innerJoin(linkedClass, "destination", property);
 
-                for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-                    SingleProperty primaryKeyProperty = new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field);
-                    Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
-                    where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
-                }
+                    Expression where = null;
 
-                // Build the query
-                Query<?> query = qb.from(join).where(where).build("destination");
+                    for (BaseColumnObject primaryKey : currentEntity.columns.getPrimaryKeys()) {
+                        SingleProperty primaryKeyProperty = new SingleProperty<>(currentEntity.entityClass, primaryKey.type, primaryKey.field);
+                        Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
+                        where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
+                    }
 
-                // Run the query and assign the result to the object field
-                try {
-                    field.set(object, query.getSingleResult());
-                } catch (IllegalAccessException e) {
-                    throw new QueryException(e);
-                }
+                    // Build the query
+                    Query<?> query = qb.from(join).where(where).build("destination");
+
+                    try {
+                        // Assign the query result to the object field
+                        field.set(object, query.getSingleResult());
+
+                    } catch (IllegalAccessException e) {
+                        throw new QueryException(e);
+                    }
+                });
+
+                futures.add(future);
             }
 
             // Load the fields of the parent entities
             entity = entity.parent;
         }
+
+        return futures;
     }
 
 

@@ -3,8 +3,18 @@ package it.mscuttari.kaoldb.core;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -14,15 +24,28 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
  */
 public final class KaolDB {
 
+    /** Singleton instance */
     private static KaolDB instance;
-    private final Config config;
+
+    /** Configuration */
+    private final Config config = new Config();
+
+    /** Concurrency */
+    private final ExecutorService executorService;
 
 
     /**
      * Constructor
      */
     private KaolDB() {
-        this.config = new Config();
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+        this.executorService = new ThreadPoolExecutor(
+                cpuCores,
+                Integer.MAX_VALUE,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>()
+        );
     }
 
 
@@ -100,6 +123,16 @@ public final class KaolDB {
         }
 
         LogUtils.i("Entities mapped");
+    }
+
+
+    /**
+     * Get executor service to be used for concurrency
+     *
+     * @return  executor service
+     */
+    ExecutorService getExecutorService() {
+        return executorService;
     }
 
 

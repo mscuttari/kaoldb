@@ -78,7 +78,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         if (where != null)
             sql += " WHERE " + where;
 
-        System.out.println(sql);
+        //System.out.println(sql);
 
         return new QueryImpl<>(entityManager, db, resultClass, alias, sql);
     }

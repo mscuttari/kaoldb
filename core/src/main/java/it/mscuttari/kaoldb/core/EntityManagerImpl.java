@@ -28,10 +28,11 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
  *
  * @see EntityManager
  */
-class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
+class EntityManagerImpl implements EntityManager {
 
     private final DatabaseObject database;
     private final WeakReference<Context> context;
+    public final ConcurrentSQLiteOpenHelper dbHelper;
 
 
     /**
@@ -40,104 +41,106 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
      * @param   context     context
      * @param   database    database mapping object
      */
-    EntityManagerImpl(Context context, DatabaseObject database) {
-        super(context, database.getName(), null, database.getVersion());
-
+    public EntityManagerImpl(Context context, DatabaseObject database) {
         this.database = database;
         this.context = new WeakReference<>(context);
-    }
 
+        SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(context, database.getName(), null, database.getVersion()) {
+            @Override
+            public void onCreate(SQLiteDatabase db) {
+                for (EntityObject entity : database.getEntities()) {
+                    // Entity table
+                    String entityTableCreateSQL = entity.getSQL();
 
-    @Override
-    public void onCreate(SQLiteDatabase db) {
-        for (EntityObject entity : database.getEntities()) {
-            // Entity table
-            String entityTableCreateSQL = entity.getSQL();
+                    if (entityTableCreateSQL != null) {
+                        LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                        //System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                        db.execSQL(entityTableCreateSQL);
+                        LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
+                    }
 
-            if (entityTableCreateSQL != null) {
-                LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
-                System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
-                db.execSQL(entityTableCreateSQL);
-                LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
-            }
+                    // Join tables
+                    for (Field field : entity.relationships) {
+                        if (!field.isAnnotationPresent(JoinTable.class))
+                            continue;
 
-            // Join tables
-            for (Field field : entity.relationships) {
-                if (!field.isAnnotationPresent(JoinTable.class))
-                    continue;
+                        JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
+                        String joinTableCreateSQL = joinTableObject.getSQL();
 
-                JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
-                String joinTableCreateSQL = joinTableObject.getSQL();
-
-                if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
-                    LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
-                    System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
-                    db.execSQL(joinTableCreateSQL);
-                    LogUtils.i("[Entity \"" + entity.getName() + "\"] Join table created");
+                        if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
+                            LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                            //System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                            db.execSQL(joinTableCreateSQL);
+                            LogUtils.i("[Entity \"" + entity.getName() + "\"] Join table created");
+                        }
+                    }
                 }
             }
-        }
-    }
 
 
-    /**
-     * Called when the database needs to be upgraded
-     *
-     * @param   db          database.
-     * @param   oldVersion  old database version
-     * @param   newVersion  new database version
-     *
-     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
-     */
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+            /**
+             * Called when the database needs to be upgraded
+             *
+             * @param   db          database.
+             * @param   oldVersion  old database version
+             * @param   newVersion  new database version
+             *
+             * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+             */
+            @Override
+            public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+                LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        try {
-            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-            migrator.onUpgrade(db, oldVersion, newVersion);
+                try {
+                    DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+                    migrator.onUpgrade(db, oldVersion, newVersion);
 
-        } catch (IllegalAccessException e) {
-            throw new DatabaseManagementException(e);
+                } catch (IllegalAccessException e) {
+                    throw new DatabaseManagementException(e);
 
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e);
-        }
+                } catch (InstantiationException e) {
+                    throw new DatabaseManagementException(e);
+                }
 
-        LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
-    }
+                LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
+            }
 
 
-    /**
-     * Called when the database needs to be downgraded
-     *
-     * @param   db          database.
-     * @param   oldVersion  old database version
-     * @param   newVersion  new database version
-     *
-     * @throws DatabaseManagementException if the database schema migrator can't be instantiated
-     */
-    @Override
-    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+            /**
+             * Called when the database needs to be downgraded
+             *
+             * @param   db          database.
+             * @param   oldVersion  old database version
+             * @param   newVersion  new database version
+             *
+             * @throws DatabaseManagementException if the database schema migrator can't be instantiated
+             */
+            @Override
+            public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+                LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        try {
-            DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-            migrator.onDowngrade(db, oldVersion, newVersion);
+                try {
+                    DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
+                    migrator.onDowngrade(db, oldVersion, newVersion);
 
-        } catch (IllegalAccessException e) {
-            throw new DatabaseManagementException(e);
+                } catch (IllegalAccessException e) {
+                    throw new DatabaseManagementException(e);
 
-        } catch (InstantiationException e) {
-            throw new DatabaseManagementException(e);
-        }
+                } catch (InstantiationException e) {
+                    throw new DatabaseManagementException(e);
+                }
 
-        LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
+                LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
+            }
+        };
+
+        this.dbHelper = new ConcurrentSQLiteOpenHelper(dbHelper);
     }
 
 
     @Override
     public boolean deleteDatabase() {
+        dbHelper.forceClose();
         boolean result = getContext().deleteDatabase(database.getName());
 
         if (result) {
@@ -164,18 +167,6 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
     }
 
 
-    /**
-     * Get the {@link EntityObject} of an object
-     *
-     * @param   obj     object
-     * @return  entity object
-     */
-    private EntityObject getObjectEntity(Object obj) {
-        Class<?> objectClass = obj.getClass();
-        return database.getEntity(objectClass);
-    }
-
-
     @Override
     public synchronized void persist(Object obj) {
         persist(obj, null, null);
@@ -187,7 +178,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         if (prePersist != null)
             prePersist.run(obj);
 
-        EntityObject entity = getObjectEntity(obj);
+        EntityObject entity = database.getEntity(obj.getClass());
         persist(obj, entity, null, false);
 
         if (postPersist != null)
@@ -212,24 +203,25 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
             persist(obj, currentEntity.parent, currentEntity, true);
 
         // Persist the object
-        SQLiteDatabase db = getWritableDatabase();
+        dbHelper.open();
 
         try {
             if (!isInTransaction) {
-                db.beginTransaction();
+                dbHelper.beginTransaction();
             }
 
             if (cv.size() != 0) {
-                db.insert(currentEntity.tableName, null, cv);
+                dbHelper.insert(currentEntity.tableName, null, cv);
             }
 
         } finally {
             if (!isInTransaction) {
                 // End the transaction and close the database
-                db.setTransactionSuccessful();
-                db.endTransaction();
-                if (db.isOpen()) db.close();
+                dbHelper.setTransactionSuccessful();
+                dbHelper.endTransaction();
             }
+
+            dbHelper.close();
         }
     }
 
@@ -245,7 +237,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         if (preUpdate != null)
             preUpdate.run(obj);
 
-        EntityObject entity = getObjectEntity(obj);
+        EntityObject entity = database.getEntity(obj.getClass());
         update(obj, entity, null, false);
 
         if (postUpdate != null)
@@ -270,15 +262,15 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
             update(obj, currentEntity.parent, currentEntity, true);
 
         // Persist the object
-        SQLiteDatabase db = getWritableDatabase();
+        dbHelper.open();
 
         try {
             if (!isInTransaction) {
-                db.beginTransaction();
+                dbHelper.beginTransaction();
             }
 
             if (cv.size() != 0) {
-                db.insert(currentEntity.tableName, null, cv);
+                dbHelper.insert(currentEntity.tableName, null, cv);
 
                 StringBuilder where = new StringBuilder();
                 Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
@@ -292,7 +284,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
                     whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
                 }
 
-                db.update(currentEntity.tableName,
+                dbHelper.update(currentEntity.tableName,
                         cv,
                         where.toString(),
                         whereArgs.toArray(new String[primaryKeys.size()])
@@ -302,10 +294,11 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         } finally {
             if (!isInTransaction) {
                 // End the transaction and close the database
-                db.setTransactionSuccessful();
-                db.endTransaction();
-                if (db.isOpen()) db.close();
+                dbHelper.setTransactionSuccessful();
+                dbHelper.endTransaction();
             }
+
+            dbHelper.close();
         }
     }
 
@@ -321,7 +314,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         if (preRemove != null)
             preRemove.run(obj);
 
-        EntityObject entity = getObjectEntity(obj);
+        EntityObject entity = database.getEntity(obj.getClass());
         remove(obj, entity, null, false);
 
         if (postURemove != null)
@@ -346,15 +339,15 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
             remove(obj, currentEntity.parent, currentEntity, true);
 
         // Persist the object
-        SQLiteDatabase db = getWritableDatabase();
+        dbHelper.open();
 
         try {
             if (!isInTransaction) {
-                db.beginTransaction();
+                dbHelper.beginTransaction();
             }
 
             if (cv.size() != 0) {
-                db.insert(currentEntity.tableName, null, cv);
+                dbHelper.insert(currentEntity.tableName, null, cv);
 
                 StringBuilder where = new StringBuilder();
                 Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
@@ -368,7 +361,7 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
                     whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
                 }
 
-                db.delete(currentEntity.tableName,
+                dbHelper.delete(currentEntity.tableName,
                         where.toString(),
                         whereArgs.toArray(new String[primaryKeys.size()])
                 );
@@ -377,10 +370,11 @@ class EntityManagerImpl extends SQLiteOpenHelper implements EntityManager {
         } finally {
             if (!isInTransaction) {
                 // End the transaction and close the database
-                db.setTransactionSuccessful();
-                db.endTransaction();
-                if (db.isOpen()) db.close();
+                dbHelper.setTransactionSuccessful();
+                dbHelper.endTransaction();
             }
+
+            dbHelper.close();
         }
     }
 

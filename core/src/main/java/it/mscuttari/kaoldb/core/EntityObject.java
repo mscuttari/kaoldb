@@ -322,7 +322,7 @@ class EntityObject {
      * @return  relationships fields
      */
     private static Collection<Field> getRelationships(Class<?> entityClass) {
-        Collection<Field> relationships = new ArrayList<>();
+        Collection<Field> relationships = new HashSet<>();
 
         for (Field field : entityClass.getDeclaredFields()) {
             field.setAccessible(true);

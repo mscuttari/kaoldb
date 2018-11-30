@@ -8,7 +8,6 @@ import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class DatabaseObject {

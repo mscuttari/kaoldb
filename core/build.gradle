@@ -26,6 +26,11 @@ android {
     dexOptions {
         preDexLibraries = false
     }
+
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
 }
 
 dependencies {

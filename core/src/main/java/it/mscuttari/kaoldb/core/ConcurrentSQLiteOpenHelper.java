@@ -30,7 +30,6 @@ final class ConcurrentSQLiteOpenHelper {
     public synchronized void open() {
         if (db == null || !db.isOpen()) {
             db = dbHelper.getWritableDatabase();
-            db.enableWriteAheadLogging();
         }
 
         dbConnections++;

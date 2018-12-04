@@ -262,7 +262,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Open the database and start a transaction
         dbHelper.open();
-        dbHelper.beginTransaction();
+        //dbHelper.beginTransaction();
 
         try {
             while (currentEntity != null) {
@@ -297,14 +297,14 @@ class EntityManagerImpl implements EntityManager {
                 currentEntity = currentEntity.parent;
             }
 
-            dbHelper.setTransactionSuccessful();
+            //dbHelper.setTransactionSuccessful();
 
         } catch (Exception e) {
             throw new QueryException(e);
 
         } finally {
             // End the transaction and close the database
-            dbHelper.endTransaction();
+            //dbHelper.endTransaction();
             dbHelper.close();
         }
 
@@ -331,7 +331,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Open the database and start a transaction
         dbHelper.open();
-        dbHelper.beginTransaction();
+        //dbHelper.beginTransaction();
 
         try {
             while (currentEntity != null) {
@@ -357,14 +357,14 @@ class EntityManagerImpl implements EntityManager {
                 currentEntity = currentEntity.parent;
             }
 
-            dbHelper.setTransactionSuccessful();
+            //dbHelper.setTransactionSuccessful();
 
         } catch (Exception e) {
             throw new QueryException(e);
 
         } finally {
             // End the transaction and close the database
-            dbHelper.endTransaction();
+            //dbHelper.endTransaction();
             dbHelper.close();
         }
 

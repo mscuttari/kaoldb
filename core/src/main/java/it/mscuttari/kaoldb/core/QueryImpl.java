@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteCursor;
+import android.util.Pair;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -76,29 +77,27 @@ class QueryImpl<M> implements Query<M> {
         // Map the cursor columns
         Map<String, Integer> cursorMap = getCursorColumnMap(c);
 
-        // This collection represent the tasks which will be concurrently executed in order
-        // to eagerly load the many to one and one to one relationships
-        Collection<Future<?>> futures = new ArrayList<>();
-
         // Iterate among the rows and convert them to POJOs
-        for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
-            futures.addAll(loadEagerData(object));
-            createLazyCollections(object);
-            result.add(object);
-        }
-
-        // Wait for all the data to be retrieved
         try {
-            for (Future future : futures) {
-                future.get();
+            for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+                M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
+
+                // This collection represent the tasks which will be concurrently executed in order
+                // to create the queries to eagerly load the many to one and one to one relationships
+                Collection<Pair<Field, Future<Query<?>>>> eagerLoadFutures = getEagerLoadQueries(object);
+
+                // While the queries are built, create the lazy collections
+                createLazyCollections(object);
+
+                // Run the queries and assign its result to the object field
+                for (Pair<Field, Future<Query<?>>> queryFuture : eagerLoadFutures) {
+                    queryFuture.first.set(object, queryFuture.second.get().getSingleResult());
+                }
+
+                result.add(object);
             }
 
         } catch (Exception e) {
-            for (Future future : futures) {
-                future.cancel(true);
-            }
-
             throw new QueryException(e);
 
         } finally {
@@ -141,14 +140,15 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Eagerly load data linked to field annotated with {@link OneToOne} or {@link ManyToOne}
+     * Get the queries to be used to eagerly load data of fields with
+     * {@link OneToOne} or {@link ManyToOne} annotations.
      *
      * @param   object      object got from the query
      * @return  collection of futures, each of them representing the asynchronous query task
      * @throws  QueryException if the data can't be assigned to the field
      */
-    private Collection<Future<?>> loadEagerData(final M object) {
-        Collection<Future<?>> futures = new ArrayList<>();
+    private Collection<Pair<Field, Future<Query<?>>>> getEagerLoadQueries(final M object) {
+        Collection<Pair<Field, Future<Query<?>>>> futures = new ArrayList<>();
 
         if (object == null)
             return futures;
@@ -175,7 +175,7 @@ class QueryImpl<M> implements Query<M> {
                 // Run the query in a different thread
                 EntityObject currentEntity = entity;
 
-                Future<?> future = executorService.submit(() -> {
+                Future<Query<?>> future = executorService.submit(() -> {
                     // Create the query
                     Class<?> linkedClass = field.getType();
                     QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
@@ -196,18 +196,10 @@ class QueryImpl<M> implements Query<M> {
                     }
 
                     // Build the query
-                    Query<?> query = qb.from(join).where(where).build("destination");
-
-                    try {
-                        // Assign the query result to the object field
-                        field.set(object, query.getSingleResult());
-
-                    } catch (IllegalAccessException e) {
-                        throw new QueryException(e);
-                    }
+                    return qb.from(join).where(where).build("destination");
                 });
 
-                futures.add(future);
+                futures.add(new Pair<>(field, future));
             }
 
             // Load the fields of the parent entities

@@ -5,15 +5,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 
 final class ConcurrentSQLiteOpenHelper {
 
     private final SQLiteOpenHelper dbHelper;
     private SQLiteDatabase db;
-    private final AtomicInteger dbConnections = new AtomicInteger(0);
+    private int dbConnections = 0;
 
 
     /**
@@ -30,10 +28,12 @@ final class ConcurrentSQLiteOpenHelper {
      * Open the database
      */
     public synchronized void open() {
-        if (db == null)
+        if (db == null || !db.isOpen()) {
             db = dbHelper.getWritableDatabase();
+            db.enableWriteAheadLogging();
+        }
 
-        dbConnections.incrementAndGet();
+        dbConnections++;
     }
 
 
@@ -41,10 +41,8 @@ final class ConcurrentSQLiteOpenHelper {
      * Close the database
      */
     public synchronized void close() {
-        if (dbConnections.decrementAndGet() == 0 && db != null) {
-            if (db.isOpen())
-                db.close();
-
+        if (--dbConnections == 0) {
+            db.close();
             db = null;
         }
     }
@@ -63,7 +61,7 @@ final class ConcurrentSQLiteOpenHelper {
             }
         }
 
-        dbConnections.set(0);
+        dbConnections = 0;
         db = null;
     }
 

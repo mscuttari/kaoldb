@@ -9,11 +9,14 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.PostActionListener;
@@ -21,14 +24,14 @@ import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
-import static it.mscuttari.kaoldb.core.PojoAdapter.objectToContentValues;
-
 /**
  * Entity manager implementation
  *
  * @see EntityManager
  */
 class EntityManagerImpl implements EntityManager {
+
+    private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new HashMap<>();
 
     private final DatabaseObject database;
     private final WeakReference<Context> context;
@@ -41,7 +44,7 @@ class EntityManagerImpl implements EntityManager {
      * @param   context     context
      * @param   database    database mapping object
      */
-    public EntityManagerImpl(Context context, DatabaseObject database) {
+    private EntityManagerImpl(Context context, DatabaseObject database) {
         this.database = database;
         this.context = new WeakReference<>(context);
 
@@ -138,6 +141,28 @@ class EntityManagerImpl implements EntityManager {
     }
 
 
+    /**
+     * Get singleton instance.
+     * This is done to ensure that there is at most one database connection opened towards
+     * each database.
+     *
+     * @param   context     context
+     * @param   database    database object
+     *
+     * @return  singleton instance
+     */
+    public static EntityManagerImpl getEntityManager(Context context, DatabaseObject database) {
+        EntityManagerImpl entityManager = entityManagers.get(database);
+
+        if (entityManager == null) {
+            entityManager = new EntityManagerImpl(context, database);
+            entityManagers.put(database, entityManager);
+        }
+
+        return entityManager;
+    }
+
+
     @Override
     public boolean deleteDatabase() {
         dbHelper.forceClose();
@@ -175,54 +200,47 @@ class EntityManagerImpl implements EntityManager {
 
     @Override
     public synchronized <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist) {
+        // Pre persist actions
         if (prePersist != null)
             prePersist.run(obj);
 
-        EntityObject entity = database.getEntity(obj.getClass());
-        persist(obj, entity, null, false);
+        // Current working entity and the previous child entity
+        EntityObject currentEntity = database.getEntity(obj.getClass());
+        EntityObject childEntity = null;
 
-        if (postPersist != null)
-            postPersist.run(obj);
-    }
-
-
-    /**
-     * Persist object in the database
-     *
-     * @param   obj                 object to be persisted
-     * @param   currentEntity       current entity
-     * @param   childEntity         child entity (used to determine the discriminator value)
-     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
-     */
-    private synchronized void persist(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
-        // Extract the current entity data from the object to be persisted
-        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
-
-        // Do the same for its parent
-        if (currentEntity.parent != null)
-            persist(obj, currentEntity.parent, currentEntity, true);
-
-        // Persist the object
+        // Open the database and start a transaction
         dbHelper.open();
+        dbHelper.beginTransaction();
 
         try {
-            if (!isInTransaction) {
-                dbHelper.beginTransaction();
+            while (currentEntity != null) {
+                // Extract the current entity data from the object to be persisted
+                ContentValues cv = PojoAdapter.objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
+
+                // Persist
+                if (cv.size() != 0) {
+                    dbHelper.insert(currentEntity.tableName, null, cv);
+                }
+
+                // Go up in the entity hierarchy
+                childEntity = currentEntity;
+                currentEntity = currentEntity.parent;
             }
 
-            if (cv.size() != 0) {
-                dbHelper.insert(currentEntity.tableName, null, cv);
-            }
+            dbHelper.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new QueryException(e);
 
         } finally {
-            if (!isInTransaction) {
-                // End the transaction and close the database
-                dbHelper.setTransactionSuccessful();
-                dbHelper.endTransaction();
-            }
-
+            // End the transaction and close the database
+            dbHelper.endTransaction();
             dbHelper.close();
         }
+
+        // Post persist actions
+        if (postPersist != null)
+            postPersist.run(obj);
     }
 
 
@@ -234,72 +252,65 @@ class EntityManagerImpl implements EntityManager {
 
     @Override
     public <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate) {
+        // Pre update actions
         if (preUpdate != null)
             preUpdate.run(obj);
 
-        EntityObject entity = database.getEntity(obj.getClass());
-        update(obj, entity, null, false);
+        // Current working entity and the previous child entity
+        EntityObject currentEntity = database.getEntity(obj.getClass());
+        EntityObject childEntity = null;
 
-        if (postUpdate != null)
-            postUpdate.run(obj);
-    }
-
-
-    /**
-     * Update and object that is already persisted in the database
-     *
-     * @param   obj                 object to be updated
-     * @param   currentEntity       current entity
-     * @param   childEntity         child entity (used to determine the discriminator value)
-     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
-     */
-    private synchronized void update(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
-        // Extract the current entity data from the object to be persisted
-        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
-
-        // Do the same for its parent
-        if (currentEntity.parent != null)
-            update(obj, currentEntity.parent, currentEntity, true);
-
-        // Persist the object
+        // Open the database and start a transaction
         dbHelper.open();
+        dbHelper.beginTransaction();
 
         try {
-            if (!isInTransaction) {
-                dbHelper.beginTransaction();
-            }
+            while (currentEntity != null) {
+                // Extract the current entity data from the object to be persisted
+                ContentValues cv = PojoAdapter.objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
 
-            if (cv.size() != 0) {
-                dbHelper.insert(currentEntity.tableName, null, cv);
+                // Update
+                if (cv.size() != 0) {
+                    dbHelper.insert(currentEntity.tableName, null, cv);
 
-                StringBuilder where = new StringBuilder();
-                Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
-                List<String> whereArgs = new ArrayList<>(primaryKeys.size());
+                    StringBuilder where = new StringBuilder();
+                    Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
+                    List<String> whereArgs = new ArrayList<>(primaryKeys.size());
 
-                for (BaseColumnObject primaryKey : primaryKeys) {
-                    if (where.length() > 0)
-                        where.append(" AND ");
+                    for (BaseColumnObject primaryKey : primaryKeys) {
+                        if (where.length() > 0)
+                            where.append(" AND ");
 
-                    where.append(primaryKey.name).append(" = ?");
-                    whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
+                        where.append(primaryKey.name).append(" = ?");
+                        whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
+                    }
+
+                    dbHelper.update(currentEntity.tableName,
+                            cv,
+                            where.toString(),
+                            whereArgs.toArray(new String[primaryKeys.size()])
+                    );
                 }
 
-                dbHelper.update(currentEntity.tableName,
-                        cv,
-                        where.toString(),
-                        whereArgs.toArray(new String[primaryKeys.size()])
-                );
+                // Go up in the entity hierarchy
+                childEntity = currentEntity;
+                currentEntity = currentEntity.parent;
             }
+
+            dbHelper.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new QueryException(e);
 
         } finally {
-            if (!isInTransaction) {
-                // End the transaction and close the database
-                dbHelper.setTransactionSuccessful();
-                dbHelper.endTransaction();
-            }
-
+            // End the transaction and close the database
+            dbHelper.endTransaction();
             dbHelper.close();
         }
+
+        // Post persist actions
+        if (postUpdate != null)
+            postUpdate.run(obj);
     }
 
 
@@ -310,45 +321,21 @@ class EntityManagerImpl implements EntityManager {
 
 
     @Override
-    public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postURemove) {
+    public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postRemove) {
+        // Pre remove actions
         if (preRemove != null)
             preRemove.run(obj);
 
-        EntityObject entity = database.getEntity(obj.getClass());
-        remove(obj, entity, null, false);
+        // Current working entity and the previous child entity
+        EntityObject currentEntity = database.getEntity(obj.getClass());
 
-        if (postURemove != null)
-            postURemove.run(obj);
-    }
-
-
-    /**
-     * Remove and object that is already persisted in the database
-     *
-     * @param   obj                 object to be removed
-     * @param   currentEntity       current entity
-     * @param   childEntity         child entity (used to determine the discriminator value)
-     * @param   isInTransaction     true if the transaction is already started, false if the first iteration
-     */
-    private synchronized void remove(Object obj, EntityObject currentEntity, EntityObject childEntity, boolean isInTransaction) {
-        // Extract the current entity data from the object to be persisted
-        ContentValues cv = objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
-
-        // Do the same for its parent
-        if (currentEntity.parent != null)
-            remove(obj, currentEntity.parent, currentEntity, true);
-
-        // Persist the object
+        // Open the database and start a transaction
         dbHelper.open();
+        dbHelper.beginTransaction();
 
         try {
-            if (!isInTransaction) {
-                dbHelper.beginTransaction();
-            }
-
-            if (cv.size() != 0) {
-                dbHelper.insert(currentEntity.tableName, null, cv);
-
+            while (currentEntity != null) {
+                // Remove
                 StringBuilder where = new StringBuilder();
                 Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
                 List<String> whereArgs = new ArrayList<>(primaryKeys.size());
@@ -365,17 +352,25 @@ class EntityManagerImpl implements EntityManager {
                         where.toString(),
                         whereArgs.toArray(new String[primaryKeys.size()])
                 );
+
+                // Go up in the entity hierarchy
+                currentEntity = currentEntity.parent;
             }
+
+            dbHelper.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new QueryException(e);
 
         } finally {
-            if (!isInTransaction) {
-                // End the transaction and close the database
-                dbHelper.setTransactionSuccessful();
-                dbHelper.endTransaction();
-            }
-
+            // End the transaction and close the database
+            dbHelper.endTransaction();
             dbHelper.close();
         }
+
+        // Post remove actions
+        if (postRemove != null)
+            postRemove.run(obj);
     }
 
 

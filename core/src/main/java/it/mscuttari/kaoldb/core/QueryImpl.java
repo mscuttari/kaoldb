@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -90,19 +89,22 @@ class QueryImpl<M> implements Query<M> {
         }
 
         // Wait for all the data to be retrieved
-        for (Future future : futures) {
-            try {
+        try {
+            for (Future future : futures) {
                 future.get();
-
-            } catch (ExecutionException e) {
-                throw new QueryException(e.getCause());
-            } catch (InterruptedException e) {
-                throw new QueryException(e.getCause());
             }
-        }
 
-        c.close();
-        entityManager.dbHelper.close();
+        } catch (Exception e) {
+            for (Future future : futures) {
+                future.cancel(true);
+            }
+
+            throw new QueryException(e);
+
+        } finally {
+            c.close();
+            entityManager.dbHelper.close();
+        }
 
         return result;
     }

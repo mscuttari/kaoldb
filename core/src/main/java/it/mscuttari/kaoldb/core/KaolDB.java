@@ -3,18 +3,12 @@ package it.mscuttari.kaoldb.core;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -154,7 +148,7 @@ public final class KaolDB {
 
         Map<String, DatabaseObject> mapping = KaolDB.getInstance().getConfig().getDatabaseMapping();
         DatabaseObject database = mapping.get(databaseName);
-        return new EntityManagerImpl(context, database);
+        return EntityManagerImpl.getEntityManager(context, database);
     }
 
 }

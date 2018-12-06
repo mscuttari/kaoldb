@@ -61,7 +61,7 @@ class From<X> implements Root<X> {
 
     @Override
     public Class<?> getEntityClass() {
-        return entity.entityClass;
+        return entity.clazz;
     }
 
 
@@ -179,8 +179,8 @@ class From<X> implements Root<X> {
                     Expression on = null;
 
                     for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, parent, alias, new SingleProperty<>(parent.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, parent, alias, new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
                         Expression onParent = PredicateImpl.eq(db, a, b);
                         on = on == null ? onParent : on.and(onParent);
                     }
@@ -188,7 +188,7 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new InnerJoin<>(db, root, parent.entityClass, alias, on);
+                    root = new InnerJoin<>(db, root, parent.clazz, alias, on);
                     root.hierarchyVisited = true;
                 }
 
@@ -218,8 +218,8 @@ class From<X> implements Root<X> {
                     Expression on = null;
 
                     for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.entityClass, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, child, alias, new SingleProperty<>(child.entityClass, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                        Variable<?, ?> b = new Variable<>(db, child, alias, new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
                         Expression onChild = PredicateImpl.eq(db, a, b);
                         on = on == null ? onChild : on.and(onChild);
                     }
@@ -227,7 +227,7 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new LeftJoin<>(db, root, child.entityClass, alias, on);
+                    root = new LeftJoin<>(db, root, child.clazz, alias, on);
                     root.hierarchyVisited = true;
                     root = resolveChildrenInheritance(root, db.getEntity(root.getEntityClass()), alias);
                 }

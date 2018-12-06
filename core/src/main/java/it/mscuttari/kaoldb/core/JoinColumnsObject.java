@@ -23,6 +23,7 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
      * @param   field       field the columns are generated from
      */
     public JoinColumnsObject(DatabaseObject db, EntityObject entity, Field field) {
+        super(entity);
         this.field = field;
 
         JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);

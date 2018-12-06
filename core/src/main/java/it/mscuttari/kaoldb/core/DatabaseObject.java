@@ -1,13 +1,22 @@
 package it.mscuttari.kaoldb.core;
 
+import android.util.Pair;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class DatabaseObject {
@@ -22,19 +31,10 @@ class DatabaseObject {
     private Class<? extends DatabaseSchemaMigrator> migrator;
 
     /** Entities */
-    private final Collection<Class<?>> classes;
+    private final Collection<Class<?>> classes = new HashSet<>();
 
     /** Entities mapping */
-    private final Map<Class<?>, EntityObject> entities;
-
-
-    /**
-     * Default constructor
-     */
-    public DatabaseObject() {
-        this.classes = new HashSet<>();
-        this.entities = new HashMap<>();
-    }
+    private final Map<Class<?>, EntityObject> entities = new HashMap<>();
 
 
     /**
@@ -59,7 +59,7 @@ class DatabaseObject {
      * @throws  InvalidConfigException if the name is null or empty
      */
     public void setName(String name) {
-        LogUtils.d("[Database]: setting name \"" + name + "\"");
+        LogUtils.d("[Database] setting name \"" + name + "\"");
 
         if (name == null) {
             throw new InvalidConfigException("Database name can't be null");
@@ -93,7 +93,7 @@ class DatabaseObject {
      * @throws  InvalidConfigException if the version is null or < 0
      */
     public void setVersion(Integer version) {
-        LogUtils.d("[Database \"" + name + "\"]: setting version " + version);
+        LogUtils.d("[Database \"" + name + "\"] setting version " + version);
 
         if (version == null) {
             throw new InvalidConfigException("Database version can't be null");
@@ -131,7 +131,7 @@ class DatabaseObject {
             throw new InvalidConfigException("Database schema migrator can't be null");
         }
 
-        LogUtils.d("[Database \"" + name + "\"]: setting schema migrator " + migrator.getSimpleName());
+        LogUtils.d("[Database \"" + name + "\"] setting schema migrator " + migrator.getSimpleName());
         this.migrator = migrator;
     }
 
@@ -157,7 +157,7 @@ class DatabaseObject {
         if (clazz == null)
             return;
 
-        LogUtils.d("[Database \"" + name + "\"]: adding entity class " + clazz.getSimpleName());
+        LogUtils.d("[Database \"" + name + "\"] adding class " + clazz.getSimpleName());
 
         if (!clazz.isAnnotationPresent(Entity.class)) {
             throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have @Entity annotation");
@@ -184,17 +184,35 @@ class DatabaseObject {
     /**
      * Get {@link EntityObject} corresponding to an entity class
      *
-     * @param   entityClass             entity class
-     * @return  {@link EntityObject} of the entity
+     * @param   clazz       entity class
+     * @return  entity object
      * @throws  InvalidConfigException  if the entity has not been found in the mapped ones
      */
-    public EntityObject getEntity(Class<?> entityClass) {
-        EntityObject entityObject = entities.get(entityClass);
+    public EntityObject getEntity(Class<?> clazz) {
+        if (!classes.contains(clazz)) {
+            throw new InvalidConfigException("Entity " + clazz.getSimpleName() + " not found");
+        }
 
-        if (entityObject == null)
-            throw new InvalidConfigException("Entity " + entityClass.getSimpleName() + " not found");
+        EntityObject entity;
 
-        return entityObject;
+        do {
+            // Try to get the entity
+            entity = entities.get(clazz);
+
+            if (entity == null) {
+                // Wait for the entity to be mapped
+
+                synchronized (this) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new KaolDBException(e);
+                    }
+                }
+            }
+        } while (entity == null);
+
+        return entity;
     }
 
 
@@ -245,33 +263,53 @@ class DatabaseObject {
      * @param   classes     collection of all classes
      * @return  map between classes and entities objects
      */
-    public Map<Class<?>, EntityObject> mapEntities(Collection<Class<?>> classes) {
-        Map<Class<?>, EntityObject> result = new HashMap<>();
+    public void mapEntities(Collection<Class<?>> classes) {
+        LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
-        // First scan to get basic data
-        LogUtils.v("Entities mapping: first scan to get basic data");
+        entities.clear();
+        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
-        for (Class<?> entityClass : classes) {
-            if (result.containsKey(entityClass)) continue;
-            EntityObject entity = EntityObject.entityClassToEntityObject(this, entityClass, classes, result);
-            result.put(entityClass, entity);
+        try {
+            // First scan to get basic data
+            Collection<Future<?>> mappingTasks = new ArrayList<>(classes.size());
+            LogUtils.v("[Database \"" + name + "\"] entities mapping: first scan to get basic data");
+
+            for (Class<?> clazz : classes) {
+                mappingTasks.add(executorService.submit(() -> {
+                    entities.put(clazz, new EntityObject(this, clazz));
+                }));
+            }
+
+            for (Future<?> task : mappingTasks) {
+                task.get();
+            }
+
+            // Second scan to setup the columns
+            Collection<Future<?>> columnsTasks = new ArrayList<>();
+            LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to setup the columns");
+
+            for (EntityObject entity : entities.values()) {
+                columnsTasks.add(executorService.submit(entity::setupColumns));
+            }
+
+            for (Future<?> task : columnsTasks) {
+                task.get();
+            }
+
+            // Third scan to check consistence
+            LogUtils.v("[Database \"" + name + "\"] entities mapping: third scan to check for data consistence");
+
+            for (EntityObject entity : entities.values()) {
+                entity.checkConsistence();
+            }
+
+            LogUtils.d("[Database \"" + name + "\"] entities mapped");
+
+        } catch (ExecutionException e) {
+            throw new MappingException(e);
+        } catch (InterruptedException e) {
+            throw new MappingException(e);
         }
-
-        // Second scan to assign static data
-        LogUtils.v("Entities mapping: second scan to assign static data");
-
-        for (EntityObject entity : result.values()) {
-            entity.setupColumns();
-        }
-
-        // Third scan to check consistence
-        LogUtils.v("Entities mapping: third scan to check data consistence");
-
-        for (EntityObject entity : result.values()) {
-            entity.checkConsistence(result);
-        }
-
-        return result;
     }
 
 }

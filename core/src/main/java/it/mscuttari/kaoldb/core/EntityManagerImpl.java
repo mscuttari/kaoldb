@@ -56,10 +56,10 @@ class EntityManagerImpl implements EntityManager {
                     String entityTableCreateSQL = entity.getSQL();
 
                     if (entityTableCreateSQL != null) {
-                        LogUtils.d("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
+                        LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
                         //System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
                         db.execSQL(entityTableCreateSQL);
-                        LogUtils.i("[Entity \"" + entity.getName() + "\"] Table created");
+                        LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
                     }
 
                     // Join tables
@@ -71,10 +71,10 @@ class EntityManagerImpl implements EntityManager {
                         String joinTableCreateSQL = joinTableObject.getSQL();
 
                         if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
-                            LogUtils.d("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
+                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
                             //System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
                             db.execSQL(joinTableCreateSQL);
-                            LogUtils.i("[Entity \"" + entity.getName() + "\"] Join table created");
+                            LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
                         }
                     }
                 }
@@ -105,7 +105,7 @@ class EntityManagerImpl implements EntityManager {
                     throw new DatabaseManagementException(e);
                 }
 
-                LogUtils.i("[Database \"" + database.getName() + "\"]: upgraded from version " + oldVersion + " to version " + newVersion);
+                LogUtils.i("[Database \"" + database.getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
             }
 
 
@@ -120,7 +120,7 @@ class EntityManagerImpl implements EntityManager {
              */
             @Override
             public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-                LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+                LogUtils.d("[Database \"" + database.getName() + "\"] downgrading from version " + oldVersion + " to version " + newVersion);
 
                 try {
                     DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
@@ -133,7 +133,7 @@ class EntityManagerImpl implements EntityManager {
                     throw new DatabaseManagementException(e);
                 }
 
-                LogUtils.i("[Database \"" + database.getName() + "\"]: downgraded from version " + oldVersion + " to version " + newVersion);
+                LogUtils.i("[Database \"" + database.getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);
             }
         };
 
@@ -169,7 +169,7 @@ class EntityManagerImpl implements EntityManager {
         boolean result = getContext().deleteDatabase(database.getName());
 
         if (result) {
-            LogUtils.i("Database \"" + database.getName() + "\" deleted");
+            LogUtils.i("[Database \"" + database.getName() + "\"] database deleted");
         }
 
         return result;
@@ -262,7 +262,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Open the database and start a transaction
         dbHelper.open();
-        //dbHelper.beginTransaction();
+        dbHelper.beginTransaction();
 
         try {
             while (currentEntity != null) {
@@ -297,14 +297,14 @@ class EntityManagerImpl implements EntityManager {
                 currentEntity = currentEntity.parent;
             }
 
-            //dbHelper.setTransactionSuccessful();
+            dbHelper.setTransactionSuccessful();
 
         } catch (Exception e) {
             throw new QueryException(e);
 
         } finally {
             // End the transaction and close the database
-            //dbHelper.endTransaction();
+            dbHelper.endTransaction();
             dbHelper.close();
         }
 
@@ -331,7 +331,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Open the database and start a transaction
         dbHelper.open();
-        //dbHelper.beginTransaction();
+        dbHelper.beginTransaction();
 
         try {
             while (currentEntity != null) {
@@ -357,14 +357,14 @@ class EntityManagerImpl implements EntityManager {
                 currentEntity = currentEntity.parent;
             }
 
-            //dbHelper.setTransactionSuccessful();
+            dbHelper.setTransactionSuccessful();
 
         } catch (Exception e) {
             throw new QueryException(e);
 
         } finally {
             // End the transaction and close the database
-            //dbHelper.endTransaction();
+            dbHelper.endTransaction();
             dbHelper.close();
         }
 

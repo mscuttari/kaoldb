@@ -22,6 +22,9 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 class Columns implements ColumnsContainer {
 
+    /** Entity object */
+    protected final EntityObject entity;
+
     /** Table columns */
     private final Collection<ColumnsContainer> columns = new HashSet<>();
 
@@ -34,9 +37,11 @@ class Columns implements ColumnsContainer {
 
     /**
      * Default constructor
+     *
+     * @param   entity      entity the columns belongs to
      */
-    public Columns() {
-
+    public Columns(EntityObject entity) {
+        this(entity, null);
     }
 
 
@@ -46,8 +51,11 @@ class Columns implements ColumnsContainer {
      *
      * @param   columns     columns to be added
      */
-    public Columns(Collection<ColumnsContainer> columns) {
-        addAll(columns);
+    public Columns(EntityObject entity, Collection<ColumnsContainer> columns) {
+        this.entity = entity;
+
+        if (columns != null)
+            addAll(columns);
     }
 
 
@@ -73,7 +81,7 @@ class Columns implements ColumnsContainer {
 
 
     @Override
-    public void addToContentValues(@NonNull ContentValues cv, Object obj) {
+    public synchronized void addToContentValues(@NonNull ContentValues cv, Object obj) {
         for (BaseColumnObject column : this) {
             column.addToContentValues(cv, obj);
         }
@@ -85,7 +93,7 @@ class Columns implements ColumnsContainer {
      *
      * @return  columns
      */
-    public final Collection<ColumnsContainer> getColumns() {
+    public final synchronized Collection<ColumnsContainer> getColumns() {
         return Collections.unmodifiableCollection(columns);
     }
 
@@ -95,7 +103,7 @@ class Columns implements ColumnsContainer {
      *
      * @return  column names map
      */
-    public final Map<String, BaseColumnObject> getNamesMap() {
+    public final synchronized Map<String, BaseColumnObject> getNamesMap() {
         return Collections.unmodifiableMap(namesMap);
     }
 
@@ -105,7 +113,7 @@ class Columns implements ColumnsContainer {
      *
      * @return  primary keys
      */
-    public final Collection<BaseColumnObject> getPrimaryKeys() {
+    public final synchronized Collection<BaseColumnObject> getPrimaryKeys() {
         return Collections.unmodifiableCollection(primaryKeys);
     }
 
@@ -116,7 +124,7 @@ class Columns implements ColumnsContainer {
      * @param   o   column to search for
      * @return  true if the column is already present; false otherwise
      */
-    public final boolean contains(BaseColumnObject o) {
+    public final synchronized boolean contains(BaseColumnObject o) {
         for (BaseColumnObject column : this) {
             if (column.equals(o))
                 return true;
@@ -137,26 +145,32 @@ class Columns implements ColumnsContainer {
      *
      * @throws  InvalidConfigException if any of the columns to be added are already present
      */
-    public boolean add(ColumnsContainer container) {
-        if (container == null)
-            return false;
+    public synchronized boolean add(ColumnsContainer container) {
+        try {
+            if (container == null)
+                return false;
 
-        // Check that the columns are not present
-        checkUniqueness(container);
+            // Check that the columns are not present
+            checkUniqueness(container);
 
-        for (BaseColumnObject column : container) {
-            if (column == null)
-                continue;
+            for (BaseColumnObject column : container) {
+                if (column == null)
+                    continue;
 
-            // Add the column name to the names map
-            namesMap.put(column.name, column);
+                // Add the column name to the names map
+                namesMap.put(column.name, column);
 
-            // Check if the column is a primary key
-            if (column.primaryKey)
-                primaryKeys.add(column);
+                // Check if the column is a primary key
+                if (column.primaryKey)
+                    primaryKeys.add(column);
+
+                LogUtils.d("[Entity \"" + entity.getName() + "\"] added column " + column);
+            }
+
+            return this.columns.add(container);
+        } finally {
+            notifyAll();
         }
-
-        return this.columns.add(container);
     }
 
 
@@ -171,7 +185,7 @@ class Columns implements ColumnsContainer {
      *
      * @throws  InvalidConfigException if any column has already been defined
      */
-    public boolean add(DatabaseObject db, EntityObject entity, Field field) {
+    public synchronized boolean add(DatabaseObject db, EntityObject entity, Field field) {
         return addAll(entityFieldToColumns(db, entity, field));
     }
 
@@ -182,7 +196,7 @@ class Columns implements ColumnsContainer {
      * @param   elements    columns or columns containers to be added
      * @return  true if the columns have been successfully added; false otherwise
      */
-    public boolean addAll(Collection<? extends ColumnsContainer> elements) {
+    public synchronized boolean addAll(Collection<? extends ColumnsContainer> elements) {
         boolean result = true;
 
         for (ColumnsContainer element : elements)
@@ -198,7 +212,7 @@ class Columns implements ColumnsContainer {
      * @param   columns     column container whose columns have to be added
      * @return  true if the columns have been successfully added; false otherwise
      */
-    public boolean addAll(Columns columns) {
+    public synchronized boolean addAll(Columns columns) {
         return addAll(columns.columns);
     }
 
@@ -209,7 +223,7 @@ class Columns implements ColumnsContainer {
      * @param   container       columns container to search for
      * @throws  InvalidConfigException if some columns have already been defined
      */
-    private void checkUniqueness(ColumnsContainer container) {
+    private synchronized void checkUniqueness(ColumnsContainer container) {
         for (BaseColumnObject column : container) {
             if (this.contains(column))
                 throw new InvalidConfigException("Column " + column.name + " already defined");

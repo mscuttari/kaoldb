@@ -39,8 +39,8 @@ public abstract class AbstractTest {
     public void setUp() {
         // KaolDB instance
         KaolDB kdb = KaolDB.getInstance();
-        kdb.setConfig(RuntimeEnvironment.application, R.xml.persistence);
         kdb.setDebugMode(true);
+        kdb.setConfig(RuntimeEnvironment.application, R.xml.persistence);
 
         // Entity manager
         em = kdb.getEntityManager(RuntimeEnvironment.application, databaseName);

@@ -140,12 +140,12 @@ class Config {
         String version = xml.getAttributeValue(null, "version");
 
         if (version == null || version.isEmpty())
-            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: version not set");
+            throw new InvalidConfigException("[Database \"" + database.getName() + "\"] version not set");
 
         try {
             database.setVersion(Integer.valueOf(version));
         } catch (NumberFormatException e) {
-            throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid version", e);
+            throw new InvalidConfigException("[Database \"" + database.getName() + "\"] invalid version", e);
         }
 
         // Schema migrator
@@ -157,11 +157,11 @@ class Config {
                 if (DatabaseSchemaMigrator.class.isAssignableFrom(migratorClass)) {
                     database.setSchemaMigrator(migratorClass.asSubclass(DatabaseSchemaMigrator.class));
                 } else {
-                    throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator");
+                    throw new InvalidConfigException("[Database \"" + database.getName() + "\"] invalid schema migrator");
                 }
 
             } catch (ClassNotFoundException e) {
-                throw new InvalidConfigException("[Database \"" + database.getName() + "\"]: invalid schema migrator", e);
+                throw new InvalidConfigException("[Database \"" + database.getName() + "\"] invalid schema migrator", e);
             }
         }
 
@@ -184,7 +184,6 @@ class Config {
                 try {
                     Class<?> clazz = Class.forName(xml.getText());
                     database.addEntityClass(clazz);
-                    LogUtils.i("[Database \"" + database.getName() + "\"]: found class " + clazz.getSimpleName());
 
                 } catch (ClassNotFoundException e) {
                     throw new InvalidConfigException("[Database \"" + database.getName()+ "\"]: class " + xml.getText() + " not found", e);
@@ -193,8 +192,6 @@ class Config {
 
             eventType = xml.next();
         }
-
-        LogUtils.e("[Database \"" + database.getName() + "\"]: classes mapped");
 
         // Add database to databases list
         mapping.put(database.getName(), database);

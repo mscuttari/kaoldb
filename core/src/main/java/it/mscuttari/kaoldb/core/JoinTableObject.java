@@ -26,13 +26,13 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * Direct join columns.
      * @see JoinTable#joinColumns()
      */
-    private final Columns directJoinColumns = new Columns();
+    private final Columns directJoinColumns;
 
     /**
      * Inverse join columns.
      * @see JoinTable#inverseJoinColumns()
      */
-    private final Columns inverseJoinColumns = new Columns();
+    private final Columns inverseJoinColumns;
 
 
     /**
@@ -41,7 +41,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @see #directJoinColumns
      * @see #inverseJoinColumns
      */
-    private final Columns joinColumns = new Columns();
+    private final Columns joinColumns;
 
 
     /**
@@ -54,6 +54,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     public JoinTableObject(DatabaseObject db, EntityObject entity, Field field) {
         this.db = db;
         this.field = field;
+        this.directJoinColumns = new Columns(entity);
+        this.inverseJoinColumns = new Columns(entity);
+        this.joinColumns = new Columns(entity);
 
         JoinTable annotation = field.getAnnotation(JoinTable.class);
 
@@ -139,7 +142,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
             if (!empty)
                 result.append(", ");
 
-            result.append(column);
+            result.append(column.getSQL());
             empty = false;
         }
 

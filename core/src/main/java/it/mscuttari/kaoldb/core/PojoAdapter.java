@@ -73,7 +73,7 @@ class PojoAdapter {
 
         while (entity.children.size() != 0) {
             // Get the discriminator value
-            String discriminatorColumnName = alias + entity.entityClass.getSimpleName() + "." + entity.discriminatorColumn.name;
+            String discriminatorColumnName = alias + entity.clazz.getSimpleName() + "." + entity.discriminatorColumn.name;
             int columnIndex = cursorMap.get(discriminatorColumnName);
             Object discriminatorValue = null;
 
@@ -104,12 +104,12 @@ class PojoAdapter {
         }
 
         // Just a security check
-        if (!resultClass.isAssignableFrom(entity.entityClass))
+        if (!resultClass.isAssignableFrom(entity.clazz))
             throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.getName());
 
         // Populate child class
         try {
-            T result = (T) entity.entityClass.newInstance();
+            T result = (T) entity.clazz.newInstance();
 
             while (entity != null) {
                 if (entity.realTable) {
@@ -410,14 +410,14 @@ class PojoAdapter {
         EntityObject entity = db.getEntity(clazz);
 
         EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
-        QueryBuilder<?> qb = em.getQueryBuilder(entity.entityClass);
-        Root<?> root = qb.getRoot(entity.entityClass, "de");
+        QueryBuilder<?> qb = em.getQueryBuilder(entity.clazz);
+        Root<?> root = qb.getRoot(entity.clazz, "de");
 
         Expression where = null;
 
         for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
             // Create the property that the generated class would have because of the primary key field
-            SingleProperty property = new SingleProperty<>(entity.entityClass, primaryKey.field.getType(), primaryKey.field);
+            SingleProperty property = new SingleProperty<>(entity.clazz, primaryKey.field.getType(), primaryKey.field);
 
             Object value = primaryKey.getValue(obj);
             Expression expression = root.eq(property, value);

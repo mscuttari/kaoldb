@@ -38,7 +38,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * Column type
      *
      * This field may contain a wrong value until the entities relationships has not been
-     * checked with the {@link EntityObject#checkConsistence(Map)} method
+     * checked with the {@link EntityObject#checkConsistence()} method
      */
     @NonNull public Class<?> type;
 
@@ -95,7 +95,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
     @Override
     public final String toString() {
-        return name;
+        return name + " (" + type.getSimpleName() + ")";
     }
 
 

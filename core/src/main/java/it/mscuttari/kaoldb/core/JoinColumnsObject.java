@@ -18,9 +18,9 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
     /**
      * Constructor
      *
-     * @param   db          database
-     * @param   entity      entity the column belongs to
-     * @param   field       field the columns are generated from
+     * @param db        database
+     * @param entity    entity the column belongs to
+     * @param field     field the columns are generated from
      */
     public JoinColumnsObject(DatabaseObject db, EntityObject entity, Field field) {
         super(entity);

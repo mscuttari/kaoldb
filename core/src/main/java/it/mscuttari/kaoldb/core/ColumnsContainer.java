@@ -30,8 +30,8 @@ interface ColumnsContainer extends Iterable<BaseColumnObject> {
      *
      * @see EntityObject#checkConsistence(Map)
      *
-     * @param   entities        map of all entities
-     * @throws  InvalidConfigException if the configuration is invalid
+     * @param entities      map of all entities
+     * @throws InvalidConfigException if the configuration is invalid
      */
     void fixType(Map<Class<?>, EntityObject> entities);
 
@@ -39,11 +39,11 @@ interface ColumnsContainer extends Iterable<BaseColumnObject> {
     /**
      * Add the columns to a {@link ContentValues} data set
      *
-     * @param   cv      data set to be populated
-     * @param   obj     object containing the data to be extracted
+     * @param cv    data set to be populated
+     * @param obj   object containing the data to be extracted
      *
-     * @throws  PojoException if the obj doesn't contain the columns
-     * @throws  PojoException if the column value can't be retrieved
+     * @throws PojoException if the obj doesn't contain the columns
+     * @throws PojoException if the column value can't be retrieved
      */
     void addToContentValues(@NonNull ContentValues cv, Object obj);
 

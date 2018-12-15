@@ -97,8 +97,8 @@ class EntityObject {
     /**
      * Constructor
      *
-     * @param   db          database the entity belongs to
-     * @param   clazz       entity class
+     * @param db        database the entity belongs to
+     * @param clazz     entity class
      */
     public EntityObject(@NonNull DatabaseObject db, @NonNull Class<?> clazz) {
         this.db = db;
@@ -171,7 +171,7 @@ class EntityObject {
     /**
      * Get the simple name of the class associated to this entity
      *
-     * @return  class name
+     * @return class name
      */
     public String getName() {
         return clazz.getSimpleName();
@@ -181,7 +181,7 @@ class EntityObject {
     /**
      * Get inheritance type
      *
-     * @return  inheritance type
+     * @return inheritance type
      */
     @Nullable
     private InheritanceType getInheritanceType() {
@@ -201,8 +201,8 @@ class EntityObject {
     /**
      * Determine if the class is linked to a real table
      *
-     * @return  true if a table should exists for this class; false if not
-     * @throws  MappingException if a newly implemented inheritance type is not taken into consideration
+     * @return true if a table should exists for this class; false if not
+     * @throws MappingException if a newly implemented inheritance type is not taken into consideration
      */
     private boolean isRealTable() {
         try {
@@ -260,8 +260,8 @@ class EntityObject {
      * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
      * Example: ModelClassName => model_class_name
      *
-     * @return  table name (null if the class doesn't need a real table)
-     * @throws  InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
+     * @return table name (null if the class doesn't need a real table)
+     * @throws InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
      */
     @Nullable
     private String getTableName() {
@@ -295,7 +295,7 @@ class EntityObject {
     /**
      * Get the parent entity and eventually add this entity to its children
      *
-     * @return  parent entity (null if there is no parent entity)
+     * @return parent entity (null if there is no parent entity)
      */
     @Nullable
     private EntityObject getParent() {
@@ -322,7 +322,7 @@ class EntityObject {
     /**
      * Get discriminator value
      *
-     * @return  discriminator vale (null if the entity doesn't have a parent)
+     * @return discriminator vale (null if the entity doesn't have a parent)
      */
     @Nullable
     private Object getDiscriminatorValue() {
@@ -345,7 +345,7 @@ class EntityObject {
      * Each field is considered a relationship one if it is annotated with {@link OneToOne},
      * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
      *
-     * @return  relationships fields
+     * @return relationships fields
      */
     private Collection<Field> getRelationships() {
         try {
@@ -374,7 +374,7 @@ class EntityObject {
     /**
      * Get the unique columns sets (both the unique columns specified in the @Table annotation)
      *
-     * @return  list of unique columns sets
+     * @return list of unique columns sets
      * @see Table#uniqueConstraints()
      */
     private Collection<Collection<BaseColumnObject>> getMultipleUniqueColumns() {
@@ -426,7 +426,7 @@ class EntityObject {
      *  -   Fields annotated with {@link OneToOne} that are owning side
      *  -   Fields annotated with {@link ManyToOne}
      *
-     * @throws  InvalidConfigException in case of multiple column declaration
+     * @throws InvalidConfigException in case of multiple column declaration
      */
     public void setupColumns() {
         // Normal and join columns
@@ -521,7 +521,7 @@ class EntityObject {
     /**
      * Check entity consistence
      *
-     * @throws  KaolDBException if the configuration is invalid
+     * @throws KaolDBException if the configuration is invalid
      */
     void checkConsistence() {
         Map<Class<?>, EntityObject> entities = db.getEntitiesMap();
@@ -550,9 +550,9 @@ class EntityObject {
      * Get field of a class given its name.
      * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
-     * @param   fieldName   field name
-     * @return  accessible field
-     * @throws  MappingException if there is no field in the class with the specified name
+     * @param fieldName     field name
+     * @return accessible field
+     * @throws MappingException if there is no field in the class with the specified name
      */
     public Field getField(String fieldName) {
         return getField(clazz, fieldName);
@@ -563,12 +563,12 @@ class EntityObject {
      * Get field of a class given its name.
      * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
-     * @param   clazz       class the field belongs to
-     * @param   fieldName   field name
+     * @param clazz         class the field belongs to
+     * @param fieldName     field name
      *
-     * @return  accessible field
+     * @return accessible field
      *
-     * @throws  MappingException if there is no field in the class with the specified name
+     * @throws MappingException if there is no field in the class with the specified name
      */
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
@@ -589,7 +589,7 @@ class EntityObject {
      * Optional join tables that are related to eventual internal fields must be managed
      * separately and in a second moment (after the creation of all the normal tables).
      *
-     * @return  SQL query (null if no table should be created)
+     * @return SQL query (null if no table should be created)
      */
     @Nullable
     public String getSQL() {
@@ -647,8 +647,8 @@ class EntityObject {
      *
      * Example: PRIMARY KEY(column_1, column_2, column_3)
      *
-     * @param   primaryKeys     collection of primary keys
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @param primaryKeys       collection of primary keys
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     public static String getTablePrimaryKeysSql(Collection<BaseColumnObject> primaryKeys) {
@@ -681,8 +681,8 @@ class EntityObject {
      * [[column_1, column_2], [column_2, column_3, column_4]] would generate the statement
      * UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
      *
-     * @param   uniqueColumns       unique columns groups
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @param uniqueColumns     unique columns groups
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private static String getTableUniquesSql(Collection<Collection<BaseColumnObject>> uniqueColumns) {
@@ -729,7 +729,7 @@ class EntityObject {
      * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
      * FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6)
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableForeignKeysSql() {
@@ -762,7 +762,7 @@ class EntityObject {
      *          REFERENCES parent_table(primary_key_1, primary_key_2)
      *          ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableInheritanceConstraints() {
@@ -820,7 +820,7 @@ class EntityObject {
      *  REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
      *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableRelationshipsConstraints() {

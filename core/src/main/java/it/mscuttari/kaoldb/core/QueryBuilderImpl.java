@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
@@ -16,13 +17,13 @@ import it.mscuttari.kaoldb.interfaces.Root;
  * QueryBuilder implementation
  *
  * @see QueryBuilder
- * @param   <T>     result objects class
+ * @param <T>   result objects class
  */
 class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
-    private final DatabaseObject db;
-    private final Class<T> resultClass;
-    private final EntityManagerImpl entityManager;
+    @NonNull private final EntityManagerImpl entityManager;
+    @NonNull private final DatabaseObject db;
+    @NonNull private final Class<T> resultClass;
 
     private Root<?> from;
     private Expression where;
@@ -31,13 +32,16 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     /**
      * Constructor
      *
-     * @param   db              database object
-     * @param   resultClass     class of the query result object
-     * @param   entityManager   entity manager instance
+     * @param db                database object
+     * @param resultClass       class of the query result object
+     * @param entityManager     entity manager instance
      *
-     * @throws  QueryException  if the result class is not an entity
+     * @throws QueryException if the result class is not an entity
      */
-    QueryBuilderImpl(DatabaseObject db, Class<T> resultClass, EntityManagerImpl entityManager) {
+    QueryBuilderImpl(@NonNull DatabaseObject db,
+                     @NonNull Class<T> resultClass,
+                     @NonNull EntityManagerImpl entityManager) {
+
         this.db = db;
         this.resultClass = resultClass;
         this.entityManager = entityManager;
@@ -80,7 +84,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         //System.out.println(sql);
 
-        return new QueryImpl<>(entityManager, db, resultClass, alias, sql);
+        return new QueryImpl<>(db, entityManager, resultClass, alias, sql);
     }
 
 
@@ -89,12 +93,12 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
      * If for example, an equality predicate is referred to another entity, a join with that
      * entity table is needed.
      *
-     * @param   root    original root
-     * @param   where   WHERE clause
+     * @param root      original root
+     * @param where     "WHERE" clause
      *
-     * @return  root extended with the required joins
+     * @return root extended with the required joins
      */
-    private static Root<?> createJoinForPredicates(Root<?> root, Expression where) {
+    private Root<?> createJoinForPredicates(Root<?> root, Expression where) {
         // No other entity involved
         if (where == null)
             return root;
@@ -108,16 +112,17 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         while (iterator.hasNext()) {
             PredicateImpl predicate = iterator.next();
-
             Object leftData = predicate.getFirstVariable().getData();
 
-            if (leftData instanceof Property) {
-                Property property = (Property) leftData;
+            if (!(leftData instanceof Property))
+                continue;
 
-                if (property.columnAnnotation != null && property.columnAnnotation != Column.class) {
-                    String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
-                    root = root.innerJoin(property.fieldType, alias, property);
-                }
+            Property property = (Property) leftData;
+
+            if (property.columnAnnotation != null && property.columnAnnotation != Column.class) {
+                String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
+                Root<?> joinedRoot = new From<>(db, (Class<?>) property.fieldType, alias);
+                root = root.join(joinedRoot, property);
             }
         }
 
@@ -126,12 +131,12 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     /**
-     * Get the "select" clause to be used in the query
+     * Get the "SELECT" clause to be used in the query
      *
-     * @param   root    root
-     * @param   alias   the alias of the desired result entity
+     * @param root      root
+     * @param alias     the alias of the desired result entity
      *
-     * @return  "select" clause
+     * @return "SELECT" clause
      */
     private String getSelectClause(Root<?> root, String alias) {
         // Check alias
@@ -167,29 +172,25 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     /**
      * Check if the alias exists and if it's linked to the correct class
      *
-     * @param   root    root
-     * @param   alias   alias
+     * @param root      root
+     * @param alias     alias
      *
-     * @return  true if the alias is correct
+     * @return true if the alias is correct
      *
-     * @throws  QueryException  if the alias has not been found or if it is linked to a class different than the result one
+     * @throws QueryException if the alias has not been found or if it is linked to a class different than the result one
      */
     private boolean checkAlias(Root<?> root, String alias) {
-        if (root instanceof From<?>) {
-            From<?> from = (From<?>)root;
-
-            if (from.getAlias().equals(alias)) {
-                if (from.getEntityClass().equals(resultClass)) {
-                    return true;
-                } else {
-                    throw new QueryException("Alias " + alias + " is linked to class " + from.getEntityClass().getSimpleName() + ". Expected class " + resultClass.getSimpleName());
-                }
+        if (root.getAlias().equals(alias)) {
+            if (root.getEntityClass().equals(resultClass)) {
+                return true;
+            } else {
+                throw new QueryException("Alias " + alias + " is linked to class " + root.getEntityClass().getSimpleName() + ". Expected class: " + resultClass.getSimpleName() + ".");
             }
+        }
 
-            if (from instanceof Join<?, ?>) {
-                if (checkAlias(((Join) from).getLeftSideRoot(), alias))
-                    return true;
-            }
+        if (root instanceof Join<?, ?>) {
+            if (checkAlias(((Join<?, ?>) root).getRightRoot(), alias))
+                return true;
         }
 
         throw new QueryException("Alias " + alias + " not found");
@@ -199,10 +200,10 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     /**
      * Get children columns
      *
-     * @param   entity      parent entity
-     * @param   alias       alias to be used in the  query
+     * @param entity    parent entity
+     * @param alias     alias to be used in the  query
      *
-     * @return  columns list (each column is in the following form: aliasClassName.ColumnName
+     * @return columns list (each column is in the following form: aliasClassName.ColumnName
      */
     private static List<String> childrenSelectClause(EntityObject entity, String alias) {
         List<String> result = new ArrayList<>();

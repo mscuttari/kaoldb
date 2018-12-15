@@ -8,7 +8,7 @@ public interface PreActionListener<M> {
     /**
      * Method called by the entity manager before the action is performed
      *
-     * @param   obj     object of interest for the action
+     * @param obj   object of interest for the action
      */
     void run(M obj);
 

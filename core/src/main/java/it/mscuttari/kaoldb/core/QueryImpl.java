@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
@@ -27,27 +28,34 @@ import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
- * @param   <M>     result objects class
+ * @param <M>   result objects class
  */
 class QueryImpl<M> implements Query<M> {
 
-    private final EntityManagerImpl entityManager;
-    private final DatabaseObject db;
-    private final Class<M> resultClass;
-    private final String alias;
-    private final String sql;
+    @NonNull private final DatabaseObject db;
+    @NonNull private final EntityManagerImpl entityManager;
+    @NonNull private final Class<M> resultClass;
+    @NonNull private final String alias;
+    @NonNull private final String sql;
 
 
     /**
      * Constructor
      *
-     * @param   db              database object
-     * @param   resultClass     result objects type
-     * @param   sql             SQL statement to be run
+     * @param db                database object
+     * @param entityManager     entity manager
+     * @param resultClass       result objects type
+     * @param alias             alias towards the query is built
+     * @param sql               SQL statement to be run
      */
-    QueryImpl(EntityManagerImpl entityManager, DatabaseObject db, Class<M> resultClass, String alias, String sql) {
-        this.entityManager = entityManager;
+    QueryImpl(@NonNull DatabaseObject db,
+              @NonNull EntityManagerImpl entityManager,
+              @NonNull Class<M> resultClass,
+              @NonNull String alias,
+              @NonNull String sql) {
+
         this.db = db;
+        this.entityManager = entityManager;
         this.resultClass = resultClass;
         this.alias = alias;
         this.sql = sql;
@@ -57,7 +65,7 @@ class QueryImpl<M> implements Query<M> {
     /**
      * Get SQL query
      *
-     * @return  sql query
+     * @return SQL query
      */
     @Override
     public String toString() {
@@ -126,8 +134,8 @@ class QueryImpl<M> implements Query<M> {
      * has a section aimed to fix bug 903852, but this workaround actually breaks the usage of
      * dots in column names.
      *
-     * @param   c       cursor to be mapped
-     * @return  {@link Map} between column name and column index
+     * @param c     cursor to be mapped
+     * @return {@link Map} between column name and column index
      */
     private static Map<String, Integer> getCursorColumnMap(Cursor c) {
         Map<String, Integer> map = new HashMap<>(c.getColumnCount(), 1);
@@ -145,9 +153,9 @@ class QueryImpl<M> implements Query<M> {
      * Get the queries to be used to eagerly load data of fields with
      * {@link OneToOne} or {@link ManyToOne} annotations.
      *
-     * @param   object      object got from the query
-     * @return  collection of futures, each of them representing the asynchronous query task
-     * @throws  QueryException if the data can't be assigned to the field
+     * @param object    object got from the query
+     * @return collection of futures, each of them representing the asynchronous query task
+     * @throws QueryException if the data can't be assigned to the field
      */
     private Collection<Pair<Field, Future<Query<?>>>> getEagerLoadQueries(final M object) {
         Collection<Pair<Field, Future<Query<?>>>> futures = new ArrayList<>();
@@ -187,7 +195,7 @@ class QueryImpl<M> implements Query<M> {
 
                     // Create the join
                     Root<?> root = qb.getRoot(currentEntity.clazz, "source");
-                    Root<?> join = root.innerJoin(linkedClass, "destination", property);
+                    Root<?> join = root.join(new From<>(db, linkedClass, "destination"), property);
 
                     Expression where = null;
 
@@ -215,8 +223,8 @@ class QueryImpl<M> implements Query<M> {
     /**
      * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields
      *
-     * @param   object          object got from the query
-     * @throws  QueryException  if the lazy field can't be accessed
+     * @param object    object got from the query
+     * @throws QueryException if the lazy field can't be accessed
      */
     @SuppressWarnings("unchecked")
     private void createLazyCollections(M object) {
@@ -268,7 +276,7 @@ class QueryImpl<M> implements Query<M> {
 
             // Create the join and equality constraints
             Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
-            Root<?> join = linkedClassRoot.innerJoin(entity.clazz, "source", property);
+            Root<?> join = linkedClassRoot.join(new From<>(db, entity.clazz, "source"), property);
 
             Expression where = null;
 

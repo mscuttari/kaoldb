@@ -13,7 +13,7 @@ public enum DiscriminatorType {
     /**
      * Get corresponding discriminator column class
      *
-     * @return  column class
+     * @return column class
      */
     public Class<?> getDiscriminatorClass() {
         switch (this) {

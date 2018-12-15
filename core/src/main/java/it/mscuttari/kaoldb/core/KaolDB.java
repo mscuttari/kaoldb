@@ -46,7 +46,7 @@ public final class KaolDB {
     /**
      * Get instance
      *
-     * @return  singleton instance
+     * @return singleton instance
      */
     public static KaolDB getInstance() {
         if (instance == null)
@@ -59,7 +59,7 @@ public final class KaolDB {
     /**
      * Set the framework in debug mode or not (default = false)
      *
-     * @param   enabled     whether to enable or not debug logs
+     * @param enabled   whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
         getConfig().setDebugMode(enabled);
@@ -69,7 +69,7 @@ public final class KaolDB {
     /**
      * Get configuration
      *
-     * @return  configuration object
+     * @return configuration object
      */
     Config getConfig() {
         return config;
@@ -79,8 +79,8 @@ public final class KaolDB {
     /**
      * Set configuration
      *
-     * @param   resId           resource ID of the XML configuration file
-     * @throws  KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
+     * @param resId     resource ID of the XML configuration file
+     * @throws KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
      */
     public void setConfig(Context context, int resId) {
         // Load configuration file
@@ -119,7 +119,7 @@ public final class KaolDB {
     /**
      * Get executor service to be used for concurrency
      *
-     * @return  executor service
+     * @return executor service
      */
     ExecutorService getExecutorService() {
         return executorService;
@@ -130,10 +130,10 @@ public final class KaolDB {
     /**
      * Get entity manager for a specific database
      *
-     * @param   context         context
-     * @param   databaseName    database name
+     * @param context           context
+     * @param databaseName      database name
      *
-     * @return  entity manager
+     * @return entity manager
      */
     public EntityManager getEntityManager(Context context, String databaseName) {
         context = context.getApplicationContext();

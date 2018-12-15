@@ -53,19 +53,19 @@ class PredicateImpl extends ExpressionImpl {
     }
 
 
-    private PredicateType operation;
-    private DatabaseObject db;
-    private Variable<?, ?> x;
-    private Variable<?, ?> y;
+    private final PredicateType operation;
+    private final DatabaseObject db;
+    private final Variable<?, ?> x;
+    private final Variable<?, ?> y;
 
 
     /**
      * Constructor
      *
-     * @param   operation   operation
-     * @param   db          database object
-     * @param   x           first variable
-     * @param   y           second variable
+     * @param operation     operation
+     * @param db            database object
+     * @param x             first variable
+     * @param y             second variable
      */
     private PredicateImpl(PredicateType operation, DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         super(null, null, null);
@@ -78,14 +78,14 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Create "is null" predicate
+     * Create "IS NULL" predicate
      *
-     * @param   db  database object
-     * @param   x   variable
+     * @param db    database object
+     * @param x     variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if the variable is null
+     * @throws QueryException if the variable is null
      */
     public static PredicateImpl isNull(DatabaseObject db, Variable<?, ?> x) {
         if (x == null)
@@ -96,15 +96,15 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Create "equals" predicate
+     * Create "EQUALS" predicate
      *
-     * @param   db  database object
-     * @param   x   first variable
-     * @param   y   second variable
+     * @param db    database object
+     * @param x     first variable
+     * @param y     second variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if any of the variables are null
+     * @throws QueryException if any of the variables are null
      */
     public static PredicateImpl eq(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
@@ -115,15 +115,15 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Create "greater than" predicate
+     * Create "GREATER THAN" predicate
      *
-     * @param   db  database object
-     * @param   x   first variable
-     * @param   y   second variable
+     * @param db    database object
+     * @param x     first variable
+     * @param y     second variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if any of the variables are null
+     * @throws QueryException if any of the variables are null
      */
     public static PredicateImpl gt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
@@ -134,15 +134,15 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Create "greater or equals than" predicate
+     * Create "GREATER OR EQUALS THAN" predicate
      *
-     * @param   db  database object
-     * @param   x   first variable
-     * @param   y   second variable
+     * @param db    database object
+     * @param x     first variable
+     * @param y     second variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if any of the variables are null
+     * @throws QueryException if any of the variables are null
      */
     public static PredicateImpl ge(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
@@ -153,15 +153,15 @@ class PredicateImpl extends ExpressionImpl {
 
 
     /**
-     * Create "less than" predicate
+     * Create "LESS THAN" predicate
      *
-     * @param   db  database object
-     * @param   x   first variable
-     * @param   y   second variable
+     * @param db    database object
+     * @param x     first variable
+     * @param y     second variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if any of the variables are null
+     * @throws QueryException if any of the variables are null
      */
     public static PredicateImpl lt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
@@ -174,13 +174,13 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create "less or equals than" predicate
      *
-     * @param   db  database object
-     * @param   x   first variable
-     * @param   y   second variable
+     * @param db    database object
+     * @param x     first variable
+     * @param y     second variable
      *
-     * @return  predicate
+     * @return predicate
      *
-     * @throws  QueryException  if any of the variables are null
+     * @throws QueryException if any of the variables are null
      */
     public static PredicateImpl le(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
         if (x == null || y == null)
@@ -193,8 +193,8 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Get string representation to be used in SQL query
      *
-     * @return  string representation
-     * @throws  QueryException  if the requested configuration is invalid
+     * @return string representation
+     * @throws QueryException if the requested configuration is invalid
      */
     @Override
     public String toString() {
@@ -209,7 +209,7 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Get first variable
      *
-     * @return  first variable
+     * @return first variable
      */
     public Variable<?, ?> getFirstVariable() {
         return x;
@@ -219,7 +219,7 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Get second variable
      *
-     * @return  second variable
+     * @return second variable
      */
     public Variable<?, ?> getSecondVariable() {
         return y;
@@ -229,7 +229,7 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Get string representation of an unary predicate
      *
-     * @return  string representation to be used in query
+     * @return string representation to be used in query
      */
     private String processUnaryPredicate() {
         StringBuilder sb = new StringBuilder();
@@ -257,7 +257,7 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Get string representation of an binary predicate
      *
-     * @return  string representation to be used in query
+     * @return string representation to be used in query
      */
     private String processBinaryPredicate() {
         StringBuilder sb = new StringBuilder();
@@ -312,12 +312,12 @@ class PredicateImpl extends ExpressionImpl {
      *
      * Every column is in the format "tableAlias.columnName".
      *
-     * @param   property    property
-     * @param   alias       table alias
+     * @param property      property
+     * @param alias         table alias
      *
-     * @return  list of columns
+     * @return list of columns
      *
-     * @throws  QueryException if the property is invalid
+     * @throws QueryException if the property is invalid
      */
     private static List<String> getPropertyColumns(Property<?, ?> property, String alias) {
         List<String> result = new ArrayList<>();
@@ -371,15 +371,15 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create property-property associations for the query
      *
-     * @param   db          database object
-     * @param   xProperty   first property
-     * @param   xAlias      first table alias
-     * @param   yProperty   second property
-     * @param   yAlias      second table alias
+     * @param db            database object
+     * @param xProperty     first property
+     * @param xAlias        first table alias
+     * @param yProperty     second property
+     * @param yAlias        second table alias
      *
-     * @return  list of columns pairs
+     * @return list of columns pairs
      *
-     * @throws  QueryException  if the requested configuration is invalid
+     * @throws QueryException if the requested configuration is invalid
      */
     private static List<Pair<String, String>> bindProperties(DatabaseObject db, Property xProperty, String xAlias, Property yProperty, String yAlias) {
         List<Pair<String, String>> result = new ArrayList<>();
@@ -468,14 +468,14 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create property-value associations for the query
      *
-     * @param   db          database object
-     * @param   property    model property
-     * @param   alias       table alias
-     * @param   obj         object value
+     * @param db            database object
+     * @param property      model property
+     * @param alias         table alias
+     * @param obj           object value
      *
-     * @return  list of column-value pairs
+     * @return list of column-value pairs
      *
-     * @throws  QueryException  if the requested configuration is invalid
+     * @throws QueryException if the requested configuration is invalid
      */
     private static List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property<?, ?> property, String alias, Object obj) {
         List<Pair<String, String>> result = new ArrayList<>();
@@ -525,8 +525,8 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Convert object to string in order to be placed in the query
      *
-     * @param   obj     object
-     * @return  string
+     * @param obj       object
+     * @return string
      */
     private static String objectToString(Object obj) {
         if (obj instanceof String) {

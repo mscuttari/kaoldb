@@ -16,10 +16,10 @@ class Variable<M, T> {
     /**
      * Constructor
      *
-     * @param   db          database object
-     * @param   entity      entity object
-     * @param   tableAlias  table alias
-     * @param   property    entity property
+     * @param db            database object
+     * @param entity        entity object
+     * @param tableAlias    table alias
+     * @param property      entity property
      */
     Variable(DatabaseObject db, EntityObject entity, String tableAlias, Property<M, T> property) {
         this.db = db;

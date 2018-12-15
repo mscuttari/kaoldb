@@ -40,8 +40,8 @@ class DatabaseObject {
     /**
      * Get database name
      *
-     * @return  database name
-     * @throws  InvalidConfigException if the name has not been set
+     * @return database name
+     * @throws InvalidConfigException if the name has not been set
      */
     public String getName() {
         if (name == null) {
@@ -55,8 +55,8 @@ class DatabaseObject {
     /**
      * Set database name
      *
-     * @param   name    database name
-     * @throws  InvalidConfigException if the name is null or empty
+     * @param name      database name
+     * @throws InvalidConfigException if the name is null or empty
      */
     public void setName(String name) {
         LogUtils.d("[Database] setting name \"" + name + "\"");
@@ -74,8 +74,8 @@ class DatabaseObject {
     /**
      * Get database version
      *
-     * @return  database version
-     * @throws  InvalidConfigException if the version has not been set
+     * @return database version
+     * @throws InvalidConfigException if the version has not been set
      */
     public int getVersion() {
         if (version == null) {
@@ -89,8 +89,8 @@ class DatabaseObject {
     /**
      * Set database version
      *
-     * @param   version     database version
-     * @throws  InvalidConfigException if the version is null or < 0
+     * @param version       database version
+     * @throws InvalidConfigException if the version is null or < 0
      */
     public void setVersion(Integer version) {
         LogUtils.d("[Database \"" + name + "\"] setting version " + version);
@@ -108,8 +108,8 @@ class DatabaseObject {
     /**
      * Get database schema migrator
      *
-     * @return  database schema migrator
-     * @throws  InvalidConfigException if the database schema migrator has not been set
+     * @return database schema migrator
+     * @throws InvalidConfigException if the database schema migrator has not been set
      */
     public Class<? extends DatabaseSchemaMigrator> getSchemaMigrator() {
         if (migrator == null) {
@@ -123,8 +123,8 @@ class DatabaseObject {
     /**
      * Set database schema migrator
      *
-     * @param   migrator        database schema migrator
-     * @throws  InvalidConfigException if the schema migrator is null
+     * @param migrator      database schema migrator
+     * @throws InvalidConfigException if the schema migrator is null
      */
     public void setSchemaMigrator(Class<? extends DatabaseSchemaMigrator> migrator) {
         if (migrator == null) {
@@ -140,7 +140,7 @@ class DatabaseObject {
      * Get an unmodifiable {@link Collection} of all entities classes
      * To add new classes, use {@link #addEntityClass(Class)} or {@link #setEntityClasses(Collection)}
      *
-     * @return  entity classes
+     * @return entity classes
      */
     public Collection<Class<?>> getEntityClasses() {
         return Collections.unmodifiableCollection(classes);
@@ -150,8 +150,8 @@ class DatabaseObject {
     /**
      * Add entity class
      *
-     * @param   clazz       entity class
-     * @throws  InvalidConfigException if the class isn't annotated with {@link Entity}
+     * @param clazz     entity class
+     * @throws InvalidConfigException if the class isn't annotated with {@link Entity}
      */
     public void addEntityClass(Class<?> clazz) {
         if (clazz == null)
@@ -170,8 +170,8 @@ class DatabaseObject {
     /**
      * Set entity classes
      *
-     * @param   classes     entity classes
-     * @throws  InvalidConfigException if any of the classes isn't annotated with {@link Entity}
+     * @param classes       entity classes
+     * @throws InvalidConfigException if any of the classes isn't annotated with {@link Entity}
      */
     public void setEntityClasses(Collection<Class<?>> classes) {
         this.classes.clear();
@@ -184,9 +184,9 @@ class DatabaseObject {
     /**
      * Get {@link EntityObject} corresponding to an entity class
      *
-     * @param   clazz       entity class
-     * @return  entity object
-     * @throws  InvalidConfigException  if the entity has not been found in the mapped ones
+     * @param clazz     entity class
+     * @return entity object
+     * @throws InvalidConfigException  if the entity has not been found in the mapped ones
      */
     public EntityObject getEntity(Class<?> clazz) {
         if (!classes.contains(clazz)) {
@@ -230,7 +230,7 @@ class DatabaseObject {
      * Get an unmodifiable {@link Collection} of all entity objects
      * To set a map, use {@link #setEntitiesMap(Map)}
      *
-     * @return  mapped entities
+     * @return mapped entities
      */
     public Collection<EntityObject> getEntities() {
         return Collections.unmodifiableCollection(entities.values());
@@ -240,7 +240,7 @@ class DatabaseObject {
     /**
      * Set entities mapping
      *
-     * @param   map     map between entity class and {@link EntityObject}
+     * @param map   map between entity class and {@link EntityObject}
      */
     public void setEntitiesMap(Map<Class<?>, EntityObject> map) {
         this.entities.clear();
@@ -260,8 +260,8 @@ class DatabaseObject {
      * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
      * mapping consistence
      *
-     * @param   classes     collection of all classes
-     * @return  map between classes and entities objects
+     * @param classes       collection of all classes
+     * @return map between classes and entities objects
      */
     public void mapEntities(Collection<Class<?>> classes) {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");

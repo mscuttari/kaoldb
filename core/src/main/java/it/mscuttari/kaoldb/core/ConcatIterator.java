@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
 /**
  * Wrapper iterator to be used to concatenate two iterators
  *
- * @param   <T>     data type of the iterated objects
+ * @param <T>   data type of the iterated objects
  */
 class ConcatIterator<T> implements Iterator<T> {
 

@@ -29,8 +29,8 @@ class Propagation {
     /**
      * Constructor
      *
-     * @param   onUpdate    on update action
-     * @param   onDelete    on delete action
+     * @param onUpdate      on update action
+     * @param onDelete      on delete action
      */
     public Propagation(Action onUpdate, Action onDelete) {
         this.onUpdate = onUpdate;

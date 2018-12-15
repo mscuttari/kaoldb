@@ -24,9 +24,9 @@ class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
     /**
      * Constructor
      *
-     * @param   operation   operation
-     * @param   x           first expression
-     * @param   y           second expression
+     * @param operation     operation
+     * @param x             first expression
+     * @param y             second expression
      */
     ExpressionImpl(ExpressionType operation, Expression x, Expression y) {
         this.operation = operation;
@@ -110,7 +110,7 @@ class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
     /**
      * Get string representation to be used in SQL query
      *
-     * @return  string representation
+     * @return string representation
      */
     @Override
     public String toString() {

@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -58,16 +57,16 @@ abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Constructor
      *
-     * @param   db                          database
-     * @param   entity                      entity the column belongs to
-     * @param   field                       field the column is generated from
-     * @param   name                        column name
-     * @param   customColumnDefinition      column custom definition
-     * @param   type                        column type
-     * @param   nullable                    nullable property
-     * @param   primaryKey                  primary key property
-     * @param   unique                      unique property
-     * @param   defaultValue                default value
+     * @param db                        database
+     * @param entity                    entity the column belongs to
+     * @param field                     field the column is generated from
+     * @param name                      column name
+     * @param customColumnDefinition    column custom definition
+     * @param type                      column type
+     * @param nullable                  nullable property
+     * @param primaryKey                primary key property
+     * @param unique                    unique property
+     * @param defaultValue              default value
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject entity,
@@ -131,8 +130,8 @@ abstract class BaseColumnObject implements ColumnsContainer {
      *
      * Example: columnFieldName => column_field_name
      *
-     * @param   field       field the column is generated from
-     * @return  column name
+     * @param field     field the column is generated from
+     * @return column name
      */
     protected static String getDefaultName(@NonNull Field field) {
         String fieldName = field.getName();
@@ -146,9 +145,9 @@ abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Get field value
      *
-     * @param   obj     object to get the value from
-     * @return  field value
-     * @throws  PojoException if the field can't be accessed
+     * @param obj       object to get the value from
+     * @return field value
+     * @throws PojoException if the field can't be accessed
      */
     @Nullable
     public final Object getValue(Object obj) {
@@ -168,10 +167,10 @@ abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Set field value
      *
-     * @param   obj     object containing the field to be set
-     * @param   value   value to be set
+     * @param obj       object containing the field to be set
+     * @param value     value to be set
      *
-     * @throws  QueryException if the field can't be accessed
+     * @throws QueryException if the field can't be accessed
      */
     public final void setValue(Object obj, Object value) {
         field.setAccessible(true);
@@ -206,7 +205,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
      *
      * Example: (column 1 INTEGER UNIQUE, column 2 REAL NOT NULL)
      *
-     * @return  SQL query
+     * @return SQL query
      */
     public final String getSQL() {
         StringBuilder result = new StringBuilder();
@@ -269,7 +268,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
         /**
          * Constructor
          *
-         * @param   column      column to be returned during iteration
+         * @param column    column to be returned during iteration
          */
         public SingleColumnIterator(BaseColumnObject column) {
             this.column = column;

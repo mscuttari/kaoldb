@@ -8,7 +8,7 @@ final class PredicatesIterator extends LeavesIterator<ExpressionImpl> {
     /**
      * Constructor
      *
-     * @param   root    tree root
+     * @param root      tree root
      */
     public PredicatesIterator(ExpressionImpl root) {
         super(root);

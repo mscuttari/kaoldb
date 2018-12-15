@@ -20,9 +20,9 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Constructor
      *
-     * @param   db          database
-     * @param   entity      entity the column belongs to
-     * @param   field       field the column is generated from
+     * @param db        database
+     * @param entity    entity the column belongs to
+     * @param field     field the column is generated from
      */
     public SimpleColumnObject(@NonNull DatabaseObject db,
                               @NonNull EntityObject entity,
@@ -43,8 +43,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get column name
      *
-     * @param   field   field the column is generated from
-     * @return  column name
+     * @param field     field the column is generated from
+     * @return column name
      */
     @NonNull
     private static String getColumnName(@NonNull Field field) {
@@ -56,8 +56,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get custom column definition
      *
-     * @param   field   field the column is generated from
-     * @return  custom column definition (null if not provided)
+     * @param field     field the column is generated from
+     * @return custom column definition (null if not provided)
      */
     @Nullable
     private static String getCustomColumnDefinition(@NonNull Field field) {
@@ -69,8 +69,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get column type
      *
-     * @param   field   field the column is generated from
-     * @return  column type
+     * @param field     field the column is generated from
+     * @return column type
      */
     @NonNull
     private static Class<?> getType(@NonNull Field field) {
@@ -81,8 +81,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get nullable property
      *
-     * @param   field   field the column is generated from
-     * @return  whether the column is nullable or not
+     * @param field     field the column is generated from
+     * @return whether the column is nullable or not
      */
     private static boolean getNullableProperty(@NonNull Field field) {
         Column annotation = field.getAnnotation(Column.class);
@@ -93,8 +93,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get primary key property
      *
-     * @param   field   field the column is generated from
-     * @return  whether the column is a primary key or not
+     * @param field     field the column is generated from
+     * @return whether the column is a primary key or not
      */
     private static boolean getPrimaryKeyProperty(@NonNull Field field) {
         return field.isAnnotationPresent(Id.class);
@@ -104,8 +104,8 @@ final class SimpleColumnObject extends BaseColumnObject {
     /**
      * Get unique property
      *
-     * @param   field   field the column is generated from
-     * @return  whether the column value should be unique or not
+     * @param field     field the column is generated from
+     * @return whether the column value should be unique or not
      */
     private static boolean getUniqueProperty(@NonNull Field field) {
         Column annotation = field.getAnnotation(Column.class);
@@ -119,8 +119,8 @@ final class SimpleColumnObject extends BaseColumnObject {
      * The value is stored as a string in order to be ready for SQL statement generation.
      * // TODO: check for data type compatibility
      *
-     * @param   field   field the column is generated from
-     * @return  column default value (null if not provided)
+     * @param field     field the column is generated from
+     * @return column default value (null if not provided)
      */
     @Nullable
     private static String getDefaultValue(@NonNull Field field) {

@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
@@ -8,11 +9,11 @@ import it.mscuttari.kaoldb.interfaces.Root;
 /**
  * @param   <X>     entity root
  */
-class From<X> implements Root<X> {
+final class From<X> implements Root<X> {
 
-    protected final DatabaseObject db;
-    protected final EntityObject entity;
-    private final String alias;
+    @NonNull private final DatabaseObject db;
+    @NonNull private final EntityObject entity;
+    @NonNull private final String alias;
 
     // Used during the SQL string build to keep track of the visited roots
     private boolean hierarchyVisited = false;
@@ -21,11 +22,14 @@ class From<X> implements Root<X> {
     /**
      * Constructor
      *
-     * @param   db              database object
-     * @param   entityClass     entity class
-     * @param   alias           table alias
+     * @param db            database object
+     * @param entityClass   entity class
+     * @param alias         table alias
      */
-    From(DatabaseObject db, Class<X> entityClass, String alias) {
+    From(@NonNull DatabaseObject db,
+         @NonNull Class<X> entityClass,
+         @NonNull String alias) {
+
         this.db = db;
         this.entity = db.getEntity(entityClass);
         this.alias = alias;
@@ -35,13 +39,13 @@ class From<X> implements Root<X> {
     /**
      * Get string representation to be used in query
      *
-     * @return  "from" clause
+     * @return "FROM" clause
      */
     @Override
     public String toString() {
         // Resolve hierarchy joins
         if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
-            From<?> root = this;
+            Root<?> root = this;
             EntityObject entity = db.getEntity(getEntityClass());
 
             root = resolveParentInheritance(root, entity, alias);
@@ -51,7 +55,7 @@ class From<X> implements Root<X> {
         }
 
         try {
-            return entity.tableName + " AS " + alias + getEntityClass().getSimpleName();
+            return entity.tableName + " AS " + getFullAlias();
         } finally {
             // Reset the status ot allow a second query build
             hierarchyVisited = false;
@@ -72,32 +76,27 @@ class From<X> implements Root<X> {
 
 
     @Override
-    public <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
-        return new InnerJoin<>(db, this, entityClass, alias, property);
+    public String getFullAlias() {
+        return getFullAlias(getAlias(), getEntityClass());
+    }
+
+
+    /**
+     * Get full alias of an entity table (alias + class name)
+     *
+     * @param alias     entity alias
+     * @param clazz     entity class
+     *
+     * @return full alias
+     */
+    public static String getFullAlias(String alias, Class<?> clazz) {
+        return alias + clazz.getSimpleName();
     }
 
 
     @Override
-    public <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Expression on) {
-        return new InnerJoin<>(db, this, entityClass, alias, on);
-    }
-
-
-    @Override
-    public <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Property<X, Y> property) {
-        return new LeftJoin<>(db, this, entityClass, alias, property);
-    }
-
-
-    @Override
-    public <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Expression on) {
-        return new LeftJoin<>(db, this, entityClass, alias, on);
-    }
-
-
-    @Override
-    public <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias) {
-        return new NaturalJoin<>(db, this, entityClass, alias);
+    public <Y> Root<X> join(Root<Y> root, Property<X, Y> property) {
+        return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
 
 
@@ -137,39 +136,17 @@ class From<X> implements Root<X> {
 
 
     /**
-     * Get full alias of this entity table (alias + class name)
-     *
-     * @return  full alias
-     */
-    public String getFullAlias() {
-        return getFullAlias(getAlias(), getEntityClass());
-    }
-
-
-    /**
-     * Get full alias of an entity table (alias + class name)
-     *
-     * @param   alias   entity alias
-     * @param   clazz   entity class
-     *
-     * @return  full alias
-     */
-    public static String getFullAlias(String alias, Class<?> clazz) {
-        return alias + clazz.getSimpleName();
-    }
-
-
-    /**
      * Merge parent tables
      *
-     * @param   root        main root
-     * @param   entity      main entity object
-     * @param   alias       main alias
+     * @param root      main root
+     * @param entity    main entity object
+     * @param alias     main alias
      *
-     * @return  join root
+     * @return join root
      */
-    private From<?> resolveParentInheritance(From<?> root, EntityObject entity, String alias) {
-        root.hierarchyVisited = true;
+    private Root<?> resolveParentInheritance(Root<?> root, EntityObject entity, String alias) {
+        if (root instanceof From<?>)
+            ((From<?>) root).hierarchyVisited = true;
 
         if (entity.parent != null) {
             EntityObject parent = entity.parent;
@@ -188,8 +165,10 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new InnerJoin<>(db, root, parent.clazz, alias, on);
-                    root.hierarchyVisited = true;
+                    From<?> parentRoot = new From<>(db, parent.clazz, alias);
+                    parentRoot.hierarchyVisited = true;
+
+                    root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
                 }
 
                 parent = parent.parent;
@@ -203,14 +182,15 @@ class From<X> implements Root<X> {
     /**
      * Merge children tables
      *
-     * @param   root        main root
-     * @param   entity      current entity object
-     * @param   alias       main alias
+     * @param root      main root
+     * @param entity    current entity object
+     * @param alias     main alias
      *
-     * @return  join root
+     * @return join root
      */
-    private From<?> resolveChildrenInheritance(From<?> root, EntityObject entity, String alias) {
-        root.hierarchyVisited = true;
+    private Root<?> resolveChildrenInheritance(Root<?> root, EntityObject entity, String alias) {
+        if (root instanceof From<?>)
+            ((From<?>) root).hierarchyVisited = true;
 
         if (entity.children.size() != 0) {
             for (EntityObject child : entity.children) {
@@ -227,9 +207,11 @@ class From<X> implements Root<X> {
                     if (on == null)
                         throw new QueryException("Can't merge inherited tables");
 
-                    root = new LeftJoin<>(db, root, child.clazz, alias, on);
-                    root.hierarchyVisited = true;
-                    root = resolveChildrenInheritance(root, db.getEntity(root.getEntityClass()), alias);
+                    From<?> childRoot = new From<>(db, child.clazz, alias);
+                    childRoot.hierarchyVisited = true;
+
+                    root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
+                    root = resolveChildrenInheritance(root, child, alias);
                 }
             }
         }

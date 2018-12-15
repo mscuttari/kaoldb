@@ -15,13 +15,13 @@ public interface QueryBuilder<T> {
      * Roots can be thought as a direct access to the entity table properties and allow to create
      * expressions based on their values
      *
-     * @param   entityClass     entity class
-     * @param   alias           entity alias to be used in the query
-     * @param   <M>             entity class
+     * @param entityClass   entity class
+     * @param alias         entity alias to be used in the query
+     * @param <M>           entity class
      *
-     * @return  entity root
+     * @return entity root
      *
-     * @throws  QueryException  if the alias is null or empty
+     * @throws QueryException if the alias is null or empty
      */
     <M> Root<M> getRoot(Class<M> entityClass, String alias);
 
@@ -29,7 +29,7 @@ public interface QueryBuilder<T> {
     /**
      * Set "FROM" clause
      *
-     * @param   from    entity root
+     * @param from      entity root
      */
     QueryBuilder<T> from(Root<?> from);
 
@@ -37,9 +37,9 @@ public interface QueryBuilder<T> {
     /**
      * Set "WHERE" clause
      *
-     * @param   where       logic expression
+     * @param where     logic expression
      *
-     * @return  query builder
+     * @return query builder
      */
     QueryBuilder<T> where(Expression where);
 
@@ -51,13 +51,13 @@ public interface QueryBuilder<T> {
      * If the clauses are modified after a query build and then rebuilt, the new query will be
      * different then the previous one and will reflect the new clauses
      *
-     * @param   alias       the alias of the desired result entity; it must be present in the list
-     *                      of the aliases specified during the {@link Root} composition
+     * @param alias     the alias of the desired result entity; it must be present in the list
+     *                  of the aliases specified during the {@link Root} composition
      *
-     * @return  {@link Query} object which can be used to retrieve query result objects
+     * @return {@link Query} object which can be used to retrieve query result objects
      *
-     * @throws  QueryException  if the query configuration is invalid (see exception message for
-     *                          further details)
+     * @throws QueryException if the query configuration is invalid (see exception message for
+     *                        further details)
      */
     Query<T> build(String alias);
 

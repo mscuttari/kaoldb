@@ -47,9 +47,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     /**
      * Constructor
      *
-     * @param   db          database the table belongs to
-     * @param   entity      entity that owns the relationship
-     * @param   field       field the table and its columns are generated from
+     * @param db        database the table belongs to
+     * @param entity    entity that owns the relationship
+     * @param field     field the table and its columns are generated from
      */
     public JoinTableObject(DatabaseObject db, EntityObject entity, Field field) {
         this.db = db;
@@ -90,7 +90,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * All the normal tables must have been created before running the executing the result of
      * this method, as it will create foreign keys pointing to their columns.
      *
-     * @return  SQL query
+     * @return SQL query
      */
     @Nullable
     public String getSQL() {
@@ -131,7 +131,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     /**
      * Get the columns SQL statement to be inserted in the table creation query
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getColumnsSql() {
@@ -156,7 +156,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * Differently from {@link EntityObject#getTableForeignKeysSql()}, this method
      * is used for the foreign keys of a join table
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     private  String getJoinTableForeignKeysSql() {

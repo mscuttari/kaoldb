@@ -13,7 +13,7 @@ abstract class LeavesIterator<T extends TreeNode<T>> implements Iterator<T> {
     /**
      * Constructor
      *
-     * @param   root    tree root
+     * @param root      tree root
      */
     public LeavesIterator(T root) {
         if (root != null) {
@@ -50,7 +50,7 @@ abstract class LeavesIterator<T extends TreeNode<T>> implements Iterator<T> {
     /**
      * Fetch next node
      *
-     * @return  next node
+     * @return next node
      */
     private T fetchNext() {
         T next = null;

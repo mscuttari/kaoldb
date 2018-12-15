@@ -38,7 +38,7 @@ class Columns implements ColumnsContainer {
     /**
      * Default constructor
      *
-     * @param   entity      entity the columns belongs to
+     * @param entity    entity the columns belongs to
      */
     public Columns(EntityObject entity) {
         this(entity, null);
@@ -49,7 +49,7 @@ class Columns implements ColumnsContainer {
      * Constructor.
      * Takes a collection of columns and sets it as the initial set.
      *
-     * @param   columns     columns to be added
+     * @param columns   columns to be added
      */
     public Columns(EntityObject entity, Collection<ColumnsContainer> columns) {
         this.entity = entity;
@@ -91,7 +91,7 @@ class Columns implements ColumnsContainer {
     /**
      * Get an unmodifiable version of {@link #columns}
      *
-     * @return  columns
+     * @return columns
      */
     public final synchronized Collection<ColumnsContainer> getColumns() {
         return Collections.unmodifiableCollection(columns);
@@ -101,7 +101,7 @@ class Columns implements ColumnsContainer {
     /**
      * Get an unmodifiable version of {@link #namesMap}
      *
-     * @return  column names map
+     * @return column names map
      */
     public final synchronized Map<String, BaseColumnObject> getNamesMap() {
         return Collections.unmodifiableMap(namesMap);
@@ -111,7 +111,7 @@ class Columns implements ColumnsContainer {
     /**
      * Get an unmodifiable version of {@link #primaryKeys}
      *
-     * @return  primary keys
+     * @return primary keys
      */
     public final synchronized Collection<BaseColumnObject> getPrimaryKeys() {
         return Collections.unmodifiableCollection(primaryKeys);
@@ -121,8 +121,8 @@ class Columns implements ColumnsContainer {
     /**
      * Check if a column is already mapped
      *
-     * @param   o   column to search for
-     * @return  true if the column is already present; false otherwise
+     * @param o     column to search for
+     * @return true if the column is already present; false otherwise
      */
     public final synchronized boolean contains(BaseColumnObject o) {
         for (BaseColumnObject column : this) {
@@ -137,13 +137,13 @@ class Columns implements ColumnsContainer {
     /**
      * Add the columns contained by a column container
      *
-     * @param   container       columns container whose columns have to be added
+     * @param container     columns container whose columns have to be added
      *
-     * @return  true if the columns have been successfully added;
-     *          false if the container is null;
-     *          false if the container can't be added to the tree for some reasons.
+     * @return true if the columns have been successfully added;
+     *         false if the container is null;
+     *         false if the container can't be added to the tree for some reasons.
      *
-     * @throws  InvalidConfigException if any of the columns to be added are already present
+     * @throws InvalidConfigException if any of the columns to be added are already present
      */
     public synchronized boolean add(ColumnsContainer container) {
         try {
@@ -177,13 +177,13 @@ class Columns implements ColumnsContainer {
     /**
      * Get the columns linked to a field and add them to the columns set
      *
-     * @param   db          database
-     * @param   entity      entity the column belongs to
-     * @param   field       field the columns are generated from
+     * @param db        database
+     * @param entity    entity the column belongs to
+     * @param field     field the columns are generated from
      *
-     * @return  true if the columns have been successfully added; false otherwise
+     * @return true if the columns have been successfully added; false otherwise
      *
-     * @throws  InvalidConfigException if any column has already been defined
+     * @throws InvalidConfigException if any column has already been defined
      */
     public synchronized boolean add(DatabaseObject db, EntityObject entity, Field field) {
         return addAll(entityFieldToColumns(db, entity, field));
@@ -193,8 +193,8 @@ class Columns implements ColumnsContainer {
     /**
      * Add columns
      *
-     * @param   elements    columns or columns containers to be added
-     * @return  true if the columns have been successfully added; false otherwise
+     * @param elements      columns or columns containers to be added
+     * @return true if the columns have been successfully added; false otherwise
      */
     public synchronized boolean addAll(Collection<? extends ColumnsContainer> elements) {
         boolean result = true;
@@ -209,8 +209,8 @@ class Columns implements ColumnsContainer {
     /**
      * Add columns
      *
-     * @param   columns     column container whose columns have to be added
-     * @return  true if the columns have been successfully added; false otherwise
+     * @param columns       column container whose columns have to be added
+     * @return true if the columns have been successfully added; false otherwise
      */
     public synchronized boolean addAll(Columns columns) {
         return addAll(columns.columns);
@@ -220,8 +220,8 @@ class Columns implements ColumnsContainer {
     /**
      * Check that the column to be added are not already mapped
      *
-     * @param   container       columns container to search for
-     * @throws  InvalidConfigException if some columns have already been defined
+     * @param container     columns container to search for
+     * @throws InvalidConfigException if some columns have already been defined
      */
     private synchronized void checkUniqueness(ColumnsContainer container) {
         for (BaseColumnObject column : container) {
@@ -240,13 +240,13 @@ class Columns implements ColumnsContainer {
      * {@link Collection} populated with multiple elements according to the join
      * columns number
      *
-     * @param   db          database
-     * @param   entity      entity the column belongs to
-     * @param   field           class field
+     * @param db        database
+     * @param entity    entity the column belongs to
+     * @param field     class field
      *
-     * @return  column objects collection
+     * @return column objects collection
      *
-     * @throws  InvalidConfigException if there is no column annotation
+     * @throws InvalidConfigException if there is no column annotation
      */
     public static Collection<ColumnsContainer> entityFieldToColumns(DatabaseObject db, EntityObject entity, Field field) {
         Collection<ColumnsContainer> result = new HashSet<>();
@@ -280,7 +280,7 @@ class Columns implements ColumnsContainer {
      * Get the columns SQL statement to be inserted in the table creation query.
      * Example: column 1 INTEGER UNIQUE, column 2 TEXT, column 3 REAL NOT NULL
      *
-     * @return  SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (null if the SQL statement is not needed in the main query)
      */
     @Nullable
     public final String getSQL() {
@@ -312,7 +312,7 @@ class Columns implements ColumnsContainer {
         /**
          * Constructor
          *
-         * @param   columns     columns collection to iterate on
+         * @param columns   columns collection to iterate on
          */
         public ColumnsIterator(Collection<ColumnsContainer> columns) {
             this.stack.push(columns.iterator());
@@ -340,7 +340,7 @@ class Columns implements ColumnsContainer {
         /**
          * Prefetch the next element
          *
-         * @return  next element
+         * @return next element
          */
         private BaseColumnObject fetchNext() {
             while (!stack.empty()) {

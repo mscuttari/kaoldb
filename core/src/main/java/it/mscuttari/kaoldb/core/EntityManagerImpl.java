@@ -41,8 +41,8 @@ class EntityManagerImpl implements EntityManager {
     /**
      * Constructor
      *
-     * @param   context     context
-     * @param   database    database mapping object
+     * @param context       context
+     * @param database      database mapping object
      */
     private EntityManagerImpl(Context context, DatabaseObject database) {
         this.database = database;
@@ -84,9 +84,9 @@ class EntityManagerImpl implements EntityManager {
             /**
              * Called when the database needs to be upgraded
              *
-             * @param   db          database.
-             * @param   oldVersion  old database version
-             * @param   newVersion  new database version
+             * @param db            database
+             * @param oldVersion    old database version
+             * @param newVersion    new database version
              *
              * @throws DatabaseManagementException if the database schema migrator can't be instantiated
              */
@@ -112,9 +112,9 @@ class EntityManagerImpl implements EntityManager {
             /**
              * Called when the database needs to be downgraded
              *
-             * @param   db          database.
-             * @param   oldVersion  old database version
-             * @param   newVersion  new database version
+             * @param db            database
+             * @param oldVersion    old database version
+             * @param newVersion    new database version
              *
              * @throws DatabaseManagementException if the database schema migrator can't be instantiated
              */
@@ -146,10 +146,10 @@ class EntityManagerImpl implements EntityManager {
      * This is done to ensure that there is at most one database connection opened towards
      * each database.
      *
-     * @param   context     context
-     * @param   database    database object
+     * @param context       context
+     * @param database      database object
      *
-     * @return  singleton instance
+     * @return singleton instance
      */
     public static EntityManagerImpl getEntityManager(Context context, DatabaseObject database) {
         EntityManagerImpl entityManager = entityManagers.get(database);
@@ -377,7 +377,7 @@ class EntityManagerImpl implements EntityManager {
     /**
      * Get {@link Context}
      *
-     * @return  context
+     * @return context
      */
     private Context getContext() {
         Context context = this.context.get();

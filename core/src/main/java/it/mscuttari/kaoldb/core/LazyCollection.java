@@ -19,8 +19,8 @@ import it.mscuttari.kaoldb.interfaces.Query;
  * This class allows to temporarily skip the relationships data load and run the associated queries
  * only when needed
  *
- * @param   <T>     POJO class
- * @param   <S>     container type (e.g. {@link List})
+ * @param <T>   POJO class
+ * @param <S>   container type (e.g. {@link List})
  */
 abstract class LazyCollection<T, S extends Collection<T>> implements Collection<T> {
 
@@ -44,10 +44,10 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     /**
      * Constructor
      *
-     * @param   container   data container specified by the user
-     * @param   query       query to be executed to load data
+     * @param container     data container specified by the user
+     * @param query         query to be executed to load data
      *
-     * @throws  PojoException if the container is null
+     * @throws PojoException if the container is null
      */
     protected LazyCollection(S container, Query<T> query) {
         if (container == null)
@@ -61,7 +61,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     /**
      * Get data container
      *
-     * @return  data container (may not be initialized yet)
+     * @return data container (may not be initialized yet)
      */
     protected S getContainer() {
         return data;

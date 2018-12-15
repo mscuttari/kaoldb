@@ -17,7 +17,7 @@ class LogUtils {
     /**
      * Log verbose message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void v(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {
@@ -33,7 +33,7 @@ class LogUtils {
     /**
      * Log debug message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void d(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {
@@ -49,7 +49,7 @@ class LogUtils {
     /**
      * Log information message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void i(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {
@@ -65,7 +65,7 @@ class LogUtils {
     /**
      * Log warning message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void w(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {
@@ -81,7 +81,7 @@ class LogUtils {
     /**
      * Log error message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void e(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {
@@ -97,7 +97,7 @@ class LogUtils {
     /**
      * Log critical message
      *
-     * @param   message     message
+     * @param message   message
      */
     public static void wtf(String message) {
         if (KaolDB.getInstance().getConfig().isDebugEnabled()) {

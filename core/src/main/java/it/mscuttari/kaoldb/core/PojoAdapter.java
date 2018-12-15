@@ -50,17 +50,17 @@ class PojoAdapter {
      * Then, the second part creates an instance of that class and populates its basic fields with
      * the data contained in the cursor.
      *
-     * @param   db              database object
-     * @param   c               cursor
-     * @param   cursorMap       map between cursor column names and column indexes
-     *                          (for more details see {@link QueryImpl#getCursorColumnMap(Cursor)})
-     * @param   resultClass     desired result class (if it has children, it will be just a super
-     *                          class of the result object)
+     * @param db            database object
+     * @param c             cursor
+     * @param cursorMap     map between cursor column names and column indexes
+     *                      (for more details see {@link QueryImpl#getCursorColumnMap(Cursor)})
+     * @param resultClass   desired result class (if it has children, it will be just a super
+     *                      class of the result object)
      *
-     * @return  populated object
+     * @return populated object
      *
-     * @throws  PojoException   if the child class is not found (wrong discriminator column value)
-     *                          or if it can not be instantiated
+     * @throws PojoException if the child class is not found (wrong discriminator column value) or
+     *                       if it can not be instantiated
      */
     @SuppressWarnings("unchecked")
     @Nullable
@@ -153,13 +153,13 @@ class PojoAdapter {
     /**
      * Convert {@link Cursor} field to object
      *
-     * @param   c               cursor
-     * @param   cursorMap       map between cursor column names and column indexes
-     * @param   columnName      column name
+     * @param c             cursor
+     * @param cursorMap     map between cursor column names and column indexes
+     * @param columnName    column name
      *
-     * @return  column value
+     * @return column value
      *
-     * @throws  PojoException if the data type is not compatible with the one found in the database
+     * @throws PojoException if the data type is not compatible with the one found in the database
      */
     @SuppressWarnings("unchecked")
     private static <T> T cursorFieldToObject(Cursor c, Map<String, Integer> cursorMap, String columnName, Class<T> dataType) {
@@ -222,17 +222,17 @@ class PojoAdapter {
      * If zero, no data needs to be saved and, if not skipped, the
      * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.
      *
-     * @param   context         context
-     * @param   db              database object
-     * @param   currentEntity   current entity object
-     * @param   childEntity     child entity object
-     * @param   obj             object to be persisted
+     * @param context           context
+     * @param db                database object
+     * @param currentEntity     current entity object
+     * @param childEntity       child entity object
+     * @param obj               object to be persisted
      *
-     * @return  data ready to be saved in the database
+     * @return data ready to be saved in the database
      *
-     * @throws  QueryException  if the discriminator value has been manually set but is not
-     *                          compatible with the child entity class
-     * @throws  QueryException  if the field associated with the discriminator value can't be accessed
+     * @throws QueryException  if the discriminator value has been manually set but is not
+     *                         compatible with the child entity class
+     * @throws QueryException  if the field associated with the discriminator value can't be accessed
      */
     public static ContentValues objectToContentValues(Context context, DatabaseObject db, EntityObject currentEntity, EntityObject childEntity, Object obj) {
         ContentValues cv = new ContentValues();
@@ -379,16 +379,16 @@ class PojoAdapter {
     /**
      * Check if an object already exists in the database
      *
-     * @param   obj         {@link Object} to be searched. In case of basic object type (Integer,
-     *                      String, etc.) the check will be successful; in case of complex type
-     *                      (custom classes), a query searching for the object is run
-     * @param   context     application {@link Context}
-     * @param   db          {@link DatabaseObject} of the database the entity belongs to
+     * @param obj       {@link Object} to be searched. In case of basic object type (Integer,
+     *                  String, etc.) the check will be successful; in case of complex type
+     *                  (custom classes), a query searching for the object is run
+     * @param context   application {@link Context}
+     * @param db        {@link DatabaseObject} of the database the entity belongs to
      *
-     * @return  true if the data already exits in the database; false otherwise
+     * @return true if the data already exits in the database; false otherwise
      *
-     * @throws  InvalidConfigException  if the entity has a primary key not linked to a class field
-     *                                  (not normally reachable situation)
+     * @throws InvalidConfigException  if the entity has a primary key not linked to a class field
+     *                                 (not normally reachable situation)
      */
     private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db) {
         // Null data is considered to be existing
@@ -443,9 +443,9 @@ class PojoAdapter {
      *  -   Boolean values are stored either as 1 (true) or 0 (false).
      *  -   {@link Date} and {@link Calendar} objects are stored by saving their time in milliseconds.
      *
-     * @param   cv          content values
-     * @param   columnName  column name
-     * @param   value       value
+     * @param cv            content values
+     * @param columnName    column name
+     * @param value         value
      */
     public static void insertDataIntoContentValues(ContentValues cv, String columnName, Object value) {
         if (value == null) {
@@ -488,8 +488,8 @@ class PojoAdapter {
      * {@link Integer}, {@link Long}, {@link Float}, {@link Double}, {@link String},
      * {@link Boolean}. {@link Date}, {@link Calendar}.
      *
-     * @param   clazz       data class
-     * @return  true if one the specified classes is found
+     * @param clazz     data class
+     * @return true if one the specified classes is found
      */
     private static boolean isPrimitiveType(Class<?> clazz) {
         Class<?>[] primitiveTypes = {

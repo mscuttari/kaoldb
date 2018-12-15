@@ -37,10 +37,10 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Constructor
      *
-     * @param   db          database
-     * @param   entity      entity the column belongs to
-     * @param   field       field the column is generated from
-     * @param   annotation  JoinColumn annotation the column is generated from
+     * @param db            database
+     * @param entity        entity the column belongs to
+     * @param field         field the column is generated from
+     * @param annotation    JoinColumn annotation the column is generated from
      */
     public JoinColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject entity,
@@ -65,10 +65,10 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get column name
      *
-     * @param   field       field the column is generated from
-     * @param   annotation  JoinColumn annotation the column is generated from
+     * @param field         field the column is generated from
+     * @param annotation    JoinColumn annotation the column is generated from
      *
-     * @return  column name
+     * @return column name
      */
     @NonNull
     private static String getColumnName(@NonNull Field field, @NonNull JoinColumn annotation) {
@@ -79,8 +79,8 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get custom column definition
      *
-     * @param   annotation      JoinColumn annotation the column is generated from
-     * @return  custom column definition (null if not provided)
+     * @param annotation    JoinColumn annotation the column is generated from
+     * @return custom column definition (null if not provided)
      */
     @Nullable
     private static String getCustomColumnDefinition(@NonNull JoinColumn annotation) {
@@ -92,8 +92,8 @@ final class JoinColumnObject extends BaseColumnObject {
      * Get column type.
      * The type must be checked later by using {@link #fixType(Map)}.
      *
-     * @param   field   field the column is generated from
-     * @return  column type
+     * @param field     field the column is generated from
+     * @return column type
      */
     @NonNull
     private static Class<?> getType(@NonNull Field field) {
@@ -104,8 +104,8 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get nullable property
      *
-     * @param   field       field the column is generated from
-     * @param   annotation  JoinColumn annotation the column is generated from
+     * @param field         field the column is generated from
+     * @param annotation    JoinColumn annotation the column is generated from
      *
      * @return  whether the column is nullable or not
      */
@@ -128,8 +128,8 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get primary key property
      *
-     * @param   field   field the column is generated from
-     * @return  whether the column is a primary key or not
+     * @param field     field the column is generated from
+     * @return whether the column is a primary key or not
      */
     private static boolean getPrimaryKeyProperty(@NonNull Field field) {
         return field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
@@ -139,8 +139,8 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get unique property
      *
-     * @param   annotation      JoinColumn annotation the column is generated from
-     * @return  whether the column value should be unique or not
+     * @param annotation    JoinColumn annotation the column is generated from
+     * @return whether the column value should be unique or not
      */
     private static boolean getUniqueProperty(@NonNull JoinColumn annotation) {
         return annotation.unique();
@@ -150,8 +150,8 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get default value
      *
-     * @param   annotation      JoinColumn annotation the column is generated from
-     * @return  column default value (null if not provided)
+     * @param annotation    JoinColumn annotation the column is generated from
+     * @return column default value (null if not provided)
      */
     @Nullable
     private static String getDefaultValue(@NonNull JoinColumn annotation) {
@@ -162,7 +162,7 @@ final class JoinColumnObject extends BaseColumnObject {
     /**
      * Get the foreign key policy to be used during the table creation phase
      *
-     * @return  SQL statement (null if there is no custom column definition)
+     * @return SQL statement (null if there is no custom column definition)
      */
     private Propagation initializePropagation() {
         if (field.isAnnotationPresent(JoinTable.class)) {

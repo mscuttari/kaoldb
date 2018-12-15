@@ -17,7 +17,7 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Constructor
      *
-     * @param   dbHelper    database helper that needs thread safety
+     * @param dbHelper      database helper that needs thread safety
      */
     public ConcurrentSQLiteOpenHelper(SQLiteOpenHelper dbHelper) {
         this.dbHelper = dbHelper;
@@ -68,8 +68,8 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Begin transaction
      *
-     * @throws  DatabaseManagementException if the database has not been opened yet
-     * @throws  DatabaseManagementException if a transaction is already running
+     * @throws DatabaseManagementException if the database has not been opened yet
+     * @throws DatabaseManagementException if a transaction is already running
      */
     public synchronized void beginTransaction() {
         if (db == null)
@@ -85,8 +85,8 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Set the current transaction as successful
      *
-     * @throws  DatabaseManagementException if the database has not been opened yet
-     * @throws  DatabaseManagementException if there is no transaction running
+     * @throws DatabaseManagementException if the database has not been opened yet
+     * @throws DatabaseManagementException if there is no transaction running
      */
     public synchronized void setTransactionSuccessful() {
         if (db == null)
@@ -102,8 +102,8 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * End the current transaction
      *
-     * @throws  DatabaseManagementException if the database has not been opened yet
-     * @throws  DatabaseManagementException if there is no transaction running
+     * @throws DatabaseManagementException if the database has not been opened yet
+     * @throws DatabaseManagementException if there is no transaction running
      */
     public synchronized void endTransaction() {
         if (db == null)
@@ -119,10 +119,10 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Perform a SELECT query
      *
-     * @param   sql             query
-     * @param   selectionArgs   selection args
+     * @param sql               query
+     * @param selectionArgs     selection args
      *
-     * @return  cursor containing the data
+     * @return cursor containing the data
      */
     public synchronized Cursor select(String sql, String[] selectionArgs) {
         if (db == null)
@@ -135,11 +135,11 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Perform an insertion into the database
      *
-     * @param   table           table name
-     * @param   nullColumnHack  see {@link SQLiteDatabase#insert(String, String, ContentValues)}
-     * @param   values          data to be inserted
+     * @param table             table name
+     * @param nullColumnHack    see {@link SQLiteDatabase#insert(String, String, ContentValues)}
+     * @param values            data to be inserted
      *
-     * @return  row ID
+     * @return row ID
      */
     public synchronized long insert(String table, String nullColumnHack, ContentValues values) {
         boolean shortRun = db == null;
@@ -156,12 +156,12 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Perform an update of some already existing data
      *
-     * @param   table           table name
-     * @param   values          new data
-     * @param   whereClause     selection clause
-     * @param   whereArgs       selection args
+     * @param table         table name
+     * @param values        new data
+     * @param whereClause   selection clause
+     * @param whereArgs     selection args
      *
-     * @return  number of rows affected
+     * @return number of rows affected
      */
     public synchronized int update(String table, ContentValues values, String whereClause, String[] whereArgs) {
         boolean shortRun = db == null;
@@ -178,11 +178,11 @@ final class ConcurrentSQLiteOpenHelper {
     /**
      * Delete some entries
      *
-     * @param   table           table name
-     * @param   whereClause     selection clause
-     * @param   whereArgs       selection args
+     * @param table         table name
+     * @param whereClause   selection clause
+     * @param whereArgs     selection args
      *
-     * @return  number of rows affected
+     * @return number of rows affected
      */
     public synchronized int delete(String table, String whereClause, String[] whereArgs) {
         boolean shortRun = db == null;

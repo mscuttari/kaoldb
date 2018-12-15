@@ -12,7 +12,7 @@ public interface Root<X> {
     /**
      * Get the entity class the root is linked to
      *
-     * @return  entity class
+     * @return entity class
      */
     Class<?> getEntityClass();
 
@@ -20,80 +20,37 @@ public interface Root<X> {
     /**
      * Get the alias used in the query for the current root
      *
-     * @return  alias
+     * @return alias
      */
     String getAlias();
 
 
     /**
-     * Get inner join root
+     * Get full alias of this entity table (alias + class name)
      *
-     * @param   entityClass     entity class to be joined
-     * @param   property        property upon with base the "ON" expression
-     * @param   <Y>             entity class to be joined (right side of join relationship)
-     *
-     * @return  joined entity root
+     * @return full alias
      */
-    <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Property<X, Y> property);
+    String getFullAlias();
 
 
     /**
-     * Get inner join root
+     * Get join root
      *
-     * @param   entityClass     entity class to be joined
-     * @param   alias           alias to be used for the joined entity
-     * @param   on              ON expression
-     * @param   <Y>             entity class to be joined (right side of join relationship)
+     * @param root          root to be joined
+     * @param property      property upon with base the "ON" expression
+     * @param <Y>           entity class to be joined (right side of join relationship)
      *
-     * @return  joined entity root
+     * @return joined entity root
      */
-    <Y> Root<Y> innerJoin(Class<Y> entityClass, String alias, Expression on);
-
-
-    /**
-     * Get left join root
-     *
-     * @param   entityClass     entity class to be joined
-     * @param   alias           alias to be used for the joined entity
-     * @param   property        property upon with base the "ON" expression
-     * @param   <Y>             entity class to be joined (right side of join relationship)
-     *
-     * @return  joined entity root
-     */
-    <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Property<X, Y> property);
-
-
-    /**
-     * Get left join root
-     *
-     * @param   entityClass     entity class to be joined
-     * @param   alias           alias to be used for the joined entity
-     * @param   on              ON expression
-     * @param   <Y>             entity class to be joined (right side of join relationship)
-     *
-     * @return  joined entity root
-     */
-    <Y> Root<Y> leftJoin(Class<Y> entityClass, String alias, Expression on);
-
-
-    /**
-     * Get natural join root
-     *
-     * @param   entityClass     entity class to be joined
-     * @param   alias           alias to be used for the joined entity
-     * @param   <Y>             entity class to be joined (right side of join relationship)
-     *
-     * @return  joined entity root
-     */
-    <Y> Root<Y> naturalJoin(Class<Y> entityClass, String alias);
+    <Y> Root<X> join(Root<Y> root, Property<X, Y> property);
 
 
     /**
      * Get "is null" expression for a field
      *
-     * @param   field       entity field
+     * @param field     entity field
      *
-     * @return  expression
+     * @return expression
      */
     Expression isNull(SingleProperty<X, ?> field);
 
@@ -101,11 +58,11 @@ public interface Root<X> {
     /**
      * Get "equals" expression between a field and a value
      *
-     * @param   field       entity field
-     * @param   value       value
-     * @param   <T>         data type
+     * @param field     entity field
+     * @param value     value
+     * @param <T>       data type
      *
-     * @return  expression
+     * @return expression
      */
     <T> Expression eq(SingleProperty<X, T> field, T value);
 
@@ -113,11 +70,11 @@ public interface Root<X> {
     /**
      * Get "equals" expression between two fields
      *
-     * @param   x       first field
-     * @param   y       second field
-     * @param   <T>     data type
+     * @param x     first field
+     * @param y     second field
+     * @param <T>   data type
      *
-     * @return  expression
+     * @return expression
      */
     <T> Expression eq(SingleProperty<X, T> x, SingleProperty<X, T> y);
 
@@ -125,16 +82,16 @@ public interface Root<X> {
     /**
      * Get "equals" expression between two fields
      *
-     * @param   x           first field
-     * @param   yClass      class of the second entity
-     * @param   yAlias      alias of the second entity
-     * @param   y           second field
-     * @param   <Y>         second field belonging class
-     * @param   <T>         second field data type
+     * @param x         first field
+     * @param yClass    class of the second entity
+     * @param yAlias    alias of the second entity
+     * @param y         second field
+     * @param <Y>       second field belonging class
+     * @param <T>       second field data type
      *
-     * @return  expression
+     * @return expression
      *
-     * @throws  QueryException  if yClass is not an entity
+     * @throws QueryException if yClass is not an entity
      */
     <Y, T> Expression eq(SingleProperty<X, T> x, Class<Y> yClass, String yAlias, SingleProperty<Y, T> y);
 

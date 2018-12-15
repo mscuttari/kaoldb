@@ -36,7 +36,7 @@ class Config {
     /**
      * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}
      *
-     * @return  database map
+     * @return database map
      */
     public Map<String, DatabaseObject> getDatabaseMapping() {
         return Collections.unmodifiableMap(mapping);
@@ -46,7 +46,7 @@ class Config {
     /**
      * Get an unmodifiable {@link Collection} of database names
      *
-     * @return  database names
+     * @return database names
      */
     public Collection<String> getDatabaseNames() {
         return Collections.unmodifiableCollection(mapping.keySet());
@@ -56,7 +56,7 @@ class Config {
     /**
      * Check if debug mode is enabled
      *
-     * @return  true if enabled; false otherwise
+     * @return true if enabled; false otherwise
      */
     public boolean isDebugEnabled() {
         return debug;
@@ -66,7 +66,7 @@ class Config {
     /**
      * Set whether the debug mode should be enabled or not
      *
-     * @param   enabled     whether to enable or not the debug mode
+     * @param enabled       whether to enable or not the debug mode
      */
     public void setDebugMode(boolean enabled) {
         this.debug = enabled;
@@ -82,10 +82,10 @@ class Config {
     /**
      * Parse the XML configuration file
      *
-     * @param   xml     the XmlResourceParser instance used to read the configuration file
+     * @param xml       the XmlResourceParser instance used to read the configuration file
      *
-     * @throws  XmlPullParserException      in case of parsing error
-     * @throws  IOException                 in case of general i/o error
+     * @throws XmlPullParserException in case of parsing error
+     * @throws IOException in case of general i/o error
      */
     public void parseConfigFile(XmlResourceParser xml) throws XmlPullParserException, IOException {
         int eventType = xml.getEventType();
@@ -103,10 +103,10 @@ class Config {
     /**
      * Iterate through databases list
      *
-     * @param   xml     the XmlResourceParser instance used to read the configuration file
+     * @param xml       the XmlResourceParser instance used to read the configuration file
      *
-     * @throws  XmlPullParserException      in case of parsing error
-     * @throws  IOException                 in case of general i/o error
+     * @throws XmlPullParserException in case of parsing error
+     * @throws IOException in case of general i/o error
      */
     private void parseDatabasesList(XmlResourceParser xml) throws XmlPullParserException, IOException {
         int eventType = xml.getEventType();
@@ -124,10 +124,10 @@ class Config {
     /**
      * Parse single database section
      *
-     * @param   xml     the XmlResourceParser instance used to read the configuration file
+     * @param xml   the XmlResourceParser instance used to read the configuration file
      *
-     * @throws  XmlPullParserException      in case of parsing error
-     * @throws  IOException                 in case of general i/o error
+     * @throws XmlPullParserException in case of parsing error
+     * @throws IOException in case of general i/o error
      */
     private void parseDatabaseSection(XmlResourceParser xml) throws XmlPullParserException, IOException {
         LogUtils.v("Parsing database section");

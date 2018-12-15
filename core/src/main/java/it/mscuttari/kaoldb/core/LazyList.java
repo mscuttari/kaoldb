@@ -16,15 +16,15 @@ import it.mscuttari.kaoldb.interfaces.Query;
 /**
  * Lazy collection implementation using a {@link List} as data container
  *
- * @param   <T>     POJO class
+ * @param <T>   POJO class
  */
 class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
 
     /**
      * Constructor
      *
-     * @param   container   data container specified by the user
-     * @param   query       query to be executed to load data
+     * @param container     data container specified by the user
+     * @param query         query to be executed to load data
      */
     public LazyList(List<T> container, Query<T> query) {
         super(container == null ? new ArrayList<T>() : container, query);

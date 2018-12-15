@@ -10,7 +10,7 @@ public interface Query<M> {
     /**
      * Run the query and get the results list
      *
-     * @return  results list
+     * @return results list
      */
     List<M> getResultList();
 
@@ -18,7 +18,7 @@ public interface Query<M> {
     /**
      * Run the query and get the first query result object
      *
-     * @return  first result object
+     * @return first result object
      */
     M getSingleResult();
 

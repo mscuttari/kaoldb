@@ -1,29 +1,24 @@
 package it.mscuttari.kaoldb.core;
 
+import androidx.annotation.NonNull;
+
 /**
- * @param   <M>     entity class
  * @param   <T>     data type
  */
-class Variable<M, T> {
+class Variable<T> {
 
-    private DatabaseObject db;
-    private EntityObject entity;
     private String tableAlias;
-    private Property<M, T> property;
+    private Property<?, T> property;
     private T value;
 
 
     /**
      * Constructor
      *
-     * @param db            database object
-     * @param entity        entity object
      * @param tableAlias    table alias
      * @param property      entity property
      */
-    Variable(DatabaseObject db, EntityObject entity, String tableAlias, Property<M, T> property) {
-        this.db = db;
-        this.entity = entity;
+    Variable(@NonNull String tableAlias, @NonNull Property<?, T> property) {
         this.tableAlias = tableAlias;
         this.property = property;
     }
@@ -34,28 +29,8 @@ class Variable<M, T> {
      *
      * @param   value       simple object value
      */
-    Variable(T value) {
+    Variable(@NonNull T value) {
         this.value = value;
-    }
-
-
-    /**
-     * Get database object
-     *
-     * @return  database object
-     */
-    public DatabaseObject getDatabase() {
-        return db;
-    }
-
-
-    /**
-     * Get entity object
-     *
-     * @return  entity object
-     */
-    public EntityObject getEntity() {
-        return entity;
     }
 
 

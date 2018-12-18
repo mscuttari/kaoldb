@@ -19,7 +19,7 @@ ext {
 
     developerId = 'mscuttari'
     developerName = 'Michele Scuttari'
-    developerEmail = 'michele@scuttari.me'
+    developerEmail = 'info@mscuttari.it'
 
     licenseName = 'MIT'
     licenseUrl = 'https://github.com/quangctkm9207/multi-library-bintray/LICENSE'

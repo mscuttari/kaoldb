@@ -22,7 +22,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
     @NonNull protected final DatabaseObject db;
 
     /** Entity the column belongs to */
-    @NonNull protected final EntityObject entity;
+    @NonNull protected final EntityObject<?> entity;
 
     /** Field the column is generated from */
     @NonNull public final Field field;
@@ -69,7 +69,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @param defaultValue              default value
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
-                            @NonNull EntityObject entity,
+                            @NonNull EntityObject<?> entity,
                             @NonNull Field field,
                             @NonNull String name,
                             @Nullable String customColumnDefinition,
@@ -114,7 +114,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
     }
 
 
-    @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new SingleColumnIterator(this);

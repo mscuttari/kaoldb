@@ -2,6 +2,8 @@ package it.mscuttari.kaoldb.interfaces;
 
 import java.util.List;
 
+import androidx.annotation.NonNull;
+
 /**
  * Entity manager gives access to all entity related operations, such as querying or persisting objects
  */
@@ -23,7 +25,7 @@ public interface EntityManager {
      *
      * @return query builder
      */
-    <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass);
+    <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass);
 
 
     /**
@@ -34,7 +36,7 @@ public interface EntityManager {
      *
      * @return elements list
      */
-    <T> List<T> getAll(Class<T> entityClass);
+    <T> List<T> getAll(@NonNull Class<T> entityClass);
 
 
     /**

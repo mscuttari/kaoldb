@@ -40,7 +40,11 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.3.2'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
-    implementation group: 'androidx.annotation', name: 'annotation', version: '1.0.0'
+    implementation group: 'androidx.annotation', name: 'annotation', version: '1.0.1'
+
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    implementation group: 'com.google.guava', name: 'guava', version: '27.0.1-android'
+
 }
 
 apply from: rootProject.file('release-bintray.gradle')

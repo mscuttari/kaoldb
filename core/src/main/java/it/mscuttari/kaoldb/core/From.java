@@ -1,10 +1,15 @@
 package it.mscuttari.kaoldb.core;
 
+import java.util.Stack;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @param   <X>     entity root
@@ -12,7 +17,7 @@ import it.mscuttari.kaoldb.interfaces.Root;
 final class From<X> implements Root<X> {
 
     @NonNull private final DatabaseObject db;
-    @NonNull private final EntityObject entity;
+    @NonNull private final EntityObject<X> entity;
     @NonNull private final String alias;
 
     // Used during the SQL string build to keep track of the visited roots
@@ -31,8 +36,8 @@ final class From<X> implements Root<X> {
          @NonNull String alias) {
 
         this.db = db;
-        this.entity = db.getEntity(entityClass);
-        this.alias = alias;
+        this.entity = db.getEntity(checkNotNull(entityClass));
+        this.alias = checkNotNull(alias);
     }
 
 
@@ -43,19 +48,88 @@ final class From<X> implements Root<X> {
      */
     @Override
     public String toString() {
-        // Resolve hierarchy joins
-        if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
-            Root<?> root = this;
-            EntityObject entity = db.getEntity(getEntityClass());
-
-            root = resolveParentInheritance(root, entity, alias);
-            root = resolveChildrenInheritance(root, entity, alias);
-
-            return root.toString();
-        }
-
         try {
+            // Resolve hierarchy joins if the hierarchy tree has not been visited yet
+
+            if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
+                Root<X> root = this;
+                EntityObject<X> entity = db.getEntity(getEntityClass());
+                hierarchyVisited = true;
+
+                // Merge parent tables
+                if (entity.parent != null) {
+                    EntityObject<? super X> parent = entity.parent;
+
+                    while (parent != null) {
+                        if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
+                            Expression on = null;
+
+                            for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
+                                Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                                Variable<?> b = new Variable<>(alias, new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
+
+                                Expression onParent = PredicateImpl.eq(db, a, b);
+                                on = on == null ? onParent : on.and(onParent);
+                            }
+
+                            if (on == null)
+                                throw new QueryException("Can't merge inherited tables");
+
+                            From<?> parentRoot = new From<>(db, parent.clazz, alias);
+                            parentRoot.hierarchyVisited = true;
+
+                            root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
+                        }
+
+                        parent = parent.parent;
+                    }
+                }
+
+                // Merge children tables
+                if (entity.children.size() != 0) {
+                    Stack<EntityObject<? extends X>> stack = new Stack<>();
+                    stack.push(entity);
+
+                    while (!stack.empty()) {
+                        EntityObject<? extends X> node = stack.pop();
+
+                        for (EntityObject<? extends X> child : node.children) {
+                            if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
+                                // Perform the join with the child table
+                                Expression on = null;
+
+                                for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
+                                    Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                                    Variable<?> b = new Variable<>(alias, new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
+
+                                    Expression onChild = PredicateImpl.eq(db, a, b);
+                                    on = on == null ? onChild : on.and(onChild);
+                                }
+
+                                if (on == null)
+                                    throw new QueryException("Can't merge inherited tables");
+
+                                From<?> childRoot = new From<>(db, child.clazz, alias);
+                                childRoot.hierarchyVisited = true;
+
+                                root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
+
+                                // Depth first scan
+                                if (child.children.size() != 0) {
+                                    stack.push(child);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                return root.toString();
+            }
+
+            // Tree exploration not needed
             return entity.tableName + " AS " + getFullAlias();
+
         } finally {
             // Reset the status ot allow a second query build
             hierarchyVisited = false;
@@ -64,7 +138,7 @@ final class From<X> implements Root<X> {
 
 
     @Override
-    public Class<?> getEntityClass() {
+    public Class<X> getEntityClass() {
         return entity.clazz;
     }
 
@@ -95,128 +169,157 @@ final class From<X> implements Root<X> {
 
 
     @Override
-    public <Y> Root<X> join(Root<Y> root, Property<X, Y> property) {
+    public <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property) {
         return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
 
 
     @Override
-    public Expression isNull(SingleProperty<X, ?> field) {
-        Variable<X, ?> a = new Variable<>(db, entity, alias, field);
+    public Expression isNull(@NonNull SingleProperty<X, ?> field) {
+        Variable<?> a = new Variable<>(alias, field);
 
         return PredicateImpl.isNull(db, a);
     }
 
 
     @Override
-    public <T> Expression eq(SingleProperty<X, T> field, T value) {
-        Variable<X, T> a = new Variable<>(db, entity, alias, field);
-        Variable<?, T> b = new Variable<>(value);
+    public <T> Expression eq(@NonNull SingleProperty<X, T> field, @Nullable T value) {
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
+
+        // Just in case the user wants to check for a null property but wrongly calls this
+        // method instead of isNull
+        if (value == null) {
+            return PredicateImpl.isNull(db, a);
+        }
 
         return PredicateImpl.eq(db, a, b);
     }
 
 
     @Override
-    public <T> Expression eq(SingleProperty<X, T> x, SingleProperty<X, T> y) {
-        Variable<X, T> a = new Variable<>(db, entity, alias, x);
-        Variable<X, T> b = new Variable<>(db, entity, alias, y);
+    public <T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(alias, y);
 
         return PredicateImpl.eq(db, a, b);
     }
 
 
     @Override
-    public <Y, T> Expression eq(SingleProperty<X, T> x, Class<Y> yClass, String yAlias, SingleProperty<Y, T> y) {
-        Variable<X, T> a = new Variable<>(db, entity, alias, x);
-        Variable<Y, T> b = new Variable<>(db, db.getEntity(yClass), yAlias, y);
+    public <Y, T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(yAlias, y);
 
         return PredicateImpl.eq(db, a, b);
     }
 
 
-    /**
-     * Merge parent tables
-     *
-     * @param root      main root
-     * @param entity    main entity object
-     * @param alias     main alias
-     *
-     * @return join root
-     */
-    private Root<?> resolveParentInheritance(Root<?> root, EntityObject entity, String alias) {
-        if (root instanceof From<?>)
-            ((From<?>) root).hierarchyVisited = true;
+    @Override
+    public <T> Expression gt(@NonNull SingleProperty<X, T> field, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
 
-        if (entity.parent != null) {
-            EntityObject parent = entity.parent;
-
-            while (parent != null) {
-                if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
-                    Expression on = null;
-
-                    for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, parent, alias, new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
-                        Expression onParent = PredicateImpl.eq(db, a, b);
-                        on = on == null ? onParent : on.and(onParent);
-                    }
-
-                    if (on == null)
-                        throw new QueryException("Can't merge inherited tables");
-
-                    From<?> parentRoot = new From<>(db, parent.clazz, alias);
-                    parentRoot.hierarchyVisited = true;
-
-                    root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
-                }
-
-                parent = parent.parent;
-            }
-        }
-
-        return root;
+        return PredicateImpl.gt(db, a, b);
     }
 
 
-    /**
-     * Merge children tables
-     *
-     * @param root      main root
-     * @param entity    current entity object
-     * @param alias     main alias
-     *
-     * @return join root
-     */
-    private Root<?> resolveChildrenInheritance(Root<?> root, EntityObject entity, String alias) {
-        if (root instanceof From<?>)
-            ((From<?>) root).hierarchyVisited = true;
+    @Override
+    public <T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(alias, y);
 
-        if (entity.children.size() != 0) {
-            for (EntityObject child : entity.children) {
-                if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
-                    Expression on = null;
+        return PredicateImpl.gt(db, a, b);
+    }
 
-                    for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-                        Variable<?, ?> a = new Variable<>(db, entity, alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                        Variable<?, ?> b = new Variable<>(db, child, alias, new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
-                        Expression onChild = PredicateImpl.eq(db, a, b);
-                        on = on == null ? onChild : on.and(onChild);
-                    }
 
-                    if (on == null)
-                        throw new QueryException("Can't merge inherited tables");
+    @Override
+    public <Y, T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(yAlias, y);
 
-                    From<?> childRoot = new From<>(db, child.clazz, alias);
-                    childRoot.hierarchyVisited = true;
+        return PredicateImpl.gt(db, a, b);
+    }
 
-                    root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
-                    root = resolveChildrenInheritance(root, child, alias);
-                }
-            }
-        }
 
-        return root;
+    @Override
+    public <T> Expression ge(@NonNull SingleProperty<X, T> field, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
+
+        return PredicateImpl.ge(db, a, b);
+    }
+
+
+    @Override
+    public <T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(alias, y);
+
+        return PredicateImpl.ge(db, a, b);
+    }
+
+
+    @Override
+    public <Y, T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(yAlias, y);
+
+        return PredicateImpl.ge(db, a, b);
+    }
+
+
+    @Override
+    public <T> Expression lt(@NonNull SingleProperty<X, T> field, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
+
+        return PredicateImpl.lt(db, a, b);
+    }
+
+
+    @Override
+    public <T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(alias, y);
+
+        return PredicateImpl.lt(db, a, b);
+    }
+
+
+    @Override
+    public <Y, T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(yAlias, y);
+
+        return PredicateImpl.lt(db, a, b);
+    }
+
+
+    @Override
+    public <T> Expression le(@NonNull SingleProperty<X, T> field, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
+
+        return PredicateImpl.le(db, a, b);
+    }
+
+
+    @Override
+    public <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(alias, y);
+
+        return PredicateImpl.le(db, a, b);
+    }
+
+
+    @Override
+    public <Y, T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
+        Variable<T> a = new Variable<>(alias, x);
+        Variable<T> b = new Variable<>(yAlias, y);
+
+        return PredicateImpl.le(db, a, b);
     }
 
 }

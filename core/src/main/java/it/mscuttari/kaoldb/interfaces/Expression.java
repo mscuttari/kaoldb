@@ -1,6 +1,6 @@
 package it.mscuttari.kaoldb.interfaces;
 
-import it.mscuttari.kaoldb.exceptions.QueryException;
+import androidx.annotation.NonNull;
 
 /**
  * Expressions are used to create the "where" clause for queries
@@ -14,7 +14,6 @@ public interface Expression {
      * is the originally non negated one: NOT(NOT(expression)) = expression
      *
      * @return negated expression
-     * @throws QueryException if predicate is null
      */
     Expression not();
 
@@ -25,7 +24,7 @@ public interface Expression {
      * @param expressions   expressions to be bound with "AND" operator
      * @return expression
      */
-    Expression and(Expression... expressions);
+    Expression and(@NonNull Expression... expressions);
 
 
     /**
@@ -33,48 +32,43 @@ public interface Expression {
      *
      * @param expressions   expressions to be bound with "OR" operator
      * @return expression
-     * @throws QueryException if any of the predicates are null
      */
-    Expression or(Expression... expressions);
+    Expression or(@NonNull Expression... expressions);
 
 
     /**
      * Create "XOR" expression
      *
-     * @param expression    expression to be bound with "XOR" operator
+     * @param expressions   expressions to be bound with "XOR" operator
      * @return expression
-     * @throws QueryException if any of the predicates are null
      */
-    Expression xor(Expression expression);
+    Expression xor(@NonNull Expression... expressions);
 
 
     /**
      * Create "NAND" expression
      *
-     * @param expression    expression to be bound with "NAND" operator
+     * @param expressions   expressions to be bound with "NAND" operator
      * @return expression
-     * @throws QueryException if any of the predicates are null
      */
-    Expression nand(Expression expression);
+    Expression nand(@NonNull Expression... expressions);
 
 
     /**
      * Create "NOR" expression
      *
-     * @param expression    expression to be bound with "NOR" operator
+     * @param expressions   expressions to be bound with "NOR" operator
      * @return expression
-     * @throws QueryException if any of the predicates are null
      */
-    Expression nor(Expression expression);
+    Expression nor(@NonNull Expression... expressions);
 
 
     /**
      * Create "XNOR" expression
      *
-     * @param expression    expression to be bound with "XNOR" operator
+     * @param expressions   expressions to be bound with "XNOR" operator
      * @return expression
-     * @throws QueryException if any of the predicates are null
      */
-    Expression xnor(Expression expression);
+    Expression xnor(@NonNull Expression... expressions);
 
 }

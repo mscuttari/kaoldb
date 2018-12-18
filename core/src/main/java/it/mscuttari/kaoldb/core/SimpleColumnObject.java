@@ -25,7 +25,7 @@ final class SimpleColumnObject extends BaseColumnObject {
      * @param field     field the column is generated from
      */
     public SimpleColumnObject(@NonNull DatabaseObject db,
-                              @NonNull EntityObject entity,
+                              @NonNull EntityObject<?> entity,
                               @NonNull Field field) {
 
         super(db, entity, field,
@@ -130,7 +130,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     @Override
-    public void fixType(Map<Class<?>, EntityObject> entities) {
+    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
         // Nothing to be done. The column represent a basic entity attribute and therefore its
         // type is directly the field one (e.g. String or Integer).
     }

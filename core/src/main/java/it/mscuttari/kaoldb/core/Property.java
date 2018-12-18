@@ -14,6 +14,8 @@ import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @param <M>   entity class
  * @param <T>   data type
@@ -97,11 +99,11 @@ public abstract class Property<M, T> {
                     @NonNull Class<? extends Annotation> columnAnnotation,
                     @Nullable Class<? extends Annotation> relationshipAnnotation) {
 
-        this.entityClass = entityClass;
-        this.fieldParentClass = fieldParentClass;
-        this.fieldType = fieldType;
-        this.fieldName = fieldName;
-        this.columnAnnotation = columnAnnotation;
+        this.entityClass            = checkNotNull(entityClass);
+        this.fieldParentClass       = checkNotNull(fieldParentClass);
+        this.fieldType              = checkNotNull(fieldType);
+        this.fieldName              = checkNotNull(fieldName);
+        this.columnAnnotation       = checkNotNull(columnAnnotation);
         this.relationshipAnnotation = relationshipAnnotation;
     }
 
@@ -120,10 +122,14 @@ public abstract class Property<M, T> {
      * Get the column annotation class of a field
      *
      * @param field     field to be analyzed
+     *
      * @return class of the column annotation linked to the field
      *         (null if the field is not annotated with any column annotation)
+     *
+     * @throws IllegalArgumentException if the field doesn't have {@link Column}, {@link JoinColumn},
+     *                                  {@link JoinColumns} or {@link JoinTable} annotations
      */
-    @Nullable
+    @NonNull
     private static Class<? extends Annotation> getColumnAnnotation(Field field) {
         if (field.isAnnotationPresent(Column.class))
             return Column.class;
@@ -137,7 +143,7 @@ public abstract class Property<M, T> {
         if (field.isAnnotationPresent(JoinTable.class))
             return JoinTable.class;
 
-        return null;
+        throw new IllegalArgumentException("Field doesn't have @Column, @JoinColumn, @JoinColumns or @JoinTable annotations");
     }
 
 

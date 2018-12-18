@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
 /**
@@ -20,10 +21,8 @@ public interface QueryBuilder<T> {
      * @param <M>           entity class
      *
      * @return entity root
-     *
-     * @throws QueryException if the alias is null or empty
      */
-    <M> Root<M> getRoot(Class<M> entityClass, String alias);
+    <M> Root<M> getRoot(@NonNull Class<M> entityClass, @NonNull String alias);
 
 
     /**
@@ -59,6 +58,6 @@ public interface QueryBuilder<T> {
      * @throws QueryException if the query configuration is invalid (see exception message for
      *                        further details)
      */
-    Query<T> build(String alias);
+    Query<T> build(@NonNull String alias);
 
 }

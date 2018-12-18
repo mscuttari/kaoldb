@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import java.lang.reflect.Field;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 
@@ -22,8 +23,12 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
      * @param entity    entity the column belongs to
      * @param field     field the columns are generated from
      */
-    public JoinColumnsObject(DatabaseObject db, EntityObject entity, Field field) {
+    public JoinColumnsObject(@NonNull DatabaseObject db,
+                             @NonNull EntityObject<?> entity,
+                             @NonNull Field field) {
+
         super(entity);
+
         this.field = field;
 
         JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);

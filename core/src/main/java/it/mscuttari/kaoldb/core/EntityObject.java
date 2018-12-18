@@ -35,27 +35,27 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
  * Mapping includes table columns, parent and children classes.
  */
-class EntityObject {
+class EntityObject<T> {
 
     /** Database the entity belongs to */
     @NonNull public final DatabaseObject db;
 
     /** Entity class */
-    @NonNull public final Class<?> clazz;
+    @NonNull public final Class<T> clazz;
 
     /**
      * Inheritance type.
      * Null if the entity has no children.
      */
     @Nullable public InheritanceType inheritanceType;
-    private final AtomicBoolean joinedColumnsInherited = new AtomicBoolean(false);
+    private final AtomicBoolean joinedColumnsInherited      = new AtomicBoolean(false);
     private final AtomicBoolean singleTableColumnsInherited = new AtomicBoolean(false);
 
     /**
      * Parent entity.
      * Null if the entity has no parent.
      */
-    @Nullable public final EntityObject parent;
+    @Nullable public final EntityObject<? super T> parent;
 
     /**
      * Discriminator value.
@@ -64,7 +64,7 @@ class EntityObject {
     @Nullable public Object discriminatorValue;
 
     /** Children entities */
-    @NonNull public final Collection<EntityObject> children = new HashSet<>();
+    @NonNull public final Collection<EntityObject<? extends T>> children = new HashSet<>();
 
     /** Whether the entity has a real table or not */
     @NonNull public final Boolean realTable;
@@ -100,7 +100,7 @@ class EntityObject {
      * @param db        database the entity belongs to
      * @param clazz     entity class
      */
-    public EntityObject(@NonNull DatabaseObject db, @NonNull Class<?> clazz) {
+    public EntityObject(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
         this.db = db;
         this.clazz = clazz;
 
@@ -524,7 +524,7 @@ class EntityObject {
      * @throws KaolDBException if the configuration is invalid
      */
     void checkConsistence() {
-        Map<Class<?>, EntityObject> entities = db.getEntitiesMap();
+        Map<Class<?>, EntityObject<?>> entities = db.getEntitiesMap();
 
         // Fix join columns types
         for (ColumnsContainer column : this.columns) {

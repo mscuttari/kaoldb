@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
@@ -24,6 +25,8 @@ import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Entity manager implementation
  *
@@ -33,8 +36,8 @@ class EntityManagerImpl implements EntityManager {
 
     private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new HashMap<>();
 
-    private final DatabaseObject database;
     private final WeakReference<Context> context;
+    @NonNull private final DatabaseObject database;
     public final ConcurrentSQLiteOpenHelper dbHelper;
 
 
@@ -44,20 +47,19 @@ class EntityManagerImpl implements EntityManager {
      * @param context       context
      * @param database      database mapping object
      */
-    private EntityManagerImpl(Context context, DatabaseObject database) {
+    private EntityManagerImpl(@NonNull Context context, @NonNull DatabaseObject database) {
+        this.context = new WeakReference<>(checkNotNull(context));
         this.database = database;
-        this.context = new WeakReference<>(context);
 
         SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(context, database.getName(), null, database.getVersion()) {
             @Override
             public void onCreate(SQLiteDatabase db) {
-                for (EntityObject entity : database.getEntities()) {
+                for (EntityObject<?> entity : database.getEntities()) {
                     // Entity table
                     String entityTableCreateSQL = entity.getSQL();
 
                     if (entityTableCreateSQL != null) {
                         LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
-                        //System.out.println("[Entity \"" + entity.getName() + "\"] Create table query: " + entityTableCreateSQL);
                         db.execSQL(entityTableCreateSQL);
                         LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
                     }
@@ -72,7 +74,6 @@ class EntityManagerImpl implements EntityManager {
 
                         if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
                             LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
-                            //System.out.println("[Entity \"" + entity.getName() + "\"] Create join table query: " + joinTableCreateSQL);
                             db.execSQL(joinTableCreateSQL);
                             LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
                         }
@@ -151,7 +152,7 @@ class EntityManagerImpl implements EntityManager {
      *
      * @return singleton instance
      */
-    public static EntityManagerImpl getEntityManager(Context context, DatabaseObject database) {
+    public static EntityManagerImpl getEntityManager(@NonNull Context context, @NonNull DatabaseObject database) {
         EntityManagerImpl entityManager = entityManagers.get(database);
 
         if (entityManager == null) {
@@ -170,6 +171,8 @@ class EntityManagerImpl implements EntityManager {
 
         if (result) {
             LogUtils.i("[Database \"" + database.getName() + "\"] database deleted");
+        } else {
+            LogUtils.e("[Database \"" + database.getName() + "\"] can't delete the database");
         }
 
         return result;
@@ -177,13 +180,13 @@ class EntityManagerImpl implements EntityManager {
 
 
     @Override
-    public <T> QueryBuilder<T> getQueryBuilder(Class<T> resultClass) {
+    public <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass) {
         return new QueryBuilderImpl<>(database, resultClass, this);
     }
 
 
     @Override
-    public <T> List<T> getAll(Class<T> entityClass) {
+    public <T> List<T> getAll(@NonNull Class<T> entityClass) {
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
         Root<T> root = qb.getRoot(entityClass, "e");
         qb.from(root);

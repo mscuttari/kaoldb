@@ -1,18 +1,16 @@
 package it.mscuttari.kaoldb.core;
 
-import android.util.Pair;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
@@ -22,19 +20,19 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 class DatabaseObject {
 
     /** Database name */
-    private String name;
+    @NonNull private String name;
 
     /** Database version */
-    private Integer version;
+    @NonNull private Integer version;
 
     /** Schema migrator to be used for database version changed */
-    private Class<? extends DatabaseSchemaMigrator> migrator;
+    @NonNull private Class<? extends DatabaseSchemaMigrator> migrator;
 
     /** Entities */
     private final Collection<Class<?>> classes = new HashSet<>();
 
     /** Entities mapping */
-    private final Map<Class<?>, EntityObject> entities = new HashMap<>();
+    private final Map<Class<?>, EntityObject<?>> entities = new HashMap<>();
 
 
     /**
@@ -58,7 +56,7 @@ class DatabaseObject {
      * @param name      database name
      * @throws InvalidConfigException if the name is null or empty
      */
-    public void setName(String name) {
+    public void setName(@NonNull String name) {
         LogUtils.d("[Database] setting name \"" + name + "\"");
 
         if (name == null) {
@@ -92,7 +90,7 @@ class DatabaseObject {
      * @param version       database version
      * @throws InvalidConfigException if the version is null or < 0
      */
-    public void setVersion(Integer version) {
+    public void setVersion(@NonNull Integer version) {
         LogUtils.d("[Database \"" + name + "\"] setting version " + version);
 
         if (version == null) {
@@ -126,7 +124,7 @@ class DatabaseObject {
      * @param migrator      database schema migrator
      * @throws InvalidConfigException if the schema migrator is null
      */
-    public void setSchemaMigrator(Class<? extends DatabaseSchemaMigrator> migrator) {
+    public void setSchemaMigrator(@NonNull Class<? extends DatabaseSchemaMigrator> migrator) {
         if (migrator == null) {
             throw new InvalidConfigException("Database schema migrator can't be null");
         }
@@ -188,16 +186,17 @@ class DatabaseObject {
      * @return entity object
      * @throws InvalidConfigException  if the entity has not been found in the mapped ones
      */
-    public EntityObject getEntity(Class<?> clazz) {
+    @SuppressWarnings("unchecked")
+    public <T> EntityObject<T> getEntity(Class<T> clazz) {
         if (!classes.contains(clazz)) {
             throw new InvalidConfigException("Entity " + clazz.getSimpleName() + " not found");
         }
 
-        EntityObject entity;
+        EntityObject<T> entity;
 
         do {
             // Try to get the entity
-            entity = entities.get(clazz);
+            entity = (EntityObject<T>) entities.get(clazz);
 
             if (entity == null) {
                 // Wait for the entity to be mapped
@@ -221,7 +220,7 @@ class DatabaseObject {
      *
      * @return mapped entities
      */
-    public Map<Class<?>, EntityObject> getEntitiesMap() {
+    public Map<Class<?>, EntityObject<?>> getEntitiesMap() {
         return Collections.unmodifiableMap(entities);
     }
 
@@ -232,7 +231,7 @@ class DatabaseObject {
      *
      * @return mapped entities
      */
-    public Collection<EntityObject> getEntities() {
+    public Collection<EntityObject<?>> getEntities() {
         return Collections.unmodifiableCollection(entities.values());
     }
 
@@ -242,7 +241,7 @@ class DatabaseObject {
      *
      * @param map   map between entity class and {@link EntityObject}
      */
-    public void setEntitiesMap(Map<Class<?>, EntityObject> map) {
+    public void setEntitiesMap(Map<Class<?>, EntityObject<?>> map) {
         this.entities.clear();
         this.entities.putAll(map);
     }
@@ -276,7 +275,7 @@ class DatabaseObject {
 
             for (Class<?> clazz : classes) {
                 mappingTasks.add(executorService.submit(() -> {
-                    entities.put(clazz, new EntityObject(this, clazz));
+                    entities.put(clazz, new EntityObject<>(this, clazz));
                 }));
             }
 
@@ -288,7 +287,7 @@ class DatabaseObject {
             Collection<Future<?>> columnsTasks = new ArrayList<>();
             LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to setup the columns");
 
-            for (EntityObject entity : entities.values()) {
+            for (EntityObject<?> entity : entities.values()) {
                 columnsTasks.add(executorService.submit(entity::setupColumns));
             }
 
@@ -299,7 +298,7 @@ class DatabaseObject {
             // Third scan to check consistence
             LogUtils.v("[Database \"" + name + "\"] entities mapping: third scan to check for data consistence");
 
-            for (EntityObject entity : entities.values()) {
+            for (EntityObject<?> entity : entities.values()) {
                 entity.checkConsistence();
             }
 

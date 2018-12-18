@@ -43,7 +43,7 @@ final class JoinColumnObject extends BaseColumnObject {
      * @param annotation    JoinColumn annotation the column is generated from
      */
     public JoinColumnObject(@NonNull DatabaseObject db,
-                            @NonNull EntityObject entity,
+                            @NonNull EntityObject<?> entity,
                             @NonNull Field field,
                             @NonNull JoinColumn annotation) {
 
@@ -57,7 +57,7 @@ final class JoinColumnObject extends BaseColumnObject {
                 getDefaultValue(annotation)
         );
 
-        this.annotation = annotation;
+        this.annotation  = annotation;
         this.propagation = initializePropagation();
     }
 
@@ -178,7 +178,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     @Override
-    public void fixType(Map<Class<?>, EntityObject> entities) {
+    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
         // Class doesn't have column field
         if (field == null)
             return;
@@ -232,7 +232,7 @@ final class JoinColumnObject extends BaseColumnObject {
         }
 
         // Search the referenced column
-        EntityObject referencedEntity = entities.get(referencedClass);
+        EntityObject<?> referencedEntity = entities.get(referencedClass);
 
         if (referencedEntity == null)
             throw new InvalidConfigException("Field \"" + field.getName() + "\": \"" + referencedClass.getSimpleName() + "\" is not an entity");
@@ -258,7 +258,7 @@ final class JoinColumnObject extends BaseColumnObject {
         if (sourceObject == null) {
             insertDataIntoContentValues(cv, annotation.name(), null);
         } else {
-            EntityObject destinationEntity = db.getEntity(sourceObject.getClass());
+            EntityObject<?> destinationEntity = db.getEntity(sourceObject.getClass());
             BaseColumnObject destinationColumn = destinationEntity.columns.getNamesMap().get(annotation.referencedColumnName());
             Object value = destinationColumn.getValue(sourceObject);
             insertDataIntoContentValues(cv, annotation.name(), value);

@@ -17,10 +17,10 @@ import it.mscuttari.kaoldb.annotations.JoinTable;
 final class JoinTableObject implements Iterable<BaseColumnObject> {
 
     /** Database the table belongs to */
-    private final DatabaseObject db;
+    @NonNull private final DatabaseObject db;
 
     /** Field annotated with {@link JoinTable} */
-    private final Field field;
+    @NonNull private final Field field;
 
     /**
      * Direct join columns.
@@ -51,12 +51,15 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @param entity    entity that owns the relationship
      * @param field     field the table and its columns are generated from
      */
-    public JoinTableObject(DatabaseObject db, EntityObject entity, Field field) {
-        this.db = db;
-        this.field = field;
-        this.directJoinColumns = new Columns(entity);
+    public JoinTableObject(@NonNull DatabaseObject db,
+                           @NonNull EntityObject<?> entity,
+                           @NonNull Field field) {
+
+        this.db                 = db;
+        this.field              = field;
+        this.directJoinColumns  = new Columns(entity);
         this.inverseJoinColumns = new Columns(entity);
-        this.joinColumns = new Columns(entity);
+        this.joinColumns        = new Columns(entity);
 
         JoinTable annotation = field.getAnnotation(JoinTable.class);
 
@@ -173,7 +176,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
         // Direct join columns
         for (JoinColumn joinColumn : annotation.joinColumns()) {
-            EntityObject linkedEntity = db.getEntity(field.getDeclaringClass());
+            EntityObject<?> linkedEntity = db.getEntity(field.getDeclaringClass());
 
             result.append(separator)
                     .append("FOREIGN KEY(").append(joinColumn.name()).append(")")
@@ -186,7 +189,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         // Inverse join columns
         for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
             ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
-            EntityObject linkedEntity = db.getEntity((Class<?>) collectionType.getActualTypeArguments()[0]);
+            EntityObject<?> linkedEntity = db.getEntity((Class<?>) collectionType.getActualTypeArguments()[0]);
 
             result.append(separator)
                     .append("FOREIGN KEY(").append(inverseJoinColumn.name()).append(")")

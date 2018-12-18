@@ -9,9 +9,13 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.XmlRes;
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Main point of access for the KaolDB framework
@@ -82,7 +86,9 @@ public final class KaolDB {
      * @param resId     resource ID of the XML configuration file
      * @throws KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
      */
-    public void setConfig(Context context, int resId) {
+    public void setConfig(@NonNull Context context, @XmlRes int resId) {
+        checkNotNull(context);
+
         // Load configuration file
         LogUtils.d("Loading the configuration file. Resource ID: " + resId);
         XmlResourceParser xml;
@@ -135,7 +141,7 @@ public final class KaolDB {
      *
      * @return entity manager
      */
-    public EntityManager getEntityManager(Context context, String databaseName) {
+    public EntityManager getEntityManager(@NonNull Context context, @NonNull String databaseName) {
         context = context.getApplicationContext();
 
         if (databaseName == null || databaseName.isEmpty()) {

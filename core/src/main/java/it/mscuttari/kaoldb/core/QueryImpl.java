@@ -165,7 +165,7 @@ class QueryImpl<M> implements Query<M> {
 
         ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
-        EntityObject entity = db.getEntity(object.getClass());
+        EntityObject<?> entity = db.getEntity(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
         while (entity != null) {
@@ -231,7 +231,7 @@ class QueryImpl<M> implements Query<M> {
         if (object == null)
             return;
 
-        EntityObject entity = db.getEntity(object.getClass());
+        EntityObject<?> entity = db.getEntity(object.getClass());
         Collection<Field> usedFields = new HashSet<>();
 
         for (Field field : entity.relationships) {

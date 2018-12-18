@@ -28,12 +28,12 @@ interface ColumnsContainer extends Iterable<BaseColumnObject> {
      *
      * This method called during the mapping consistence check
      *
-     * @see EntityObject#checkConsistence(Map)
+     * @see EntityObject#checkConsistence()
      *
      * @param entities      map of all entities
      * @throws InvalidConfigException if the configuration is invalid
      */
-    void fixType(Map<Class<?>, EntityObject> entities);
+    void fixType(Map<Class<?>, EntityObject<?>> entities);
 
 
     /**

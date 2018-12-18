@@ -6,12 +6,17 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Predicate implementation
@@ -21,18 +26,19 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 class PredicateImpl extends ExpressionImpl {
 
     private enum PredicateType {
-        IS_NULL ("IS NULL", PredicateCardinality.UNARY),
-        EQUAL   ("=",       PredicateCardinality.BINARY),
-        GT      (">",       PredicateCardinality.BINARY),
-        GE      (">=",      PredicateCardinality.BINARY),
-        LT      ("<",       PredicateCardinality.BINARY),
-        LE      ("<=",      PredicateCardinality.BINARY);
+
+        IS_NULL ("IS NULL", 1),
+        EQUAL   ("=",       2),
+        GT      (">",       2),
+        GE      (">=",      2),
+        LT      ("<",       2),
+        LE      ("<=",      2);
 
         private String operation;
-        private PredicateCardinality cardinality;
+        public final int cardinality;
 
-        PredicateType(String operation, PredicateCardinality cardinality) {
-            this.operation = operation;
+        PredicateType(String operation, @IntRange(from = 1, to = 2) int cardinality) {
+            this.operation   = operation;
             this.cardinality = cardinality;
         }
 
@@ -41,22 +47,13 @@ class PredicateImpl extends ExpressionImpl {
             return operation;
         }
 
-        public PredicateCardinality getCardinality() {
-            return cardinality;
-        }
     }
 
 
-    private enum PredicateCardinality {
-        UNARY,
-        BINARY
-    }
-
-
-    private final PredicateType operation;
-    private final DatabaseObject db;
-    private final Variable<?, ?> x;
-    private final Variable<?, ?> y;
+    @NonNull  private final PredicateType operation;
+    @NonNull  private final DatabaseObject db;
+    @NonNull  private final Variable<?> x;
+    @Nullable private final Variable<?> y;
 
 
     /**
@@ -67,13 +64,17 @@ class PredicateImpl extends ExpressionImpl {
      * @param x             first variable
      * @param y             second variable
      */
-    private PredicateImpl(PredicateType operation, DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        super(null, null, null);
+    private PredicateImpl(@NonNull  PredicateType operation,
+                          @NonNull  DatabaseObject db,
+                          @NonNull  Variable<?> x,
+                          @Nullable Variable<?> y) {
+
+        super(ExpressionType.NONE, null, null);
 
         this.operation = operation;
         this.db = db;
-        this.x = x;
-        this.y = y;
+        this.x = checkNotNull(x);
+        this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
 
 
@@ -84,13 +85,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param x     variable
      *
      * @return predicate
-     *
-     * @throws QueryException if the variable is null
      */
-    public static PredicateImpl isNull(DatabaseObject db, Variable<?, ?> x) {
-        if (x == null)
-            throw new QueryException("Variable can't be null");
-
+    public static PredicateImpl isNull(DatabaseObject db, Variable<?> x) {
         return new PredicateImpl(PredicateType.IS_NULL, db, x, null);
     }
 
@@ -103,13 +99,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param y     second variable
      *
      * @return predicate
-     *
-     * @throws QueryException if any of the variables are null
      */
-    public static PredicateImpl eq(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        if (x == null || y == null)
-            throw new QueryException("Variables can't be null");
-
+    public static PredicateImpl eq(DatabaseObject db, Variable<?> x, Variable<?> y) {
         return new PredicateImpl(PredicateType.EQUAL, db, x, y);
     }
 
@@ -122,13 +113,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param y     second variable
      *
      * @return predicate
-     *
-     * @throws QueryException if any of the variables are null
      */
-    public static PredicateImpl gt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        if (x == null || y == null)
-            throw new QueryException("Variables can't be null");
-
+    public static PredicateImpl gt(DatabaseObject db, Variable<?> x, Variable<?> y) {
         return new PredicateImpl(PredicateType.GT, db, x, y);
     }
 
@@ -141,13 +127,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param y     second variable
      *
      * @return predicate
-     *
-     * @throws QueryException if any of the variables are null
      */
-    public static PredicateImpl ge(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        if (x == null || y == null)
-            throw new QueryException("Variables can't be null");
-
+    public static PredicateImpl ge(DatabaseObject db, Variable<?> x, Variable<?> y) {
         return new PredicateImpl(PredicateType.GE, db, x, y);
     }
 
@@ -160,13 +141,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param y     second variable
      *
      * @return predicate
-     *
-     * @throws QueryException if any of the variables are null
      */
-    public static PredicateImpl lt(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        if (x == null || y == null)
-            throw new QueryException("Variables can't be null");
-
+    public static PredicateImpl lt(DatabaseObject db, Variable<?> x, Variable<?> y) {
         return new PredicateImpl(PredicateType.LT, db, x, y);
     }
 
@@ -179,13 +155,8 @@ class PredicateImpl extends ExpressionImpl {
      * @param y     second variable
      *
      * @return predicate
-     *
-     * @throws QueryException if any of the variables are null
      */
-    public static PredicateImpl le(DatabaseObject db, Variable<?, ?> x, Variable<?, ?> y) {
-        if (x == null || y == null)
-            throw new QueryException("Variables can't be null");
-
+    public static PredicateImpl le(DatabaseObject db, Variable<?> x, Variable<?> y) {
         return new PredicateImpl(PredicateType.LE, db, x, y);
     }
 
@@ -198,10 +169,14 @@ class PredicateImpl extends ExpressionImpl {
      */
     @Override
     public String toString() {
-        if (operation.getCardinality() == PredicateCardinality.UNARY) {
+        if (operation.cardinality == 1) {
             return processUnaryPredicate();
-        } else {
+
+        } else if (operation.cardinality == 2){
             return processBinaryPredicate();
+
+        } else {
+            throw new IllegalStateException("Unexpected cardinality: " + operation.cardinality);
         }
     }
 
@@ -211,7 +186,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return first variable
      */
-    public Variable<?, ?> getFirstVariable() {
+    public Variable<?> getFirstVariable() {
         return x;
     }
 
@@ -221,7 +196,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return second variable
      */
-    public Variable<?, ?> getSecondVariable() {
+    public Variable<?> getSecondVariable() {
         return y;
     }
 
@@ -504,7 +479,7 @@ class PredicateImpl extends ExpressionImpl {
                 property.columnAnnotation == JoinColumns.class ||
                 property.columnAnnotation == JoinTable.class) {
 
-            EntityObject referencedEntity = db.getEntity(property.fieldType);
+            EntityObject<?> referencedEntity = db.getEntity(property.fieldType);
 
             String fullAlias = Join.getJoinFullAlias(alias, property.fieldParentClass, property.fieldType);
 

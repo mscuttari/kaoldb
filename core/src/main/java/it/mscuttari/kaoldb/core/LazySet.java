@@ -3,6 +3,7 @@ package it.mscuttari.kaoldb.core;
 import java.util.HashSet;
 import java.util.Set;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.interfaces.Query;
 
 /**
@@ -18,7 +19,7 @@ class LazySet<T> extends LazyCollection<T, Set<T>> {
      * @param container     data container specified by the user
      * @param query         query to be executed to load data
      */
-    public LazySet(Set<T> container, Query<T> query) {
+    public LazySet(Set<T> container, @NonNull Query<T> query) {
         super(container == null ? new HashSet<T>() : container, query);
     }
 

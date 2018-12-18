@@ -66,7 +66,7 @@ class PojoAdapter {
     @Nullable
     public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, String alias) {
         // Starting entity
-        EntityObject entity = db.getEntity(resultClass);
+        EntityObject<?> entity = db.getEntity(resultClass);
 
         // Go down to the child class.
         // Each iteration will go one step down through the hierarchy tree.

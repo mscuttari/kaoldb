@@ -23,7 +23,7 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 class Columns implements ColumnsContainer {
 
     /** Entity object */
-    protected final EntityObject entity;
+    @NonNull protected final EntityObject<?> entity;
 
     /** Table columns */
     private final Collection<ColumnsContainer> columns = new HashSet<>();
@@ -40,7 +40,7 @@ class Columns implements ColumnsContainer {
      *
      * @param entity    entity the columns belongs to
      */
-    public Columns(EntityObject entity) {
+    public Columns(@NonNull EntityObject<?> entity) {
         this(entity, null);
     }
 
@@ -51,7 +51,7 @@ class Columns implements ColumnsContainer {
      *
      * @param columns   columns to be added
      */
-    public Columns(EntityObject entity, Collection<ColumnsContainer> columns) {
+    public Columns(@NonNull EntityObject<?> entity, Collection<ColumnsContainer> columns) {
         this.entity = entity;
 
         if (columns != null)
@@ -65,7 +65,6 @@ class Columns implements ColumnsContainer {
     }
 
 
-    @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new ColumnsIterator(columns);
@@ -73,7 +72,7 @@ class Columns implements ColumnsContainer {
 
 
     @Override
-    public void fixType(Map<Class<?>, EntityObject> entities) {
+    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
         for (BaseColumnObject column : this) {
             column.fixType(entities);
         }
@@ -185,7 +184,7 @@ class Columns implements ColumnsContainer {
      *
      * @throws InvalidConfigException if any column has already been defined
      */
-    public synchronized boolean add(DatabaseObject db, EntityObject entity, Field field) {
+    public synchronized boolean add(DatabaseObject db, EntityObject<?> entity, Field field) {
         return addAll(entityFieldToColumns(db, entity, field));
     }
 
@@ -248,7 +247,7 @@ class Columns implements ColumnsContainer {
      *
      * @throws InvalidConfigException if there is no column annotation
      */
-    public static Collection<ColumnsContainer> entityFieldToColumns(DatabaseObject db, EntityObject entity, Field field) {
+    public static Collection<ColumnsContainer> entityFieldToColumns(DatabaseObject db, EntityObject<?> entity, Field field) {
         Collection<ColumnsContainer> result = new HashSet<>();
 
         if (field.isAnnotationPresent(Column.class)) {

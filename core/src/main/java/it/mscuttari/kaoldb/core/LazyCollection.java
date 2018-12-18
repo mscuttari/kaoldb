@@ -12,8 +12,9 @@ import java.util.stream.Stream;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.interfaces.Query;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This class allows to temporarily skip the relationships data load and run the associated queries
@@ -46,15 +47,10 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
      *
      * @param container     data container specified by the user
      * @param query         query to be executed to load data
-     *
-     * @throws PojoException if the container is null
      */
-    protected LazyCollection(S container, Query<T> query) {
-        if (container == null)
-            throw new PojoException("Container is null");
-
-        this.data = container;
-        this.query = query;
+    protected LazyCollection(@NonNull S container, @NonNull Query<T> query) {
+        this.data  = checkNotNull(container);
+        this.query = checkNotNull(query);
     }
 
 

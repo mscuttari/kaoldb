@@ -3,6 +3,7 @@ package it.mscuttari.kaoldb.core;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -18,7 +19,10 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
      * @param fieldType     field type
      * @param field         field
      */
-    public CollectionProperty(Class<M> entityClass, Class<T> fieldType, Field field) {
+    public CollectionProperty(@NonNull Class<M> entityClass,
+                              @NonNull Class<T> fieldType,
+                              @NonNull Field field) {
+
         super(entityClass, fieldType, field);
     }
 
@@ -32,7 +36,12 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
      * @param columnAnnotation          column class
      * @param relationshipAnnotation    relationship class
      */
-    public CollectionProperty(Class<M> entityClass, Class<T> fieldType, String fieldName, Class<? extends Annotation> columnAnnotation, Class<? extends Annotation> relationshipAnnotation) {
+    public CollectionProperty(@NonNull Class<M> entityClass,
+                              @NonNull Class<T> fieldType,
+                              @NonNull String fieldName,
+                              @NonNull Class<? extends Annotation> columnAnnotation,
+                              @Nullable Class<? extends Annotation> relationshipAnnotation) {
+
         super(entityClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);
     }
 
@@ -47,7 +56,13 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
      * @param columnAnnotation          column class
      * @param relationshipAnnotation    relationship class
      */
-    public CollectionProperty(Class<M> entityClass, Class<? super M> fieldParentClass, Class<T> fieldType, String fieldName, Class<? extends Annotation> columnAnnotation, @Nullable Class<? extends Annotation> relationshipAnnotation) {
+    public CollectionProperty(@NonNull Class<M> entityClass,
+                              @NonNull Class<? super M> fieldParentClass,
+                              @NonNull Class<T> fieldType,
+                              @NonNull String fieldName,
+                              @NonNull Class<? extends Annotation> columnAnnotation,
+                              @Nullable Class<? extends Annotation> relationshipAnnotation) {
+
         super(entityClass, fieldParentClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);
     }
 

@@ -27,14 +27,14 @@ public class UpdateTest extends AbstractFilmTest {
         em.update(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
+        Root<Person> personRoot = qb.getRoot(Person.class);
 
         qb.from(personRoot).where(
                 personRoot.eq(Person_.firstName, person.firstName)
                         .and(personRoot.eq(Person_.lastName, person.lastName))
         );
 
-        assertEquals(person, qb.build("p").getSingleResult());
+        assertEquals(person, qb.build(personRoot).getSingleResult());
     }
 
 }

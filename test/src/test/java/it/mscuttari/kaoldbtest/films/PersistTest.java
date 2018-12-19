@@ -19,12 +19,12 @@ public class PersistTest extends AbstractFilmTest {
         em.persist(country);
 
         QueryBuilder<Country> qb = em.getQueryBuilder(Country.class);
-        Root<Country> countryRoot = qb.getRoot(Country.class, "c");
+        Root<Country> countryRoot = qb.getRoot(Country.class);
         Expression where = countryRoot.eq(Country_.name, country.name);
 
         qb.from(countryRoot).where(where);
 
-        assertEquals(country, qb.build("c").getSingleResult());
+        assertEquals(country, qb.build(countryRoot).getSingleResult());
     }
 
 
@@ -41,14 +41,14 @@ public class PersistTest extends AbstractFilmTest {
         em.persist(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
+        Root<Person> personRoot = qb.getRoot(Person.class);
 
         qb.from(personRoot).where(
                 personRoot.eq(Person_.firstName, person.firstName)
                         .and(personRoot.eq(Person_.lastName, person.lastName))
         );
 
-        assertEquals(person, qb.build("p").getSingleResult());
+        assertEquals(person, qb.build(personRoot).getSingleResult());
     }
 
 
@@ -59,12 +59,12 @@ public class PersistTest extends AbstractFilmTest {
         em.persist(genre);
 
         QueryBuilder<Genre> qb = em.getQueryBuilder(Genre.class);
-        Root<Genre> genreRoot = qb.getRoot(Genre.class, "g");
+        Root<Genre> genreRoot = qb.getRoot(Genre.class);
         Expression where = genreRoot.eq(Genre_.name, genre.name);
 
         qb.from(genreRoot).where(where);
 
-        Genre result = qb.build("g").getSingleResult();
+        Genre result = qb.build(genreRoot).getSingleResult();
         assertEquals(genre, result);
     }
 
@@ -94,25 +94,25 @@ public class PersistTest extends AbstractFilmTest {
 
         // Polymorphic query
         QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
-        Root<Film> filmRoot = filmQb.getRoot(Film.class, "f");
+        Root<Film> filmRoot = filmQb.getRoot(Film.class);
 
         filmQb.from(filmRoot).where(
                 filmRoot.eq(Film_.title, film.title)
                         .and(filmRoot.eq(Film_.year, film.year))
         );
 
-        assertEquals(film, filmQb.build("f").getSingleResult());
+        assertEquals(film, filmQb.build(filmRoot).getSingleResult());
 
         // Specific query
         QueryBuilder<FantasyFilm> fantasyFilmQb = em.getQueryBuilder(FantasyFilm.class);
-        Root<FantasyFilm> fantasyFilmRoot = fantasyFilmQb.getRoot(FantasyFilm.class, "f");
+        Root<FantasyFilm> fantasyFilmRoot = fantasyFilmQb.getRoot(FantasyFilm.class);
 
         fantasyFilmQb.from(fantasyFilmRoot).where(
                 fantasyFilmRoot.eq(FantasyFilm_.title, film.title)
                         .and(fantasyFilmRoot.eq(FantasyFilm_.year, film.year))
         );
 
-        assertEquals(film, fantasyFilmQb.build("f").getSingleResult());
+        assertEquals(film, fantasyFilmQb.build(fantasyFilmRoot).getSingleResult());
     }
 
 
@@ -141,25 +141,25 @@ public class PersistTest extends AbstractFilmTest {
 
         // Polymorphic query
         QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
-        Root<Film> filmRoot = filmQb.getRoot(Film.class, "f");
+        Root<Film> filmRoot = filmQb.getRoot(Film.class);
 
         filmQb.from(filmRoot).where(
                 filmRoot.eq(Film_.title, film.title)
                         .and(filmRoot.eq(Film_.year, film.year))
         );
 
-        assertEquals(film, filmQb.build("f").getSingleResult());
+        assertEquals(film, filmQb.build(filmRoot).getSingleResult());
 
         // Specific query
         QueryBuilder<ThrillerFilm> thrillerFilmQb = em.getQueryBuilder(ThrillerFilm.class);
-        Root<ThrillerFilm> thrillerFilmRoot = filmQb.getRoot(ThrillerFilm.class, "f");
+        Root<ThrillerFilm> thrillerFilmRoot = filmQb.getRoot(ThrillerFilm.class);
 
         thrillerFilmQb.from(thrillerFilmRoot).where(
                 thrillerFilmRoot.eq(ThrillerFilm_.title, film.title)
                         .and(thrillerFilmRoot.eq(ThrillerFilm_.year, film.year))
         );
 
-        assertEquals(film, thrillerFilmQb.build("f").getSingleResult());
+        assertEquals(film, thrillerFilmQb.build(thrillerFilmRoot).getSingleResult());
     }
 
 }

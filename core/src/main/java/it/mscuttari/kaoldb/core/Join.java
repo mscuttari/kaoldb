@@ -203,12 +203,6 @@ final class Join<L, R> implements Root<L> {
 
 
     @Override
-    public String getFullAlias() {
-        return left.getFullAlias();
-    }
-
-
-    @Override
     public <Y> Root<L> join(@NonNull Root<Y> root, @NonNull Property<L, Y> property) {
         return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
@@ -351,7 +345,7 @@ final class Join<L, R> implements Root<L> {
             String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
 
             Expression onLeft = getThreeTablesLeftOnClause(db, left, right, annotation);
-            Expression onRight = getThreeTablesRightOnClause(db, left, right, property, annotation);
+            Expression onRight = getThreeTablesRightOnClause(db, left, right, annotation);
 
             List<Pair<String, Expression>> result = new ArrayList<>(2);
 
@@ -384,11 +378,11 @@ final class Join<L, R> implements Root<L> {
      */
     private static Expression getTwoTablesOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinColumn annotation) {
         Pair<String, String> columnsPair = new Pair<>(
-                left.getFullAlias()  + "." + annotation.name(),
-                right.getFullAlias() + "." + annotation.referencedColumnName()
+                left.getAlias()  + "." + annotation.name(),
+                right.getAlias() + "." + annotation.referencedColumnName()
         );
 
-        return columnsPairToExpression(db, columnsPair);
+        return columnsPairToExpression(db, left, columnsPair);
     }
 
 
@@ -430,11 +424,11 @@ final class Join<L, R> implements Root<L> {
 
         for (JoinColumn joinColumn : annotation.joinColumns()) {
             Pair<String, String> columnsPair = new Pair<>(
-                    left.getFullAlias() + "." + joinColumn.referencedColumnName(),
+                    left.getAlias() + "." + joinColumn.referencedColumnName(),
                     joinTableAlias + "." + joinColumn.name()
             );
 
-            Expression expression = columnsPairToExpression(db, columnsPair);
+            Expression expression = columnsPairToExpression(db, left, columnsPair);
             result = result == null ? expression : result.and(expression);
         }
 
@@ -448,19 +442,21 @@ final class Join<L, R> implements Root<L> {
      * @param db            database
      * @param left          left root
      * @param right         right root
-     * @param property      linking property
      * @param annotation    JoinTable annotation
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesRightOnClause(DatabaseObject db, Root<?> left, Root<?> right, Property<?, ?> property, JoinTable annotation) {
+    private static Expression getThreeTablesRightOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
-        String fullAlias = From.getFullAlias(left.getAlias(), property.fieldType);
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.inverseJoinColumns()) {
-            Pair<String, String> columnsPair = new Pair<>(fullAlias + "." + joinColumn.referencedColumnName(), joinTableAlias + "." + joinColumn.name());
-            Expression expression = columnsPairToExpression(db, columnsPair);
+            Pair<String, String> columnsPair = new Pair<>(
+                    right.getAlias() + "." + joinColumn.referencedColumnName(),
+                    joinTableAlias + "." + joinColumn.name()
+            );
+
+            Expression expression = columnsPairToExpression(db, right, columnsPair);
             result = result == null ? expression : result.and(expression);
         }
 
@@ -476,11 +472,11 @@ final class Join<L, R> implements Root<L> {
      *
      * @return expression
      */
-    private static Expression columnsPairToExpression(DatabaseObject db, Pair<String, String> pair) {
+    private static Expression columnsPairToExpression(DatabaseObject db, Root<?> root, Pair<String, String> pair) {
         Variable<StringWrapper> a = new Variable<>(new StringWrapper(pair.first));
         Variable<StringWrapper> b = new Variable<>(new StringWrapper(pair.second));
 
-        return PredicateImpl.eq(db, a, b);
+        return PredicateImpl.eq(db, root, a, b);
     }
 
 
@@ -495,23 +491,6 @@ final class Join<L, R> implements Root<L> {
      */
     private static String getJoinTableAlias(String tableName, String xAlias, String yAlias) {
         return tableName + "X" + xAlias + "Y" + yAlias;
-    }
-
-
-    /**
-     * Get full alias for an automatically joined table
-     *
-     * @param alias         left alias
-     * @param leftClass     left class
-     * @param rightClass    right class
-     *
-     * @return full alias
-     */
-    public static String getJoinFullAlias(String alias, Class<?> leftClass, Class<?> rightClass) {
-        return alias +
-                (leftClass == null ? "" : leftClass.getSimpleName()) +
-                "Join" +
-                (rightClass == null ? "" : rightClass.getSimpleName());
     }
 
 }

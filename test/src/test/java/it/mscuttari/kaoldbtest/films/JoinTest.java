@@ -54,20 +54,20 @@ public class JoinTest extends AbstractFilmTest {
         // Get the people from a specific country
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
 
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
-        Root<Country> countryRoot = qb.getRoot(Country.class, "c");
+        Root<Person> personRoot = qb.getRoot(Person.class);
+        Root<Country> countryRoot = qb.getRoot(Country.class);
 
         Root<Person> joinRoot = personRoot.join(countryRoot, Person_.country);
         qb.from(joinRoot);
 
         // USA
         qb.where(countryRoot.eq(Country_.name, usa.name));
-        Collection<Person> peopleFromUSA = qb.build("p").getResultList();
+        Collection<Person> peopleFromUSA = qb.build(personRoot).getResultList();
         assertEquals(peopleFromUSA, Arrays.asList(person1, person3));
 
         // Italy
         qb.where(countryRoot.eq(Country_.name, italy.name));
-        Collection<Person> peopleFromItaly = qb.build("p").getResultList();
+        Collection<Person> peopleFromItaly = qb.build(personRoot).getResultList();
         assertEquals(peopleFromItaly, Collections.singletonList(person2));
     }
 
@@ -118,8 +118,8 @@ public class JoinTest extends AbstractFilmTest {
         // Get the films
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
 
-        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
+        Root<Film> filmRoot = qb.getRoot(Film.class);
+        Root<Person> personRoot = qb.getRoot(Person.class);
 
         Root<Film> joinRoot = filmRoot.join(personRoot, Film_.director);
 
@@ -128,7 +128,7 @@ public class JoinTest extends AbstractFilmTest {
                         .and(personRoot.eq(Person_.lastName, director.lastName))
         );
 
-        Collection<Film> films = qb.build("f").getResultList();
+        Collection<Film> films = qb.build(filmRoot).getResultList();
         assertEquals(films, Arrays.asList(film1, film2, film3));
     }
 
@@ -179,17 +179,17 @@ public class JoinTest extends AbstractFilmTest {
         // Get the films
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
 
-        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
-        Root<Genre> genreRoot = qb.getRoot(Genre.class, "g");
+        Root<Film> filmRoot = qb.getRoot(Film.class);
+        Root<Genre> genreRoot = qb.getRoot(Genre.class);
 
         // Without join
         qb.from(filmRoot).where(filmRoot.eq(Film_.genre, new Genre("Thriller")));
-        assertEquals(qb.build("f").getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
 
         // With join
         Root<Film> joinRoot = filmRoot.join(genreRoot, Film_.genre);
         qb.from(joinRoot).where(genreRoot.eq(Genre_.name, "Thriller"));
-        assertEquals(qb.build("f").getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
     }
 
 
@@ -239,9 +239,9 @@ public class JoinTest extends AbstractFilmTest {
         // Get the films
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
 
-        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
-        Root<Genre> genreRoot = qb.getRoot(Genre.class, "g");
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
+        Root<Film> filmRoot = qb.getRoot(Film.class);
+        Root<Genre> genreRoot = qb.getRoot(Genre.class);
+        Root<Person> personRoot = qb.getRoot(Person.class);
 
         // Without join
         qb.from(filmRoot).where(
@@ -249,7 +249,7 @@ public class JoinTest extends AbstractFilmTest {
                 .and(filmRoot.eq(Film_.director, director))
         );
 
-        assertEquals(qb.build("f").getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
 
         // With join
         Root<Film> joinRoot = filmRoot.join(genreRoot, Film_.genre).join(personRoot, Film_.director);
@@ -260,7 +260,7 @@ public class JoinTest extends AbstractFilmTest {
                 .and(personRoot.eq(Person_.lastName, director.lastName))
         );
 
-        assertEquals(qb.build("f").getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
     }
 
 
@@ -353,13 +353,13 @@ public class JoinTest extends AbstractFilmTest {
         // Get the films
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
 
-        Root<Film> filmRoot = qb.getRoot(Film.class, "f");
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
-        Root<Country> countryRoot = qb.getRoot(Country.class, "c");
+        Root<Film> filmRoot = qb.getRoot(Film.class);
+        Root<Person> personRoot = qb.getRoot(Person.class);
+        Root<Country> countryRoot = qb.getRoot(Country.class);
 
         qb.from(filmRoot.join(personRoot.join(countryRoot, Person_.country), Film_.director))
                 .where(countryRoot.eq(Country_.name, usa.name));
-        assertEquals(qb.build("f").getResultList(), Arrays.asList(film1, film2, film3, film5));
+        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2, film3, film5));
     }
 
 }

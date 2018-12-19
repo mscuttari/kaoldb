@@ -188,10 +188,10 @@ class EntityManagerImpl implements EntityManager {
     @Override
     public <T> List<T> getAll(@NonNull Class<T> entityClass) {
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
-        Root<T> root = qb.getRoot(entityClass, "e");
+        Root<T> root = qb.getRoot(entityClass);
         qb.from(root);
 
-        return qb.build("e").getResultList();
+        return qb.build(root).getResultList();
     }
 
 

@@ -62,31 +62,37 @@ class PojoAdapter {
      * @throws PojoException if the child class is not found (wrong discriminator column value) or
      *                       if it can not be instantiated
      */
-    @SuppressWarnings("unchecked")
     @Nullable
-    public static <T> T cursorToObject(DatabaseObject db, Cursor c, Map<String, Integer> cursorMap, Class<T> resultClass, String alias) {
-        // Starting entity
-        EntityObject<?> entity = db.getEntity(resultClass);
+    public static <T> T cursorToObject(DatabaseObject db,
+                                       Cursor c,
+                                       Map<String, Integer> cursorMap,
+                                       Class<T> resultClass,
+                                       String alias) {
+
+        // The result class may be abstract, so we need to determine the real class of the result,
+        // which will be a subclass of the requested one.
+
+        EntityObject<? extends T> resultEntity = db.getEntity(resultClass);
 
         // Go down to the child class.
         // Each iteration will go one step down through the hierarchy tree.
 
-        while (entity.children.size() != 0) {
+        while (resultEntity.children.size() != 0) {
             // Get the discriminator value
-            String discriminatorColumnName = alias + entity.clazz.getSimpleName() + "." + entity.discriminatorColumn.name;
+            String discriminatorColumnName = alias + "." + resultEntity.discriminatorColumn.name;
             int columnIndex = cursorMap.get(discriminatorColumnName);
             Object discriminatorValue = null;
 
-            if (entity.discriminatorColumn.type.equals(Integer.class)) {
+            if (resultEntity.discriminatorColumn.type.equals(Integer.class)) {
                 discriminatorValue = c.getInt(columnIndex);
-            } else if (entity.discriminatorColumn.type.equals(String.class)) {
+            } else if (resultEntity.discriminatorColumn.type.equals(String.class)) {
                 discriminatorValue = c.getString(columnIndex);
             }
 
             // Determine the child class according to the discriminator value specified
             boolean childClassFound = false;
 
-            for (EntityObject child : entity.children) {
+            for (EntityObject<? extends T> child : resultEntity.children) {
                 // Just a security check
                 if (child.discriminatorValue == null)
                     continue;
@@ -94,7 +100,7 @@ class PojoAdapter {
                 // Comparison with the child class discriminator value
                 if (child.discriminatorValue.equals(discriminatorValue)) {
                     childClassFound = true;
-                    entity = child;
+                    resultEntity = child;
                     break;
                 }
             }
@@ -103,43 +109,10 @@ class PojoAdapter {
                 throw new PojoException("Child class not found");
         }
 
-        // Just a security check
-        if (!resultClass.isAssignableFrom(entity.clazz))
-            throw new PojoException("Result class " + resultClass.getSimpleName() + " requested but the entity object contains class " +  entity.getName());
+        T result;
 
-        // Populate child class
         try {
-            T result = (T) entity.clazz.newInstance();
-
-            while (entity != null) {
-                if (entity.realTable) {
-                    for (BaseColumnObject column : entity.columns) {
-                        if (column.field == null) continue;
-
-                        Object value;
-
-                        if (!column.field.isAnnotationPresent(OneToOne.class) &&
-                                !column.field.isAnnotationPresent(OneToMany.class) &&
-                                !column.field.isAnnotationPresent(ManyToOne.class) &&
-                                !column.field.isAnnotationPresent(ManyToMany.class)) {
-
-                            String columnName = alias + entity.getName() + "." + column.name;
-                            value = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
-
-                        } else {
-                            // Relationships are loaded separately
-                            value = null;
-                        }
-
-                        column.field.setAccessible(true);
-                        column.field.set(result, value);
-                    }
-                }
-
-                entity = entity.parent;
-            }
-
-            return result;
+            result = resultEntity.clazz.newInstance();
 
         } catch (InstantiationException e) {
             throw new PojoException(e);
@@ -147,6 +120,48 @@ class PojoAdapter {
         } catch (IllegalAccessException e) {
             throw new PojoException(e);
         }
+
+        // We are now in the leaf entity. Go back up in the hierarchy tree and populate
+        // the fields of each parent entity.
+
+        EntityObject<?> entity = resultEntity;
+
+        while (entity != null) {
+            if (entity.realTable) {
+                for (BaseColumnObject column : entity.columns) {
+                    if (column.field == null)
+                        continue;
+
+                    Object fieldValue;
+
+                    if (!column.field.isAnnotationPresent(OneToOne.class) &&
+                            !column.field.isAnnotationPresent(OneToMany.class) &&
+                            !column.field.isAnnotationPresent(ManyToOne.class) &&
+                            !column.field.isAnnotationPresent(ManyToMany.class)) {
+
+                        // The parents and the children entities have their entity name
+                        // appended to their root aliases. The current entity is not the
+                        // queried one if its class is not the specified result class.
+
+                        String columnName = entity.clazz.equals(resultClass) ?
+                                alias + "." + column.name :
+                                alias + entity.getName() + "." + column.name;
+
+                        fieldValue = cursorFieldToObject(c, cursorMap, columnName, column.field.getType());
+
+                    } else {
+                        // Relationships are loaded separately
+                        fieldValue = null;
+                    }
+
+                    column.setValue(result, fieldValue);
+                }
+            }
+
+            entity = entity.parent;
+        }
+
+        return result;
     }
 
 
@@ -333,7 +348,8 @@ class PojoAdapter {
                         discriminator = discriminatorType.newInstance();
 
                         JoinTable discriminatorColumnAnnotation = currentEntity.discriminatorColumn.field.getAnnotation(JoinTable.class);
-                        for (JoinColumn joinColumn : ((JoinTable)discriminatorColumnAnnotation).joinColumns()) {
+
+                        for (JoinColumn joinColumn : (discriminatorColumnAnnotation).joinColumns()) {
                             if (joinColumn.name().equals(currentEntity.discriminatorColumn.name)) {
                                 // Set the child discriminator value
                                 Field discriminatorField = discriminatorType.getField(joinColumn.referencedColumnName());
@@ -390,6 +406,7 @@ class PojoAdapter {
      * @throws InvalidConfigException  if the entity has a primary key not linked to a class field
      *                                 (not normally reachable situation)
      */
+    @SuppressWarnings("unchecked")
     private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db) {
         // Null data is considered to be existing
         if (obj == null)
@@ -411,7 +428,7 @@ class PojoAdapter {
 
         EntityManager em = KaolDB.getInstance().getEntityManager(context, db.getName());
         QueryBuilder<?> qb = em.getQueryBuilder(entity.clazz);
-        Root<?> root = qb.getRoot(entity.clazz, "de");
+        Root root = qb.getRoot(entity.clazz);
 
         Expression where = null;
 
@@ -427,7 +444,7 @@ class PojoAdapter {
         }
 
         // Run the query and check if its result is not an empty set
-        Object queryResult = qb.from(root).where(where).build("de").getSingleResult();
+        Object queryResult = qb.from(root).where(where).build(root).getSingleResult();
         return queryResult != null;
     }
 

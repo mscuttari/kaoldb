@@ -28,14 +28,6 @@ public interface Root<X> {
 
 
     /**
-     * Get full alias of this entity table (alias + class name)
-     *
-     * @return full alias
-     */
-    String getFullAlias();
-
-
-    /**
      * Get join root
      *
      * @param root          root to be joined

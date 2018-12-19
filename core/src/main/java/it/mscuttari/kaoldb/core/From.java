@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -17,6 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 final class From<X> implements Root<X> {
 
     @NonNull private final DatabaseObject db;
+    @NonNull private final QueryBuilder<?> queryBuilder;
     @NonNull private final EntityObject<X> entity;
     @NonNull private final String alias;
 
@@ -28,14 +30,17 @@ final class From<X> implements Root<X> {
      * Constructor
      *
      * @param db            database object
+     * @param queryBuilder  query builder
      * @param entityClass   entity class
      * @param alias         table alias
      */
     From(@NonNull DatabaseObject db,
+         @NonNull QueryBuilder<?> queryBuilder,
          @NonNull Class<X> entityClass,
          @NonNull String alias) {
 
         this.db = db;
+        this.queryBuilder = queryBuilder;
         this.entity = db.getEntity(checkNotNull(entityClass));
         this.alias = checkNotNull(alias);
     }
@@ -62,20 +67,20 @@ final class From<X> implements Root<X> {
 
                     while (parent != null) {
                         if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
+                            From<?> parentRoot = new From<>(db, queryBuilder, parent.clazz, getAlias() + parent.getName());
                             Expression on = null;
 
                             for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
                                 Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                Variable<?> b = new Variable<>(alias, new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
+                                Variable<?> b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
 
-                                Expression onParent = PredicateImpl.eq(db, a, b);
+                                Expression onParent = PredicateImpl.eq(db, this, a, b);
                                 on = on == null ? onParent : on.and(onParent);
                             }
 
                             if (on == null)
                                 throw new QueryException("Can't merge inherited tables");
 
-                            From<?> parentRoot = new From<>(db, parent.clazz, alias);
                             parentRoot.hierarchyVisited = true;
 
                             root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
@@ -87,40 +92,39 @@ final class From<X> implements Root<X> {
 
                 // Merge children tables
                 if (entity.children.size() != 0) {
-                    Stack<EntityObject<? extends X>> stack = new Stack<>();
-                    stack.push(entity);
+                    Stack<EntityObject<? extends X>> children = new Stack<>();
+                    children.push(entity);
 
-                    while (!stack.empty()) {
-                        EntityObject<? extends X> node = stack.pop();
+                    while (!children.empty()) {
+                        EntityObject<? extends X> node = children.pop();
 
                         for (EntityObject<? extends X> child : node.children) {
                             if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
                                 // Perform the join with the child table
+                                From<?> childRoot = new From<>(db, queryBuilder, child.clazz, getAlias() + child.getName());
                                 Expression on = null;
 
                                 for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
                                     Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                    Variable<?> b = new Variable<>(alias, new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
+                                    Variable<?> b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
 
-                                    Expression onChild = PredicateImpl.eq(db, a, b);
+                                    Expression onChild = PredicateImpl.eq(db, this, a, b);
                                     on = on == null ? onChild : on.and(onChild);
                                 }
 
                                 if (on == null)
                                     throw new QueryException("Can't merge inherited tables");
 
-                                From<?> childRoot = new From<>(db, child.clazz, alias);
                                 childRoot.hierarchyVisited = true;
 
                                 root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
 
                                 // Depth first scan
                                 if (child.children.size() != 0) {
-                                    stack.push(child);
+                                    children.push(child);
                                 }
                             }
                         }
-
                     }
                 }
 
@@ -128,7 +132,7 @@ final class From<X> implements Root<X> {
             }
 
             // Tree exploration not needed
-            return entity.tableName + " AS " + getFullAlias();
+            return entity.tableName + " AS " + getAlias();
 
         } finally {
             // Reset the status ot allow a second query build
@@ -150,25 +154,6 @@ final class From<X> implements Root<X> {
 
 
     @Override
-    public String getFullAlias() {
-        return getFullAlias(getAlias(), getEntityClass());
-    }
-
-
-    /**
-     * Get full alias of an entity table (alias + class name)
-     *
-     * @param alias     entity alias
-     * @param clazz     entity class
-     *
-     * @return full alias
-     */
-    public static String getFullAlias(String alias, Class<?> clazz) {
-        return alias + clazz.getSimpleName();
-    }
-
-
-    @Override
     public <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property) {
         return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
@@ -178,7 +163,7 @@ final class From<X> implements Root<X> {
     public Expression isNull(@NonNull SingleProperty<X, ?> field) {
         Variable<?> a = new Variable<>(alias, field);
 
-        return PredicateImpl.isNull(db, a);
+        return PredicateImpl.isNull(db, this, a);
     }
 
 
@@ -190,10 +175,10 @@ final class From<X> implements Root<X> {
         // Just in case the user wants to check for a null property but wrongly calls this
         // method instead of isNull
         if (value == null) {
-            return PredicateImpl.isNull(db, a);
+            return isNull(field);
         }
 
-        return PredicateImpl.eq(db, a, b);
+        return PredicateImpl.eq(db, this, a, b);
     }
 
 
@@ -202,7 +187,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
-        return PredicateImpl.eq(db, a, b);
+        return PredicateImpl.eq(db, this, a, b);
     }
 
 
@@ -211,7 +196,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(yAlias, y);
 
-        return PredicateImpl.eq(db, a, b);
+        return PredicateImpl.eq(db, this, a, b);
     }
 
 
@@ -220,7 +205,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, field);
         Variable<T> b = new Variable<>(value);
 
-        return PredicateImpl.gt(db, a, b);
+        return PredicateImpl.gt(db, this, a, b);
     }
 
 
@@ -229,7 +214,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
-        return PredicateImpl.gt(db, a, b);
+        return PredicateImpl.gt(db, this, a, b);
     }
 
 
@@ -238,7 +223,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(yAlias, y);
 
-        return PredicateImpl.gt(db, a, b);
+        return PredicateImpl.gt(db, this, a, b);
     }
 
 
@@ -247,7 +232,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, field);
         Variable<T> b = new Variable<>(value);
 
-        return PredicateImpl.ge(db, a, b);
+        return PredicateImpl.ge(db, this, a, b);
     }
 
 
@@ -256,7 +241,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
-        return PredicateImpl.ge(db, a, b);
+        return PredicateImpl.ge(db, this, a, b);
     }
 
 
@@ -265,7 +250,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(yAlias, y);
 
-        return PredicateImpl.ge(db, a, b);
+        return PredicateImpl.ge(db, this, a, b);
     }
 
 
@@ -274,7 +259,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, field);
         Variable<T> b = new Variable<>(value);
 
-        return PredicateImpl.lt(db, a, b);
+        return PredicateImpl.lt(db, this, a, b);
     }
 
 
@@ -283,7 +268,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
-        return PredicateImpl.lt(db, a, b);
+        return PredicateImpl.lt(db, this, a, b);
     }
 
 
@@ -292,7 +277,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(yAlias, y);
 
-        return PredicateImpl.lt(db, a, b);
+        return PredicateImpl.lt(db, this, a, b);
     }
 
 
@@ -301,7 +286,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, field);
         Variable<T> b = new Variable<>(value);
 
-        return PredicateImpl.le(db, a, b);
+        return PredicateImpl.le(db, this, a, b);
     }
 
 
@@ -310,7 +295,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
-        return PredicateImpl.le(db, a, b);
+        return PredicateImpl.le(db, this, a, b);
     }
 
 
@@ -319,7 +304,7 @@ final class From<X> implements Root<X> {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(yAlias, y);
 
-        return PredicateImpl.le(db, a, b);
+        return PredicateImpl.le(db, this, a, b);
     }
 
 }

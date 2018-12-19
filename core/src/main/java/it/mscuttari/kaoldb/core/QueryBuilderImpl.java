@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Column;
@@ -27,6 +28,10 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     @NonNull private final DatabaseObject db;
     @NonNull private final Class<T> resultClass;
 
+    // Counter for the roots got from this query builder.
+    // It is used to create an unique alias for each root.
+    private int rootCounter = 0;
+
     private Root<?> from;
     private Expression where;
 
@@ -49,8 +54,8 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     @Override
-    public <M> Root<M> getRoot(@NonNull Class<M> entityClass, @NonNull String alias) {
-        return new From<>(db, entityClass, alias);
+    public <M> Root<M> getRoot(@NonNull Class<M> entityClass) {
+        return new From<>(db, this, entityClass, "a" + rootCounter++);
     }
 
 
@@ -69,17 +74,17 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     @Override
-    public Query<T> build(String alias) {
+    public Query<T> build(Root<T> root) {
         if (from == null)
             throw new QueryException("\"From\" clause not set");
 
         Root<?> from = createJoinForPredicates(this.from, where);
-        String sql = "SELECT " + getSelectClause(from, alias) + " FROM " + from;
+        String sql = "SELECT " + getSelectClause(root) + " FROM " + from;
 
         if (where != null)
             sql += " WHERE " + where;
 
-        return new QueryImpl<>(db, entityManager, resultClass, alias, sql);
+        return new QueryImpl<>(db, entityManager, resultClass, root.getAlias(), sql);
     }
 
 
@@ -107,7 +112,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         while (iterator.hasNext()) {
             PredicateImpl predicate = iterator.next();
-            Object leftData = predicate.getFirstVariable().getData();
+            Object leftData = predicate.x.getData();
 
             if (!(leftData instanceof Property))
                 continue;
@@ -115,8 +120,8 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             Property property = (Property) leftData;
 
             if (property.columnAnnotation != null && property.columnAnnotation != Column.class) {
-                String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
-                Root<?> joinedRoot = new From<>(db, (Class<?>) property.fieldType, alias);
+                //String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
+                Root<?> joinedRoot = new From<>(db, this, (Class<?>) property.fieldType, predicate.root.getAlias());
                 root = root.join(joinedRoot, property);
             }
         }
@@ -129,21 +134,24 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
      * Get the "SELECT" clause to be used in the query
      *
      * @param root      root
-     * @param alias     the alias of the desired result entity
      *
      * @return "SELECT" clause
      */
-    private String getSelectClause(Root<?> root, String alias) {
+    private String getSelectClause(Root<?> root) {
         // Check alias
-        checkAlias(root, alias);
+        //checkAlias(root, alias);
 
-        // Get columns
-        List<String> selectColumns = new ArrayList<>();
+        List<String> columns = new ArrayList<>();
 
         // Current entity
         EntityObject<?> entity = db.getEntity(resultClass);
+
         for (BaseColumnObject column : entity.columns) {
-            selectColumns.add(alias + entity.getName() + "." + column.name + " AS \"" + alias + entity.getName() + "." + column.name + "\"");
+            columns.add(
+                    root.getAlias() + "." + column.name +
+                    " AS " +
+                    "\"" + root.getAlias() + "." + column.name + "\""
+            );
         }
 
         // Parents
@@ -151,16 +159,39 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
         while (parent != null) {
             for (BaseColumnObject column : parent.columns) {
-                selectColumns.add(alias + parent.getName() + "." + column.name + " AS \"" + alias + parent.getName() + "." + column.name + "\"");
+                columns.add(
+                        root.getAlias() + parent.getName() + "." + column.name +
+                        " AS " +
+                        "\"" + root.getAlias() + parent.getName() + "." + column.name + "\""
+                );
             }
 
             parent = parent.parent;
         }
 
         // Children
-        selectColumns.addAll(childrenSelectClause(entity, alias));
+        Stack<EntityObject<?>> children = new Stack<>();
+        children.push(entity);
 
-        return TextUtils.join(", ", selectColumns);
+        while (!children.empty()) {
+            EntityObject<?> node = children.pop();
+
+            for (EntityObject<?> child : node.children) {
+                for (BaseColumnObject column : child.columns) {
+                    columns.add(root.getAlias() + child.getName() + "." + column.name +
+                                " AS " +
+                                "\"" + root.getAlias() + child.getName() + "." + column.name + "\""
+                    );
+                }
+
+                // Depth first scan
+                if (child.children.size() != 0) {
+                    children.push(child);
+                }
+            }
+        }
+
+        return TextUtils.join(", ", columns);
     }
 
 
@@ -189,30 +220,6 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         }
 
         throw new QueryException("Alias " + alias + " not found");
-    }
-
-
-    /**
-     * Get children columns
-     *
-     * @param entity    parent entity
-     * @param alias     alias to be used in the  query
-     *
-     * @return columns list (each column is in the following form: aliasClassName.ColumnName
-     */
-    private static List<String> childrenSelectClause(EntityObject<?> entity, String alias) {
-        List<String> result = new ArrayList<>();
-
-        for (EntityObject<?> child : entity.children) {
-            for (BaseColumnObject column : child.columns) {
-                result.add(alias + child.getName() + "." + column.name + " AS \"" + alias + child.getName() + "." + column.name + "\"");
-            }
-
-            List<String> recursiveResult = childrenSelectClause(child, alias);
-            result.addAll(recursiveResult);
-        }
-
-        return result;
     }
 
 }

@@ -25,14 +25,14 @@ public class RemoveTest extends AbstractFilmTest {
         em.remove(person);
 
         QueryBuilder<Person> qb = em.getQueryBuilder(Person.class);
-        Root<Person> personRoot = qb.getRoot(Person.class, "p");
+        Root<Person> personRoot = qb.getRoot(Person.class);
 
         qb.from(personRoot).where(
                 personRoot.eq(Person_.firstName, person.firstName)
                         .and(personRoot.eq(Person_.lastName, person.lastName))
         );
 
-        assertNull(qb.build("p").getSingleResult());
+        assertNull(qb.build(personRoot).getSingleResult());
     }
 
 }

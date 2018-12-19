@@ -94,13 +94,13 @@ class QueryImpl<M> implements Query<M> {
 
                 // This collection represent the tasks which will be concurrently executed in order
                 // to create the queries to eagerly load the many to one and one to one relationships
-                Collection<Pair<Field, Future<Query<?>>>> eagerLoadFutures = getEagerLoadQueries(object);
+                Collection<Pair<Field, Future<Query>>> eagerLoadFutures = getEagerLoadQueries(object);
 
                 // While the queries are built, create the lazy collections
                 createLazyCollections(object);
 
                 // Run the queries and assign its result to the object field
-                for (Pair<Field, Future<Query<?>>> queryFuture : eagerLoadFutures) {
+                for (Pair<Field, Future<Query>> queryFuture : eagerLoadFutures) {
                     queryFuture.first.set(object, queryFuture.second.get().getSingleResult());
                 }
 
@@ -157,8 +157,9 @@ class QueryImpl<M> implements Query<M> {
      * @return collection of futures, each of them representing the asynchronous query task
      * @throws QueryException if the data can't be assigned to the field
      */
-    private Collection<Pair<Field, Future<Query<?>>>> getEagerLoadQueries(final M object) {
-        Collection<Pair<Field, Future<Query<?>>>> futures = new ArrayList<>();
+    @SuppressWarnings("unchecked")
+    private Collection<Pair<Field, Future<Query>>> getEagerLoadQueries(final M object) {
+        Collection<Pair<Field, Future<Query>>> futures = new ArrayList<>();
 
         if (object == null)
             return futures;
@@ -183,9 +184,9 @@ class QueryImpl<M> implements Query<M> {
                 usedFields.add(field);
 
                 // Run the query in a different thread
-                EntityObject currentEntity = entity;
+                EntityObject<?> currentEntity = entity;
 
-                Future<Query<?>> future = executorService.submit(() -> {
+                Future<Query> future = executorService.submit(() -> {
                     // Create the query
                     Class<?> linkedClass = field.getType();
                     QueryBuilder<?> qb = entityManager.getQueryBuilder(linkedClass);
@@ -194,19 +195,20 @@ class QueryImpl<M> implements Query<M> {
                     Property property = new SingleProperty<>(currentEntity.clazz, linkedClass, field);
 
                     // Create the join
-                    Root<?> root = qb.getRoot(currentEntity.clazz, "source");
-                    Root<?> join = root.join(new From<>(db, linkedClass, "destination"), property);
+                    Root leftRoot = qb.getRoot(currentEntity.clazz);
+                    Root rightRoot = qb.getRoot(linkedClass);
+                    Root join = leftRoot.join(rightRoot, property);
 
                     Expression where = null;
 
                     for (BaseColumnObject primaryKey : currentEntity.columns.getPrimaryKeys()) {
                         SingleProperty primaryKeyProperty = new SingleProperty<>(currentEntity.clazz, primaryKey.type, primaryKey.field);
-                        Expression primaryKeyEquality = root.eq(primaryKeyProperty, primaryKey.getValue(object));
+                        Expression primaryKeyEquality = leftRoot.eq(primaryKeyProperty, primaryKey.getValue(object));
                         where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
                     }
 
                     // Build the query
-                    return qb.from(join).where(where).build("destination");
+                    return qb.from(join).where(where).build(rightRoot);
                 });
 
                 futures.add(new Pair<>(field, future));
@@ -275,8 +277,8 @@ class QueryImpl<M> implements Query<M> {
             Property property = new SingleProperty<>(linkedClass, entity.clazz, mappedByField);
 
             // Create the join and equality constraints
-            Root<?> linkedClassRoot = qb.getRoot(linkedClass, "destination");
-            Root<?> join = linkedClassRoot.join(new From<>(db, entity.clazz, "source"), property);
+            Root linkedClassRoot = qb.getRoot(linkedClass);
+            Root<?> join = linkedClassRoot.join(qb.getRoot(entity.clazz), property);
 
             Expression where = null;
 
@@ -287,7 +289,7 @@ class QueryImpl<M> implements Query<M> {
             }
 
             // Build the query to be executed when needed
-            Query<?> query = qb.from(join).where(where).build("destination");
+            Query<?> query = qb.from(join).where(where).build(linkedClassRoot);
 
             // Get the collection instance
             Object fieldValue;

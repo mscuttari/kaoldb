@@ -17,12 +17,11 @@ public interface QueryBuilder<T> {
      * expressions based on their values
      *
      * @param entityClass   entity class
-     * @param alias         entity alias to be used in the query
      * @param <M>           entity class
      *
      * @return entity root
      */
-    <M> Root<M> getRoot(@NonNull Class<M> entityClass, @NonNull String alias);
+    <M> Root<M> getRoot(@NonNull Class<M> entityClass);
 
 
     /**
@@ -50,14 +49,13 @@ public interface QueryBuilder<T> {
      * If the clauses are modified after a query build and then rebuilt, the new query will be
      * different then the previous one and will reflect the new clauses
      *
-     * @param alias     the alias of the desired result entity; it must be present in the list
-     *                  of the aliases specified during the {@link Root} composition
+     * @param root      the root of the desired result entity
      *
      * @return {@link Query} object which can be used to retrieve query result objects
      *
      * @throws QueryException if the query configuration is invalid (see exception message for
      *                        further details)
      */
-    Query<T> build(@NonNull String alias);
+    Query<T> build(@NonNull Root<T> root);
 
 }

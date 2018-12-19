@@ -15,6 +15,7 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -52,8 +53,9 @@ class PredicateImpl extends ExpressionImpl {
 
     @NonNull  private final PredicateType operation;
     @NonNull  private final DatabaseObject db;
-    @NonNull  private final Variable<?> x;
-    @Nullable private final Variable<?> y;
+    @NonNull  public final Root<?> root;
+    @NonNull  public final Variable<?> x;
+    @Nullable public final Variable<?> y;
 
 
     /**
@@ -61,11 +63,13 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @param operation     operation
      * @param db            database object
+     * @param root          root the predicate is generated from
      * @param x             first variable
      * @param y             second variable
      */
     private PredicateImpl(@NonNull  PredicateType operation,
                           @NonNull  DatabaseObject db,
+                          @NonNull  Root<?> root,
                           @NonNull  Variable<?> x,
                           @Nullable Variable<?> y) {
 
@@ -73,6 +77,7 @@ class PredicateImpl extends ExpressionImpl {
 
         this.operation = operation;
         this.db = db;
+        this.root = root;
         this.x = checkNotNull(x);
         this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
@@ -86,8 +91,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl isNull(DatabaseObject db, Variable<?> x) {
-        return new PredicateImpl(PredicateType.IS_NULL, db, x, null);
+    public static PredicateImpl isNull(DatabaseObject db, Root<?> root, Variable<?> x) {
+        return new PredicateImpl(PredicateType.IS_NULL, db, root, x, null);
     }
 
 
@@ -100,8 +105,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl eq(DatabaseObject db, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.EQUAL, db, x, y);
+    public static PredicateImpl eq(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
+        return new PredicateImpl(PredicateType.EQUAL, db, root, x, y);
     }
 
 
@@ -114,8 +119,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl gt(DatabaseObject db, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.GT, db, x, y);
+    public static PredicateImpl gt(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
+        return new PredicateImpl(PredicateType.GT, db, root, x, y);
     }
 
 
@@ -128,8 +133,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl ge(DatabaseObject db, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.GE, db, x, y);
+    public static PredicateImpl ge(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
+        return new PredicateImpl(PredicateType.GE, db, root, x, y);
     }
 
 
@@ -142,8 +147,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl lt(DatabaseObject db, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.LT, db, x, y);
+    public static PredicateImpl lt(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
+        return new PredicateImpl(PredicateType.LT, db, root, x, y);
     }
 
 
@@ -156,8 +161,8 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @return predicate
      */
-    public static PredicateImpl le(DatabaseObject db, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.LE, db, x, y);
+    public static PredicateImpl le(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
+        return new PredicateImpl(PredicateType.LE, db, root, x, y);
     }
 
 
@@ -178,26 +183,6 @@ class PredicateImpl extends ExpressionImpl {
         } else {
             throw new IllegalStateException("Unexpected cardinality: " + operation.cardinality);
         }
-    }
-
-
-    /**
-     * Get first variable
-     *
-     * @return first variable
-     */
-    public Variable<?> getFirstVariable() {
-        return x;
-    }
-
-
-    /**
-     * Get second variable
-     *
-     * @return second variable
-     */
-    public Variable<?> getSecondVariable() {
-        return y;
     }
 
 
@@ -297,23 +282,20 @@ class PredicateImpl extends ExpressionImpl {
     private static List<String> getPropertyColumns(Property<?, ?> property, String alias) {
         List<String> result = new ArrayList<>();
 
-        // Fully qualified alias
-        String fullAlias = From.getFullAlias(alias, property.fieldParentClass);
-
         // Get field
         Field field = property.getField();
 
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
             Column annotation = field.getAnnotation(Column.class);
-            result.add(fullAlias + "." + annotation.name());
+            result.add(alias + "." + annotation.name());
             return result;
         }
 
         // @JoinColumn
         if (field.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn annotation = field.getAnnotation(JoinColumn.class);
-            result.add(fullAlias + "." + annotation.name());
+            result.add(alias + "." + annotation.name());
             return result;
         }
 
@@ -322,7 +304,7 @@ class PredicateImpl extends ExpressionImpl {
             JoinColumns annotation = field.getAnnotation(JoinColumns.class);
 
             for (JoinColumn joinColumn : annotation.value()) {
-                result.add(fullAlias + "." + joinColumn.name());
+                result.add(alias + "." + joinColumn.name());
             }
 
             return result;
@@ -333,7 +315,7 @@ class PredicateImpl extends ExpressionImpl {
             JoinTable annotation = field.getAnnotation(JoinTable.class);
 
             for (JoinColumn joinColumn : annotation.joinColumns()) {
-                result.add(fullAlias + "." + joinColumn.referencedColumnName());
+                result.add(alias + "." + joinColumn.referencedColumnName());
             }
 
             return result;
@@ -359,10 +341,6 @@ class PredicateImpl extends ExpressionImpl {
     private static List<Pair<String, String>> bindProperties(DatabaseObject db, Property xProperty, String xAlias, Property yProperty, String yAlias) {
         List<Pair<String, String>> result = new ArrayList<>();
 
-        // Fully qualified aliases
-        String xFullAlias = From.getFullAlias(xAlias, xProperty.fieldParentClass);
-        String yFullAlias = From.getFullAlias(yAlias, yProperty.fieldParentClass);
-
         // Get fields
         Field xField = xProperty.getField();
         Field yField = yProperty.getField();
@@ -375,8 +353,8 @@ class PredicateImpl extends ExpressionImpl {
             Column xAnnotation = xField.getAnnotation(Column.class);
             Column yAnnotation = yField.getAnnotation(Column.class);
 
-            String xColumn = xFullAlias + "." + xAnnotation.name();
-            String yColumn = yFullAlias + "." + yAnnotation.name();
+            String xColumn = xAlias + "." + xAnnotation.name();
+            String yColumn = yAlias + "." + yAnnotation.name();
 
             result.add(new Pair<>(xColumn, yColumn));
             return result;
@@ -387,8 +365,8 @@ class PredicateImpl extends ExpressionImpl {
             JoinColumn xAnnotation = xField.getAnnotation(JoinColumn.class);
             JoinColumn yAnnotation = yField.getAnnotation(JoinColumn.class);
 
-            String xColumn = xFullAlias + "." + xAnnotation.name();
-            String yColumn = yFullAlias + "." + yAnnotation.name();
+            String xColumn = xAlias + "." + xAnnotation.name();
+            String yColumn = yAlias + "." + yAnnotation.name();
 
             result.add(new Pair<>(xColumn, yColumn));
             return result;
@@ -403,8 +381,8 @@ class PredicateImpl extends ExpressionImpl {
             for (JoinColumn xJoinColumn : xAnnotation.value()) {
                 for (JoinColumn yJoinColumn : yAnnotation.value()) {
                     if (xJoinColumn.referencedColumnName().equals(yJoinColumn.referencedColumnName())) {
-                        String xColumn = xFullAlias + "." + xJoinColumn.name();
-                        String yColumn = yFullAlias + "." + yJoinColumn.name();
+                        String xColumn = xAlias + "." + xJoinColumn.name();
+                        String yColumn = yAlias + "." + yJoinColumn.name();
 
                         result.add(new Pair<>(xColumn, yColumn));
                         continue outer;
@@ -424,8 +402,8 @@ class PredicateImpl extends ExpressionImpl {
             for (JoinColumn xJoinColumn : xAnnotation.joinColumns()) {
                 for (JoinColumn yJoinColumn : yAnnotation.joinColumns()) {
                     if (xJoinColumn.name().equals(yJoinColumn.name())) {
-                        String xColumn = xFullAlias + "." + xJoinColumn.referencedColumnName();
-                        String yColumn = yFullAlias + "." + yJoinColumn.referencedColumnName();
+                        String xColumn = xAlias + "." + xJoinColumn.referencedColumnName();
+                        String yColumn = yAlias + "." + yJoinColumn.referencedColumnName();
 
                         result.add(new Pair<>(xColumn, yColumn));
                         continue outer;
@@ -465,10 +443,7 @@ class PredicateImpl extends ExpressionImpl {
         // @Column
         if (property.columnAnnotation == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
-
-            String fullAlias = From.getFullAlias(alias, property.fieldParentClass);
-            String column = fullAlias + "." + annotation.name();
-
+            String column = alias + "." + annotation.name();
             result.add(new Pair<>(column, objectToString(obj)));
 
             return result;
@@ -481,10 +456,8 @@ class PredicateImpl extends ExpressionImpl {
 
             EntityObject<?> referencedEntity = db.getEntity(property.fieldType);
 
-            String fullAlias = Join.getJoinFullAlias(alias, property.fieldParentClass, property.fieldType);
-
             for (BaseColumnObject primaryKey : referencedEntity.columns.getPrimaryKeys()) {
-                String column = fullAlias + "." + primaryKey.name;
+                String column = alias + "." + primaryKey.name;
                 String primaryKeyValue = objectToString(primaryKey.getValue(obj));
 
                 result.add(new Pair<>(column, primaryKeyValue));

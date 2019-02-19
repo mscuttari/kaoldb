@@ -4,7 +4,9 @@ import android.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
@@ -21,7 +23,7 @@ import it.mscuttari.kaoldb.interfaces.Root;
  * @param <L>   left side entity of the join
  * @param <R>   right side entity of the join
  */
-final class Join<L, R> implements Root<L> {
+final class Join<L, R> implements RootInt<L> {
 
     public enum JoinType {
 
@@ -44,10 +46,11 @@ final class Join<L, R> implements Root<L> {
 
     @NonNull  private final DatabaseObject db;
     @NonNull  private final JoinType type;
-    @NonNull  private final Root<L> left;
-    @NonNull  private final Root<R> right;
+    @NonNull  private final RootInt<L> left;
+    @NonNull  private final RootInt<R> right;
 
     // If the linking property is null then the ON expression is not null and vice versa
+
     @Nullable private final Property<L, R> property;
     @Nullable private final Expression on;
 
@@ -65,8 +68,8 @@ final class Join<L, R> implements Root<L> {
      */
     Join(@NonNull DatabaseObject db,
          @NonNull JoinType type,
-         @NonNull Root<L> left,
-         @NonNull Root<R> right,
+         @NonNull RootInt<L> left,
+         @NonNull RootInt<R> right,
          @NonNull Property<L, R> property) {
 
         this.db = db;
@@ -91,8 +94,8 @@ final class Join<L, R> implements Root<L> {
      */
     Join(@NonNull DatabaseObject db,
          @NonNull JoinType type,
-         @NonNull Root<L> left,
-         @NonNull Root<R> right,
+         @NonNull RootInt<L> left,
+         @NonNull RootInt<R> right,
          @NonNull Expression on) {
 
         this.db = db;
@@ -108,10 +111,25 @@ final class Join<L, R> implements Root<L> {
      * Get the "FROM" clause be used in the query
      *
      * The join tree is spanned from the most left leaf to to the right most one.
-     * This is done because some SQLite implementations does not support, although standard
-     * complaint, "from" clauses such as "(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)".
-     * Therefore, the tree must be seen as left recursive one, which lead to the equivalent but
+     * This is done because some SQLite implementations does not support, although standard-complaint,
+     * "from" clauses such as "(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)".
+     * Therefore, the tree must be seen as a left recursive one, which lead to the equivalent but
      * correctly interpreted clause "((table1 INNER JOIN table2 ON exp1) INNER JOIN table3 ON exp2)".
+     *
+     * For example, given the following tree, where
+     * nodes 1, 2, 5 are "join" nodes
+     * nodes 4, 6, 7, 3 are "from" nodes
+     *
+     *        1
+     *       / \
+     *      2   3
+     *     / \
+     *    4   5
+     *       / \
+     *      6   7
+     *
+     * the visiting is be 1 -> 2 -> 4 -> 5 > 6 -> 7 -> 3 and the resulting clause is
+     * "(((4 join 6) join 7) join 3)", obviously enriched with the proper "ON" clauses.
      *
      * @return "FROM" clause
      */
@@ -121,10 +139,11 @@ final class Join<L, R> implements Root<L> {
 
         // Go down to the left-most leaf
         // That element represents the point of start for the "FROM" clause
+        // In the example: go down to node 4
 
-        Root<?> root = this;
+        RootInt<?> root = this;
 
-        while (root instanceof Join<?, ?>) {
+        while (root instanceof Join) {
             stack.push((Join<?, ?>) root);
             root = ((Join<?, ?>) root).left;
         }
@@ -136,25 +155,29 @@ final class Join<L, R> implements Root<L> {
         while (!stack.isEmpty()) {
             Join<?, ?> join = stack.pop();
 
-            if (join.right instanceof From<?>) {
-                // The join doesn't have subtrees, so the join can be performed without further exploration
+            if (join.right instanceof From) {
+                // The join doesn't have a right subtree, so the join can be performed without further exploration.
+                // In the example, the nodes satisfying this condition are the 1 and 5.
+
                 List<Pair<String, Expression>> clauses = getJoinClauses(db, join.type, root, join.right, join.property, join.on);
 
                 for (Pair<String, Expression> clause : clauses) {
                     result = new StringBuilder("(" + result + clause.first + " ON " + clause.second + ")");
                 }
 
-            } else if (join.right instanceof Join<?, ?>) {
-                // Subtree found
-                Root<?> rightRoot = join.right;
+            } else if (join.right instanceof Join) {
+                // Subtree found (as in nodes 2 and 5)
+                RootInt<?> rightRoot = join.right;
 
-                // Go down to the left-most leaf of the subtree
+                // Go down to the left-most leaf of the subtree.
+                // In the example, if we were in node 4, we now go to node 5.
+
                 while (rightRoot instanceof Join) {
                     stack.push((Join<?, ?>) rightRoot);
                     rightRoot = ((Join<?, ?>) rightRoot).left;
                 }
 
-                // Perform the join
+                // Perform the join (i.e. between 4 and 6)
                 List<Pair<String, Expression>> clauses = getJoinClauses(db, join.type, root, rightRoot, join.property, join.on);
 
                 for (Pair<String, Expression> clause : clauses) {
@@ -175,7 +198,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return left root
      */
-    public Root<L> getLeftRoot() {
+    public RootInt<L> getLeftRoot() {
         return left;
     }
 
@@ -185,7 +208,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return right root
      */
-    public Root<R> getRightRoot() {
+    public RootInt<R> getRightRoot() {
         return right;
     }
 
@@ -204,18 +227,18 @@ final class Join<L, R> implements Root<L> {
 
     @Override
     public <Y> Root<L> join(@NonNull Root<Y> root, @NonNull Property<L, Y> property) {
-        return new Join<>(db, Join.JoinType.INNER, this, root, property);
+        return new Join<>(db, Join.JoinType.INNER, this, (RootInt<Y>) root, property);
     }
 
 
     @Override
-    public Expression isNull(@NonNull SingleProperty<L, ?> field) {
+    public <T> Expression isNull(@NonNull SingleProperty<L, T> field) {
         return left.isNull(field);
     }
 
 
     @Override
-    public <T> Expression eq(@NonNull SingleProperty<L, T> field, @NonNull T value) {
+    public <T> Expression eq(@NonNull SingleProperty<L, T> field, @Nullable T value) {
         return left.eq(field, value);
     }
 
@@ -305,6 +328,48 @@ final class Join<L, R> implements Root<L> {
 
 
     /**
+     * @see #toString() for an explanation about how the tree is spanned
+     */
+    @Override
+    public Map<String, Root<?>> getRootsMap() {
+        Map<String, Root<?>> result = new HashMap<>(2, 1);
+
+        Stack<Join<?, ?>> stack = new Stack<>();
+        RootInt<?> root = this;
+
+        while (root instanceof Join) {
+            stack.push((Join<?, ?>) root);
+            root = ((Join<?, ?>) root).left;
+        }
+
+        result.put(root.getAlias(), root);
+
+        while (!stack.isEmpty()) {
+            Join<?, ?> join = stack.pop();
+
+            if (join.right instanceof From) {
+                result.put(join.right.getAlias(), join.right);
+
+            } else if (join.right instanceof Join) {
+                // Subtree found
+                RootInt<?> rightRoot = join.right;
+
+                // Go down to the left-most leaf of the subtree
+                while (rightRoot instanceof Join) {
+                    stack.push((Join<?, ?>) rightRoot);
+                    rightRoot = ((Join<?, ?>) rightRoot).left;
+                }
+
+                // Add the roots
+                result.put(rightRoot.getAlias(), rightRoot);
+            }
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+
+    /**
      * Get the join clauses of a join
      *
      * @param db        database
@@ -315,9 +380,10 @@ final class Join<L, R> implements Root<L> {
      * @param on        "ON" custom clause
      *
      * @return list of the clauses (each clause is composed by two elements: the first is something
-     *         like " INNER JOIN table", while the second is the "ON" expression)
+     *         like " INNER JOIN table", while the second is the "ON" expression). Note that the
+     *         left table name is not included and must be added by the caller
      */
-    private static List<Pair<String, Expression>> getJoinClauses(DatabaseObject db, JoinType type, Root<?> left, Root<?> right, Property<?, ?> property, Expression on) {
+    private static List<Pair<String, Expression>> getJoinClauses(DatabaseObject db, JoinType type, RootInt<?> left, RootInt<?> right, Property<?, ?> property, Expression on) {
         // Predefined ON clause
         if (on != null) {
             return Collections.singletonList(new Pair<>(
@@ -376,7 +442,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinColumn annotation) {
+    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinColumn annotation) {
         Pair<String, String> columnsPair = new Pair<>(
                 left.getAlias()  + "." + annotation.name(),
                 right.getAlias() + "." + annotation.referencedColumnName()
@@ -396,7 +462,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinColumns annotation) {
+    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinColumns annotation) {
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.value()) {
@@ -418,7 +484,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesLeftOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinTable annotation) {
+    private static Expression getThreeTablesLeftOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
         Expression result = null;
 
@@ -446,7 +512,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesRightOnClause(DatabaseObject db, Root<?> left, Root<?> right, JoinTable annotation) {
+    private static Expression getThreeTablesRightOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
         Expression result = null;
 
@@ -472,7 +538,7 @@ final class Join<L, R> implements Root<L> {
      *
      * @return expression
      */
-    private static Expression columnsPairToExpression(DatabaseObject db, Root<?> root, Pair<String, String> pair) {
+    private static Expression columnsPairToExpression(DatabaseObject db, RootInt<?> root, Pair<String, String> pair) {
         Variable<StringWrapper> a = new Variable<>(new StringWrapper(pair.first));
         Variable<StringWrapper> b = new Variable<>(new StringWrapper(pair.second));
 

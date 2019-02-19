@@ -7,9 +7,9 @@ import androidx.annotation.NonNull;
  */
 class Variable<T> {
 
-    private String tableAlias;
-    private Property<?, T> property;
-    private T value;
+    private final String tableAlias;
+    private final Property<?, T> property;
+    private final T value;
 
 
     /**
@@ -21,6 +21,7 @@ class Variable<T> {
     Variable(@NonNull String tableAlias, @NonNull Property<?, T> property) {
         this.tableAlias = tableAlias;
         this.property = property;
+        this.value = null;
     }
 
 
@@ -30,6 +31,8 @@ class Variable<T> {
      * @param   value       simple object value
      */
     Variable(@NonNull T value) {
+        this.tableAlias = null;
+        this.property = null;
         this.value = value;
     }
 
@@ -45,17 +48,32 @@ class Variable<T> {
 
 
     /**
-     * Get the object represented by this variable.
-     * It can be either an entity property or a simple raw value
+     * Check if the variable has a property
      *
-     * @return  data
+     * @return true if {@link #property} is set; false otherwise
      */
-    public Object getData() {
-        if (property != null) {
-            return property;
-        } else {
-            return value;
-        }
+    public boolean hasProperty() {
+        return property != null;
+    }
+
+
+    /**
+     * Get the property
+     *
+     * @return property
+     */
+    public Property<?, T> getProperty() {
+        return property;
+    }
+
+
+    /**
+     * Get the raw data
+     *
+     * @return raw data
+     */
+    public T getRawData() {
+        return value;
     }
 
 

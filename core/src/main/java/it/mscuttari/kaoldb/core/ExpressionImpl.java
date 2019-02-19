@@ -1,5 +1,8 @@
 package it.mscuttari.kaoldb.core;
 
+import java.util.Iterator;
+import java.util.Stack;
+
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,20 +15,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * @see Expression
  */
-class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
+final class ExpressionImpl implements ExpressionInt {
 
-    /**
-     * {@link ExpressionType#NONE} is used just to instantiate {@link PredicateImpl}, because it
-     * is managed as a particular expression
-     */
     public enum ExpressionType {
 
-        NONE ("",    1),
-        NOT  ("NOT", 2),
+        NOT  ("NOT", 1),
         AND  ("AND", 2),
         OR   ("OR",  2);
 
-        private String operation;
+        private final String operation;
         public final int cardinality;
 
         ExpressionType(String operation, @IntRange(from = 1, to = 2) int cardinality) {
@@ -53,25 +51,130 @@ class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
      * @param x             first expression
      * @param y             second expression
      */
-    ExpressionImpl(@NonNull  ExpressionType operation,
-                   @Nullable Expression x,
-                   @Nullable Expression y) {
+    private ExpressionImpl(@NonNull  ExpressionType operation,
+                           @NonNull  Expression x,
+                           @Nullable Expression y) {
 
         this.operation = operation;
-        this.x = operation == ExpressionType.NONE ? x : checkNotNull(x);
+        this.x =  checkNotNull(x);
         this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
 
 
-    @Override
-    public ExpressionImpl getLeft() {
-        return (ExpressionImpl) x;
+    /**
+     * Create "NOT" expression
+     *
+     * @param x     expression to be negated
+     * @return expression
+     */
+    public static Expression not(Expression x) {
+        return new ExpressionImpl(ExpressionType.NOT, x, null);
     }
 
 
+    /**
+     * Create "AND" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression and(Expression x, Expression y) {
+        return new ExpressionImpl(ExpressionType.AND, x, y);
+    }
+
+
+    /**
+     * Create "OR" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression or(Expression x, Expression y) {
+        return new ExpressionImpl(ExpressionType.OR, x, y);
+    }
+
+
+    /**
+     * Create "XOR" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression xor(Expression x, Expression y) {
+        return x.xor(y);
+    }
+
+
+    /**
+     * Create "NAND" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression nand(Expression x, Expression y) {
+        return x.nand(y);
+    }
+
+
+    /**
+     * Create "NOR" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression nor(Expression x, Expression y) {
+        return x.nor(y);
+    }
+
+
+    /**
+     * Create "XNOR" expression
+     *
+     * @param x     first expression
+     * @param y     second expression
+     *
+     * @return expression
+     */
+    public static Expression xnor(Expression x, Expression y) {
+        return x.xnor(y);
+    }
+
+
+    /**
+     * Get string representation to be used in SQL query
+     *
+     * @return string representation
+     * @throws IllegalStateException if {@link #operation} is unknown
+     */
     @Override
-    public ExpressionImpl getRight() {
-        return (ExpressionImpl) y;
+    public String toString() {
+        switch (operation) {
+            case NOT:
+                return operation + " (" + x + ")";
+
+            case AND:
+            case OR:
+                return "(" + x + ") " + operation + " (" + y + ")";
+        }
+
+        throw new IllegalStateException("Unknown expression type: " + operation);
+    }
+
+
+    @NonNull
+    @Override
+    public Iterator<PredicateImpl> iterator() {
+        return new PredicatesIterator(this);
     }
 
 
@@ -158,24 +261,69 @@ class ExpressionImpl implements Expression, TreeNode<ExpressionImpl> {
 
 
     /**
-     * Get string representation to be used in SQL query
-     *
-     * @return string representation
-     * @throws IllegalStateException if {@link #operation} is unknown
+     * Iterator to be used to get the leaves of the expressions binary tree
      */
-    @Override
-    public String toString() {
-        switch (operation) {
-            case NONE:
-            case NOT:
-                return operation + " (" + x + ")";
+    private static class PredicatesIterator implements Iterator<PredicateImpl> {
 
-            case AND:
-            case OR:
-                return "(" + x + ") " + operation + " (" + y + ")";
+        private final Stack<ExpressionImpl> stack = new Stack<>();
+        private PredicateImpl next;
+
+
+        /**
+         * Constructor
+         *
+         * @param expression    tree root
+         */
+        public PredicatesIterator(ExpressionImpl expression) {
+            stack.push(expression);
+
+            while (expression.x instanceof ExpressionImpl) {
+                stack.push((ExpressionImpl) expression.x);
+                expression = (ExpressionImpl) expression.x;
+            }
+
+            this.next = (PredicateImpl) expression.x;
         }
 
-        throw new IllegalStateException("Unknown expression type: " + operation);
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+
+        @Override
+        public PredicateImpl next() {
+            PredicateImpl result = next;
+            next = fetchNext();
+            return result;
+        }
+
+
+        /**
+         * Fetch next node
+         *
+         * @return next node
+         */
+        private PredicateImpl fetchNext() {
+            if (stack.empty())
+                return null;
+
+            ExpressionImpl expression = stack.pop();
+
+            if (expression.y instanceof PredicateImpl)
+                return (PredicateImpl) expression.y;
+
+            expression = (ExpressionImpl) expression.y;
+
+            while (expression instanceof ExpressionImpl) {
+                stack.push((ExpressionImpl) expression.x);
+                expression = (ExpressionImpl) expression.x;
+            }
+
+            return (PredicateImpl) expression.x;
+        }
+
     }
 
 }

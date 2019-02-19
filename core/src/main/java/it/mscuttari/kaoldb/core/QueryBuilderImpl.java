@@ -1,10 +1,10 @@
 package it.mscuttari.kaoldb.core;
 
-import android.text.TextUtils;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Column;
@@ -30,10 +30,10 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     // Counter for the roots got from this query builder.
     // It is used to create an unique alias for each root.
-    private int rootCounter = 0;
+    private AtomicInteger rootCounter = new AtomicInteger(0);
 
-    private Root<?> from;
-    private Expression where;
+    private RootInt<?> from;
+    private ExpressionInt where;
 
 
     /**
@@ -55,36 +55,63 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
     @Override
     public <M> Root<M> getRoot(@NonNull Class<M> entityClass) {
-        return new From<>(db, this, entityClass, "a" + rootCounter++);
+        return new From<>(db, this, entityClass, "a" + rootCounter.getAndIncrement());
     }
 
 
     @Override
     public QueryBuilder<T> from(Root<?> from) {
-        this.from = from;
+        if (!(from instanceof RootInt)) {
+            // Security check. Normally not reachable.
+            throw new IllegalArgumentException("Incompatible root");
+        }
+
+        this.from = (RootInt<?>) from;
         return this;
     }
 
 
     @Override
     public QueryBuilder<T> where(Expression where) {
-        this.where = where;
+        if (!(where instanceof ExpressionInt)) {
+            // Security check. Normally not reachable.
+            throw new IllegalArgumentException("Incompatible expression");
+        }
+
+        this.where = (ExpressionInt) where;
         return this;
     }
 
 
     @Override
-    public Query<T> build(Root<T> root) {
-        if (from == null)
+    public Query<T> build(@NonNull Root<T> root) {
+        // The "FROM" clause must be set
+        if (from == null) {
             throw new QueryException("\"From\" clause not set");
+        }
 
+        if (!(root instanceof RootInt)) {
+            // Security check. Normally not reachable.
+            throw new IllegalArgumentException("Incompatible root");
+        }
+
+        // The requested root must be in the FROM structure
+        Map<String, Root<?>> aliasRootMap = from.getRootsMap();
+
+        if (!aliasRootMap.containsKey(((RootInt<T>) root).getAlias())) {
+            throw new QueryException("The root doesn't belong to the \"FROM\" structure");
+        }
+
+        // Start the real building part
         Root<?> from = createJoinForPredicates(this.from, where);
-        String sql = "SELECT " + getSelectClause(root) + " FROM " + from;
+        String sql = "SELECT " + getSelectClause((RootInt<T>) root) +
+                     " FROM " + from;
 
-        if (where != null)
+        if (where != null) {
             sql += " WHERE " + where;
+        }
 
-        return new QueryImpl<>(db, entityManager, resultClass, root.getAlias(), sql);
+        return new QueryImpl<>(db, entityManager, resultClass, ((RootInt) root).getAlias(), sql);
     }
 
 
@@ -103,25 +130,32 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         if (where == null)
             return root;
 
-        // Just a security check. This condition should never happen
-        if (!(where instanceof ExpressionImpl))
-            return root;
+        if (!(where instanceof ExpressionInt)) {
+            // Security check. Normally not reachable.
+            throw new IllegalArgumentException("Incompatible \"WHERE\" expression");
+        }
+
+        Map<String, Root<?>> aliasRootMap = ((RootInt<?>) root).getRootsMap();
 
         // Iterate through the predicates of the expression
-        PredicatesIterator iterator = new PredicatesIterator((ExpressionImpl) where);
-
-        while (iterator.hasNext()) {
-            PredicateImpl predicate = iterator.next();
-            Object leftData = predicate.x.getData();
-
-            if (!(leftData instanceof Property))
+        for (PredicateImpl<?> predicate : (ExpressionInt) where) {
+            if (!predicate.x.hasProperty())
                 continue;
 
-            Property property = (Property) leftData;
+            Property property = predicate.x.getProperty();
 
-            if (property.columnAnnotation != null && property.columnAnnotation != Column.class) {
-                //String alias = Join.getJoinFullAlias(root.getAlias(), root.getEntityClass(), null);
-                Root<?> joinedRoot = new From<>(db, this, (Class<?>) property.fieldType, predicate.root.getAlias());
+            String referencedEntityAlias = predicate.isLeftVariableDerivedFromRoot() ?
+                    predicate.root.getAlias() :
+                    predicate.root.getAlias() + property.fieldName;
+
+            // Check if the destination root has already been joined by the user
+            if (aliasRootMap.containsKey(referencedEntityAlias)) {
+                continue;
+            }
+
+            // If not, join it
+            if (property.columnAnnotation != Column.class) {
+                Root<?> joinedRoot = new From<>(db, this, (Class<?>) property.fieldType, referencedEntityAlias);
                 root = root.join(joinedRoot, property);
             }
         }
@@ -134,18 +168,17 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
      * Get the "SELECT" clause to be used in the query
      *
      * @param root      root
-     *
      * @return "SELECT" clause
      */
-    private String getSelectClause(Root<?> root) {
-        // Check alias
-        //checkAlias(root, alias);
-
+    private String getSelectClause(RootInt<T> root) {
         List<String> columns = new ArrayList<>();
 
-        // Current entity
+        // Determine the root entity.
+        // resultClass is actually the same of root.getEntityClass(); the former is preferred to
+        // the latter in order to avoid the recursion of root.getEntityClass().
         EntityObject<?> entity = db.getEntity(resultClass);
 
+        // Current entity
         for (BaseColumnObject column : entity.columns) {
             columns.add(
                     root.getAlias() + "." + column.name +
@@ -191,35 +224,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             }
         }
 
-        return TextUtils.join(", ", columns);
-    }
-
-
-    /**
-     * Check if the alias exists and if it's linked to the correct class
-     *
-     * @param root      root
-     * @param alias     alias
-     *
-     * @return true if the alias is correct
-     *
-     * @throws QueryException if the alias has not been found or if it is linked to a class different than the result one
-     */
-    private boolean checkAlias(Root<?> root, String alias) {
-        if (root.getAlias().equals(alias)) {
-            if (root.getEntityClass().equals(resultClass)) {
-                return true;
-            } else {
-                throw new QueryException("Alias " + alias + " is linked to class " + root.getEntityClass().getSimpleName() + ". Expected class: " + resultClass.getSimpleName() + ".");
-            }
-        }
-
-        if (root instanceof Join<?, ?>) {
-            if (checkAlias(((Join<?, ?>) root).getRightRoot(), alias))
-                return true;
-        }
-
-        throw new QueryException("Alias " + alias + " not found");
+        return StringUtils.implode(columns, obj -> obj, ", ");
     }
 
 }

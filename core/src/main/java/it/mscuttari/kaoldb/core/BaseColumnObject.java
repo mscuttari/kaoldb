@@ -288,6 +288,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
                 column = null;
             }
         }
+
     }
 
 }

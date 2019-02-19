@@ -4,6 +4,7 @@ import android.util.Pair;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import androidx.annotation.IntRange;
@@ -15,7 +16,6 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
-import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -24,7 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * @see Expression
  */
-class PredicateImpl extends ExpressionImpl {
+final class PredicateImpl<T> implements ExpressionInt {
 
     private enum PredicateType {
 
@@ -35,7 +35,7 @@ class PredicateImpl extends ExpressionImpl {
         LT      ("<",       2),
         LE      ("<=",      2);
 
-        private String operation;
+        private final String operation;
         public final int cardinality;
 
         PredicateType(String operation, @IntRange(from = 1, to = 2) int cardinality) {
@@ -53,9 +53,9 @@ class PredicateImpl extends ExpressionImpl {
 
     @NonNull  private final PredicateType operation;
     @NonNull  private final DatabaseObject db;
-    @NonNull  public final Root<?> root;
-    @NonNull  public final Variable<?> x;
-    @Nullable public final Variable<?> y;
+    @NonNull  public final RootInt<?> root;
+    @NonNull  public final Variable<T> x;
+    @Nullable public final Variable<T> y;
 
 
     /**
@@ -69,16 +69,16 @@ class PredicateImpl extends ExpressionImpl {
      */
     private PredicateImpl(@NonNull  PredicateType operation,
                           @NonNull  DatabaseObject db,
-                          @NonNull  Root<?> root,
-                          @NonNull  Variable<?> x,
-                          @Nullable Variable<?> y) {
-
-        super(ExpressionType.NONE, null, null);
+                          @NonNull  RootInt<?> root,
+                          @NonNull  Variable<T> x,
+                          @Nullable Variable<T> y) {
 
         this.operation = operation;
         this.db = db;
         this.root = root;
         this.x = checkNotNull(x);
+
+        // If the cardinality is 1, y is allowed to be null because not used
         this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
 
@@ -87,12 +87,13 @@ class PredicateImpl extends ExpressionImpl {
      * Create "IS NULL" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     variable
      *
      * @return predicate
      */
-    public static PredicateImpl isNull(DatabaseObject db, Root<?> root, Variable<?> x) {
-        return new PredicateImpl(PredicateType.IS_NULL, db, root, x, null);
+    public static <T> PredicateImpl isNull(DatabaseObject db, RootInt<?> root, Variable<T> x) {
+        return new PredicateImpl<>(PredicateType.IS_NULL, db, root, x, null);
     }
 
 
@@ -100,13 +101,14 @@ class PredicateImpl extends ExpressionImpl {
      * Create "EQUALS" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     first variable
      * @param y     second variable
      *
      * @return predicate
      */
-    public static PredicateImpl eq(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.EQUAL, db, root, x, y);
+    public static <T> PredicateImpl eq(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.EQUAL, db, root, x, y);
     }
 
 
@@ -114,13 +116,14 @@ class PredicateImpl extends ExpressionImpl {
      * Create "GREATER THAN" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     first variable
      * @param y     second variable
      *
      * @return predicate
      */
-    public static PredicateImpl gt(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.GT, db, root, x, y);
+    public static <T> PredicateImpl gt(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.GT, db, root, x, y);
     }
 
 
@@ -128,13 +131,14 @@ class PredicateImpl extends ExpressionImpl {
      * Create "GREATER OR EQUALS THAN" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     first variable
      * @param y     second variable
      *
      * @return predicate
      */
-    public static PredicateImpl ge(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.GE, db, root, x, y);
+    public static <T> PredicateImpl ge(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.GE, db, root, x, y);
     }
 
 
@@ -142,13 +146,14 @@ class PredicateImpl extends ExpressionImpl {
      * Create "LESS THAN" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     first variable
      * @param y     second variable
      *
      * @return predicate
      */
-    public static PredicateImpl lt(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.LT, db, root, x, y);
+    public static <T> PredicateImpl lt(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.LT, db, root, x, y);
     }
 
 
@@ -156,21 +161,30 @@ class PredicateImpl extends ExpressionImpl {
      * Create "less or equals than" predicate
      *
      * @param db    database object
+     * @param root  root the predicate is generated from
      * @param x     first variable
      * @param y     second variable
      *
      * @return predicate
      */
-    public static PredicateImpl le(DatabaseObject db, Root<?> root, Variable<?> x, Variable<?> y) {
-        return new PredicateImpl(PredicateType.LE, db, root, x, y);
+    public static <T> PredicateImpl le(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.LE, db, root, x, y);
     }
 
 
     /**
-     * Get string representation to be used in SQL query
+     * Get the string representation to be used in SQL query
      *
-     * @return string representation
+     * Some examples:
+     *  -   a1.column IS NULL
+     *  -   a1.column = value
+     *  -   a1.column = a2.column
+     *  -   a1.column > value
+     *
+     * @return string representation of the predicate
+     *
      * @throws QueryException if the requested configuration is invalid
+     * @throws IllegalStateException if the operation cardinality is unexpected
      */
     @Override
     public String toString() {
@@ -186,31 +200,112 @@ class PredicateImpl extends ExpressionImpl {
     }
 
 
+    @NonNull
+    @Override
+    public Iterator<PredicateImpl> iterator() {
+        return new SinglePredicateIterator(this);
+    }
+
+
+    @Override
+    public Expression not() {
+        return ExpressionImpl.not(this);
+    }
+
+
+    @Override
+    public Expression and(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.and(result, expression);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public Expression or(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.or(result, expression);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public Expression xor(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.xor(result, expression);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public Expression nand(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.nand(result, expression);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public Expression nor(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.nor(result, expression);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    public Expression xnor(@NonNull Expression... expressions) {
+        Expression result = this;
+
+        for (Expression expression : expressions) {
+            result = ExpressionImpl.xnor(result, expression);
+        }
+
+        return result;
+    }
+
+
     /**
      * Get string representation of an unary predicate
      *
      * @return string representation to be used in query
      */
     private String processUnaryPredicate() {
-        StringBuilder sb = new StringBuilder();
-
-        Object data = x.getData();
-
         if (operation == PredicateType.IS_NULL) {
-            if (data instanceof Property) {
-                List<String> columns = getPropertyColumns((Property)data, x.getTableAlias());
+            if (x.hasProperty()) {
+                return StringUtils.implode(
+                        getPropertyColumns(x.getProperty(), x.getTableAlias()),
+                        obj -> obj + " " + operation,
+                        " AND "
+                );
 
-                String separator = "";
-                for (String column : columns) {
-                    sb.append(separator).append(column).append(" ").append(operation);
-                    separator = " AND ";
-                }
             } else {
-                sb.append(objectToString(data)).append(" ").append(operation);
+                return objectToString(x.getRawData()) + " " + operation;
             }
         }
 
-        return sb.toString();
+        // Normally not reachable
+        throw new IllegalStateException("Unknown predicate operation: " + operation);
     }
 
 
@@ -220,40 +315,31 @@ class PredicateImpl extends ExpressionImpl {
      * @return string representation to be used in query
      */
     private String processBinaryPredicate() {
-        StringBuilder sb = new StringBuilder();
+        if (y == null) {
+            // Security check. Normally not reachable.
+            throw new IllegalStateException("Second variable is null");
+        }
 
-        Object xData = x.getData();
-        Object yData = y.getData();
-
-        if (xData instanceof Property && yData instanceof Property) {
+        if (x.hasProperty() && y.hasProperty()) {
             // Two properties
-            List<Pair<String, String>> pairs = bindProperties(db, (Property) xData, x.getTableAlias(), (Property) yData, y.getTableAlias());
+            return StringUtils.implode(
+                    bindProperties(x.getProperty(), x.getTableAlias(), y.getProperty(), y.getTableAlias()),
+                    obj -> obj.first + operation + obj.second,
+                    " AND "
+            );
 
-            String separator = "";
-            for (Pair<String, String> pair : pairs) {
-                sb.append(separator).append(pair.first).append(operation).append(pair.second);
-                separator = " AND ";
-            }
-
-
-        } else if (xData instanceof Property) {
+        } else if (x.hasProperty()) {
             // Property + value
-            List<Pair<String, String>> pairs = bindPropertyObject(db, (Property) xData, x.getTableAlias(), yData);
-
-            String separator = "";
-            for (Pair<String, String> pair : pairs) {
-                sb.append(separator).append(pair.first).append(operation).append(pair.second);
-                separator = " AND ";
-            }
+            return StringUtils.implode(
+                    bindPropertyObject(x.getProperty(), y.getRawData()),
+                    obj -> obj.first + operation + obj.second,
+                    " AND "
+            );
 
         } else {
             // Two values
-            sb.append(objectToString(xData));
-            sb.append(operation);
-            sb.append(objectToString(yData));
+            return objectToString(x.getRawData()) + operation + objectToString(y.getRawData());
         }
-
-        return sb.toString();
     }
 
 
@@ -328,7 +414,6 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create property-property associations for the query
      *
-     * @param db            database object
      * @param xProperty     first property
      * @param xAlias        first table alias
      * @param yProperty     second property
@@ -338,7 +423,7 @@ class PredicateImpl extends ExpressionImpl {
      *
      * @throws QueryException if the requested configuration is invalid
      */
-    private static List<Pair<String, String>> bindProperties(DatabaseObject db, Property xProperty, String xAlias, Property yProperty, String yAlias) {
+    private List<Pair<String, String>> bindProperties(Property xProperty, String xAlias, Property yProperty, String yAlias) {
         List<Pair<String, String>> result = new ArrayList<>();
 
         // Get fields
@@ -421,29 +506,27 @@ class PredicateImpl extends ExpressionImpl {
     /**
      * Create property-value associations for the query
      *
-     * @param db            database object
-     * @param property      model property
-     * @param alias         table alias
      * @param obj           object value
      *
      * @return list of column-value pairs
      *
      * @throws QueryException if the requested configuration is invalid
      */
-    private static List<Pair<String, String>> bindPropertyObject(DatabaseObject db, Property<?, ?> property, String alias, Object obj) {
+    private List<Pair<String, String>> bindPropertyObject(Property<?, T> property, T obj) {
         List<Pair<String, String>> result = new ArrayList<>();
 
         // Get field
         Field field = property.getField();
 
         // Object type must be compatible with the property
-        if (!field.getType().isAssignableFrom(obj.getClass()))
+        if (!field.getType().isAssignableFrom(obj.getClass())) {
             throw new QueryException("Invalid object class");
+        }
 
         // @Column
         if (property.columnAnnotation == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
-            String column = alias + "." + annotation.name();
+            String column = root.getAlias() + "." + annotation.name();
             result.add(new Pair<>(column, objectToString(obj)));
 
             return result;
@@ -454,10 +537,14 @@ class PredicateImpl extends ExpressionImpl {
                 property.columnAnnotation == JoinColumns.class ||
                 property.columnAnnotation == JoinTable.class) {
 
-            EntityObject<?> referencedEntity = db.getEntity(property.fieldType);
+            EntityObject<T> referencedEntity = db.getEntity(property.fieldType);
+
+            String referencedEntityAlias = isLeftVariableDerivedFromRoot() ?
+                    root.getAlias() :
+                    root.getAlias() + property.fieldName;
 
             for (BaseColumnObject primaryKey : referencedEntity.columns.getPrimaryKeys()) {
-                String column = alias + "." + primaryKey.name;
+                String column = referencedEntityAlias + "." + primaryKey.name;
                 String primaryKeyValue = objectToString(primaryKey.getValue(obj));
 
                 result.add(new Pair<>(column, primaryKeyValue));
@@ -482,6 +569,57 @@ class PredicateImpl extends ExpressionImpl {
         } else {
             return String.valueOf(obj);
         }
+    }
+
+
+    /**
+     * Check if {@link #x} derives from {@link #root}
+     *
+     * @return true
+     */
+    public boolean isLeftVariableDerivedFromRoot() {
+        boolean result = x.getTableAlias().equals(root.getAlias());
+
+        if (x.hasProperty()) {
+            Property<?, ?> property = x.getProperty();
+            result &= root.getEntityClass().equals(property.fieldType);
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Fake iterator to be used to iterate on a single predicate
+     */
+    private static class SinglePredicateIterator implements Iterator<PredicateImpl> {
+
+        private PredicateImpl predicate;
+
+
+        /**
+         * Constructor
+         *
+         * @param predicate     predicate to be returned during iteration
+         */
+        public SinglePredicateIterator(PredicateImpl predicate) {
+            this.predicate = predicate;
+        }
+
+
+        @Override
+        public boolean hasNext() {
+            return predicate != null;
+        }
+
+
+        @Override
+        public PredicateImpl next() {
+            PredicateImpl result = predicate;
+            predicate = null;
+            return result;
+        }
+
     }
 
 }

@@ -12,22 +12,6 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 public interface Root<X> {
 
     /**
-     * Get the entity class the root is linked to
-     *
-     * @return entity class
-     */
-    Class<X> getEntityClass();
-
-
-    /**
-     * Get the alias used in the query for the current root
-     *
-     * @return alias
-     */
-    String getAlias();
-
-
-    /**
      * Get join root
      *
      * @param root          root to be joined
@@ -46,7 +30,7 @@ public interface Root<X> {
      *
      * @return expression
      */
-    Expression isNull(@NonNull SingleProperty<X, ?> field);
+    <T> Expression isNull(@NonNull SingleProperty<X, T> field);
 
 
     /**

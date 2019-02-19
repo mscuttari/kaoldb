@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
@@ -15,7 +17,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * @param   <X>     entity root
  */
-final class From<X> implements Root<X> {
+final class From<X> implements RootInt<X> {
 
     @NonNull private final DatabaseObject db;
     @NonNull private final QueryBuilder<?> queryBuilder;
@@ -57,7 +59,7 @@ final class From<X> implements Root<X> {
             // Resolve hierarchy joins if the hierarchy tree has not been visited yet
 
             if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
-                Root<X> root = this;
+                RootInt<X> root = this;
                 EntityObject<X> entity = db.getEntity(getEntityClass());
                 hierarchyVisited = true;
 
@@ -71,8 +73,8 @@ final class From<X> implements Root<X> {
                             Expression on = null;
 
                             for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
-                                Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                Variable<?> b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
+                                Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                                Variable b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
 
                                 Expression onParent = PredicateImpl.eq(db, this, a, b);
                                 on = on == null ? onParent : on.and(onParent);
@@ -105,8 +107,8 @@ final class From<X> implements Root<X> {
                                 Expression on = null;
 
                                 for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-                                    Variable<?> a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                    Variable<?> b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
+                                    Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                                    Variable b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
 
                                     Expression onChild = PredicateImpl.eq(db, this, a, b);
                                     on = on == null ? onChild : on.and(onChild);
@@ -155,13 +157,13 @@ final class From<X> implements Root<X> {
 
     @Override
     public <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property) {
-        return new Join<>(db, Join.JoinType.INNER, this, root, property);
+        return new Join<>(db, Join.JoinType.INNER, this, (RootInt<Y>) root, property);
     }
 
 
     @Override
-    public Expression isNull(@NonNull SingleProperty<X, ?> field) {
-        Variable<?> a = new Variable<>(alias, field);
+    public <T> Expression isNull(@NonNull SingleProperty<X, T> field) {
+        Variable<T> a = new Variable<>(alias, field);
 
         return PredicateImpl.isNull(db, this, a);
     }
@@ -169,14 +171,14 @@ final class From<X> implements Root<X> {
 
     @Override
     public <T> Expression eq(@NonNull SingleProperty<X, T> field, @Nullable T value) {
-        Variable<T> a = new Variable<>(alias, field);
-        Variable<T> b = new Variable<>(value);
-
         // Just in case the user wants to check for a null property but wrongly calls this
         // method instead of isNull
         if (value == null) {
             return isNull(field);
         }
+
+        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.eq(db, this, a, b);
     }
@@ -305,6 +307,12 @@ final class From<X> implements Root<X> {
         Variable<T> b = new Variable<>(yAlias, y);
 
         return PredicateImpl.le(db, this, a, b);
+    }
+
+
+    @Override
+    public Map<String, Root<?>> getRootsMap() {
+        return Collections.singletonMap(getAlias(), this);
     }
 
 }

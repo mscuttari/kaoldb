@@ -130,13 +130,7 @@ class EntityObject<T> {
         }
 
         result.append("Children: [");
-
-        String separator = "";
-        for (EntityObject child : children) {
-            result.append(separator).append(child.getName());
-            separator = ", ";
-        }
-
+        result.append(StringUtils.implode(children, EntityObject::getName, ", "));
         result.append("], ");
 
         result.append("Columns: ")

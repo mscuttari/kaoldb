@@ -44,7 +44,6 @@ public abstract class AbstractTest {
 
         // Entity manager
         em = kdb.getEntityManager(RuntimeEnvironment.application, databaseName);
-        em.deleteDatabase();
     }
 
 

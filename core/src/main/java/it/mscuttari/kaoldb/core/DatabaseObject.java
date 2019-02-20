@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import android.database.sqlite.SQLiteDatabase;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,30 +11,34 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
+import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 
 class DatabaseObject {
 
     /** Database name */
-    @NonNull private String name;
+    private String name;
 
     /** Database version */
-    @NonNull private Integer version;
+    private Integer version;
 
     /** Schema migrator to be used for database version changed */
-    @NonNull private Class<? extends DatabaseSchemaMigrator> migrator;
+    private Class<? extends DatabaseSchemaMigrator> migrator;
 
     /** Entities */
     private final Collection<Class<?>> classes = new HashSet<>();
 
     /** Entities mapping */
     private final Map<Class<?>, EntityObject<?>> entities = new HashMap<>();
+
+    /** Whether the database version is being changed */
+    public final AtomicBoolean upgrading = new AtomicBoolean(false);
 
 
     /**
@@ -56,7 +62,7 @@ class DatabaseObject {
      * @param name      database name
      * @throws InvalidConfigException if the name is null or empty
      */
-    public void setName(@NonNull String name) {
+    public void setName(String name) {
         LogUtils.d("[Database] setting name \"" + name + "\"");
 
         if (name == null) {
@@ -90,7 +96,7 @@ class DatabaseObject {
      * @param version       database version
      * @throws InvalidConfigException if the version is null or < 0
      */
-    public void setVersion(@NonNull Integer version) {
+    public void setVersion(Integer version) {
         LogUtils.d("[Database \"" + name + "\"] setting version " + version);
 
         if (version == null) {
@@ -124,7 +130,7 @@ class DatabaseObject {
      * @param migrator      database schema migrator
      * @throws InvalidConfigException if the schema migrator is null
      */
-    public void setSchemaMigrator(@NonNull Class<? extends DatabaseSchemaMigrator> migrator) {
+    public void setSchemaMigrator(Class<? extends DatabaseSchemaMigrator> migrator) {
         if (migrator == null) {
             throw new InvalidConfigException("Database schema migrator can't be null");
         }
@@ -309,6 +315,16 @@ class DatabaseObject {
         } catch (InterruptedException e) {
             throw new MappingException(e);
         }
+    }
+
+
+    /**
+     * Get database dump
+     *
+     * @return database dump
+     */
+    public DatabaseDump getDump(SQLiteDatabase db) {
+        return new DatabaseDumpImpl(db);
     }
 
 }

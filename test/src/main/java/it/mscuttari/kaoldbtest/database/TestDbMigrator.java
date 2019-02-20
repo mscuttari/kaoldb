@@ -1,18 +1,17 @@
 package it.mscuttari.kaoldbtest.database;
 
-import android.database.sqlite.SQLiteDatabase;
-
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
+import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 
 public class TestDbMigrator implements DatabaseSchemaMigrator {
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    public void onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
 
     }
 
     @Override
-    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    public void onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
 
     }
 

@@ -54,84 +54,97 @@ class EntityManagerImpl implements EntityManager {
         SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(context, database.getName(), null, database.getVersion()) {
             @Override
             public void onCreate(SQLiteDatabase db) {
-                for (EntityObject<?> entity : database.getEntities()) {
-                    // Entity table
-                    String entityTableCreateSQL = entity.getSQL();
+                try {
+                    db.beginTransaction();
 
-                    if (entityTableCreateSQL != null) {
-                        LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
-                        db.execSQL(entityTableCreateSQL);
-                        LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
-                    }
+                    for (EntityObject<?> entity : database.getEntities()) {
+                        // Entity table
+                        String entityTableCreateSQL = entity.getSQL();
 
-                    // Join tables
-                    for (Field field : entity.relationships) {
-                        if (!field.isAnnotationPresent(JoinTable.class))
-                            continue;
+                        if (entityTableCreateSQL != null) {
+                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
+                            db.execSQL(entityTableCreateSQL);
+                            LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
+                        }
 
-                        JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
-                        String joinTableCreateSQL = joinTableObject.getSQL();
+                        // Join tables
+                        for (Field field : entity.relationships) {
+                            if (!field.isAnnotationPresent(JoinTable.class))
+                                continue;
 
-                        if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
-                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
-                            db.execSQL(joinTableCreateSQL);
-                            LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
+                            JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
+                            String joinTableCreateSQL = joinTableObject.getSQL();
+
+                            if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
+                                LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
+                                db.execSQL(joinTableCreateSQL);
+                                LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
+                            }
                         }
                     }
+
+                    db.setTransactionSuccessful();
+
+                } catch (Exception e) {
+                    throw new DatabaseManagementException(e);
+
+                } finally {
+                    db.endTransaction();
                 }
             }
 
-
-            /**
-             * Called when the database needs to be upgraded
-             *
-             * @param db            database
-             * @param oldVersion    old database version
-             * @param newVersion    new database version
-             *
-             * @throws DatabaseManagementException if the database schema migrator can't be instantiated
-             */
             @Override
             public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
                 LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
+                database.upgrading.set(true);
+                db.beginTransaction();
+
                 try {
                     DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-                    migrator.onUpgrade(db, oldVersion, newVersion);
 
-                } catch (IllegalAccessException e) {
+                    // Apply changes one version by one
+                    for (int i = oldVersion; i < newVersion; i++) {
+                        migrator.onUpgrade(i, i + 1, database.getDump(db));
+                    }
+
+                    // Commit the changes
+                    db.setTransactionSuccessful();
+
+                } catch (Exception e) {
                     throw new DatabaseManagementException(e);
 
-                } catch (InstantiationException e) {
-                    throw new DatabaseManagementException(e);
+                } finally {
+                    db.endTransaction();
+                    database.upgrading.set(false);
                 }
 
                 LogUtils.i("[Database \"" + database.getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
             }
 
-
-            /**
-             * Called when the database needs to be downgraded
-             *
-             * @param db            database
-             * @param oldVersion    old database version
-             * @param newVersion    new database version
-             *
-             * @throws DatabaseManagementException if the database schema migrator can't be instantiated
-             */
             @Override
             public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
                 LogUtils.d("[Database \"" + database.getName() + "\"] downgrading from version " + oldVersion + " to version " + newVersion);
 
+                database.upgrading.set(true);
+                db.beginTransaction();
+
                 try {
                     DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-                    migrator.onDowngrade(db, oldVersion, newVersion);
 
-                } catch (IllegalAccessException e) {
+                    for (int i = oldVersion; i > newVersion; i--) {
+                        migrator.onDowngrade(i, i - 1, database.getDump(db));
+                    }
+
+                    // Commit the changes
+                    db.setTransactionSuccessful();
+
+                } catch (Exception e) {
                     throw new DatabaseManagementException(e);
 
-                } catch (InstantiationException e) {
-                    throw new DatabaseManagementException(e);
+                } finally {
+                    db.endTransaction();
+                    database.upgrading.set(false);
                 }
 
                 LogUtils.i("[Database \"" + database.getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);

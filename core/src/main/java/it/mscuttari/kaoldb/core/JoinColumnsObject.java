@@ -20,21 +20,44 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
      * Constructor
      *
      * @param db        database
-     * @param entity    entity the column belongs to
+     * @param entity    entity the columns belong to
      * @param field     field the columns are generated from
      */
-    public JoinColumnsObject(@NonNull DatabaseObject db,
-                             @NonNull EntityObject<?> entity,
-                             @NonNull Field field) {
+    private JoinColumnsObject(@NonNull DatabaseObject db,
+                              @NonNull EntityObject<?> entity,
+                              @NonNull Field field) {
 
         super(entity);
-
         this.field = field;
+    }
 
-        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
 
-        for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
-            add(new JoinColumnObject(db, entity, field, joinColumnAnnotation));
+    /**
+     * Create the JoinColumnsObject linked to a field annotated with {@link JoinColumns}
+     * and start the mapping process.
+     *
+     * @param db        database
+     * @param entity    entity the columns belong to
+     * @param field     field the columns are generated from
+     *
+     * @return columns container
+     */
+    public static JoinColumnsObject map(@NonNull DatabaseObject db,
+                                        @NonNull EntityObject<?> entity,
+                                        @NonNull Field field) {
+
+        JoinColumnsObject result = new JoinColumnsObject(db, entity, field);
+
+        try {
+            return result;
+
+        } finally {
+            JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+
+            for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
+                JoinColumnObject joinColumn = JoinColumnObject.map(db, entity, field, joinColumnAnnotation);
+                result.add(joinColumn);
+            }
         }
     }
 

@@ -15,10 +15,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
+
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 
 class DatabaseObject {
 
@@ -198,26 +200,8 @@ class DatabaseObject {
             throw new InvalidConfigException("Entity " + clazz.getSimpleName() + " not found");
         }
 
-        EntityObject<T> entity;
-
-        do {
-            // Try to get the entity
-            entity = (EntityObject<T>) entities.get(clazz);
-
-            if (entity == null) {
-                // Wait for the entity to be mapped
-
-                synchronized (this) {
-                    try {
-                        wait();
-                    } catch (InterruptedException e) {
-                        throw new KaolDBException(e);
-                    }
-                }
-            }
-        } while (entity == null);
-
-        return entity;
+        waitWhile(this, () -> entities.get(clazz) == null);
+        return (EntityObject<T>) entities.get(clazz);
     }
 
 
@@ -248,8 +232,10 @@ class DatabaseObject {
      * @param map   map between entity class and {@link EntityObject}
      */
     public void setEntitiesMap(Map<Class<?>, EntityObject<?>> map) {
-        this.entities.clear();
-        this.entities.putAll(map);
+        doAndNotifyAll(this, () -> {
+            this.entities.clear();
+            this.entities.putAll(map);
+        });
     }
 
 
@@ -266,12 +252,11 @@ class DatabaseObject {
      * mapping consistence
      *
      * @param classes       collection of all classes
-     * @return map between classes and entities objects
      */
     public void mapEntities(Collection<Class<?>> classes) {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
-        entities.clear();
+        doAndNotifyAll(this, entities::clear);
         ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
         try {
@@ -280,13 +265,14 @@ class DatabaseObject {
             LogUtils.v("[Database \"" + name + "\"] entities mapping: first scan to get basic data");
 
             for (Class<?> clazz : classes) {
-                mappingTasks.add(executorService.submit(() -> {
-                    entities.put(clazz, new EntityObject<>(this, clazz));
-                }));
+                Runnable action = () -> entities.put(clazz, EntityObject.map(this, clazz));
+                Future<?> task = executorService.submit(() -> doAndNotifyAll(this, action));
+                mappingTasks.add(task);
             }
 
             for (Future<?> task : mappingTasks) {
-                task.get();
+                if (!task.isDone())
+                    task.get();
             }
 
             // Second scan to setup the columns
@@ -299,13 +285,6 @@ class DatabaseObject {
 
             for (Future<?> task : columnsTasks) {
                 task.get();
-            }
-
-            // Third scan to check consistence
-            LogUtils.v("[Database \"" + name + "\"] entities mapping: third scan to check for data consistence");
-
-            for (EntityObject<?> entity : entities.values()) {
-                entity.checkConsistence();
             }
 
             LogUtils.d("[Database \"" + name + "\"] entities mapped");

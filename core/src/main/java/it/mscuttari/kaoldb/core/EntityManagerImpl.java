@@ -72,7 +72,7 @@ class EntityManagerImpl implements EntityManager {
                             if (!field.isAnnotationPresent(JoinTable.class))
                                 continue;
 
-                            JoinTableObject joinTableObject = new JoinTableObject(database, entity, field);
+                            JoinTableObject joinTableObject = JoinTableObject.map(database, entity, field);
                             String joinTableCreateSQL = joinTableObject.getSQL();
 
                             if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {

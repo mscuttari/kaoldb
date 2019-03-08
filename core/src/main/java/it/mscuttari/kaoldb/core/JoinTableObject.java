@@ -9,6 +9,9 @@ import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+
 /**
  * This class allows to group the columns belonging to the same join table
  *
@@ -51,31 +54,62 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @param entity    entity that owns the relationship
      * @param field     field the table and its columns are generated from
      */
-    public JoinTableObject(@NonNull DatabaseObject db,
-                           @NonNull EntityObject<?> entity,
-                           @NonNull Field field) {
+    private JoinTableObject(@NonNull DatabaseObject db,
+                            @NonNull EntityObject<?> entity,
+                            @NonNull Field field) {
 
         this.db                 = db;
         this.field              = field;
         this.directJoinColumns  = new Columns(entity);
         this.inverseJoinColumns = new Columns(entity);
         this.joinColumns        = new Columns(entity);
+    }
+
+
+
+    /**
+     * Create the JoinTableObject linked to a field annotated with {@link JoinTable}
+     * and start the mapping process.
+     *
+     * @param db        database the table belongs to
+     * @param entity    entity that owns the relationship
+     * @param field     field the table and its columns are generated from
+     *
+     * @return join table object
+     */
+    public static JoinTableObject map(@NonNull DatabaseObject db,
+                                      @NonNull EntityObject<?> entity,
+                                      @NonNull Field field) {
+
+        JoinTableObject result = new JoinTableObject(db, entity, field);
 
         JoinTable annotation = field.getAnnotation(JoinTable.class);
 
-        for (JoinColumn directJoinColumn : annotation.joinColumns()) {
-            BaseColumnObject column = new JoinColumnObject(db, entity, field, directJoinColumn);
+        LogUtils.d("[Table \"" + annotation.name() + "\"]: adding direct join columns");
 
-            directJoinColumns.add(column);
-            joinColumns.add(column);
+        for (JoinColumn directJoinColumn : annotation.joinColumns()) {
+            BaseColumnObject column = JoinColumnObject.map(db, entity, field, directJoinColumn);
+
+            doAndNotifyAll(result, () -> {
+                result.directJoinColumns.add(column);
+                result.joinColumns.add(column);
+            });
         }
+
+        LogUtils.d("[Table \"" + annotation.name() + "\"]: adding inverse join columns");
 
         for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
-            BaseColumnObject column = new JoinColumnObject(db, entity, field, inverseJoinColumn);
+            BaseColumnObject column = JoinColumnObject.map(db, entity, field, inverseJoinColumn);
 
-            inverseJoinColumns.add(column);
-            joinColumns.add(column);
+            doAndNotifyAll(result, () -> {
+                result.inverseJoinColumns.add(column);
+                result.joinColumns.add(column);
+            });
         }
+
+        waitWhile(entity.columns, () -> entity.columns.mappingStatus.get() != 0);
+
+        return result;
     }
 
 
@@ -84,7 +118,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     public Iterator<BaseColumnObject> iterator() {
         return new ConcatIterator<>(directJoinColumns, inverseJoinColumns);
     }
-
 
 
     /**

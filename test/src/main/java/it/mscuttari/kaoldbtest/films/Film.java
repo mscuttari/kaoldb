@@ -45,10 +45,12 @@ public abstract class Film {
     @ManyToMany
     @JoinTable(
             name = "acting",
+            joinClass = Film.class,
             joinColumns = {
                     @JoinColumn(name = "film_title", referencedColumnName = "title"),
                     @JoinColumn(name = "film_year", referencedColumnName = "year")
             },
+            inverseJoinClass = Person.class,
             inverseJoinColumns = {
                     @JoinColumn(name = "actor_first_name", referencedColumnName = "first_name"),
                     @JoinColumn(name = "actor_last_name", referencedColumnName = "last_name")

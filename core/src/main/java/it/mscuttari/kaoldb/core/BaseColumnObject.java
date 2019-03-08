@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 
+import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.exceptions.PojoException;
@@ -19,82 +20,66 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 abstract class BaseColumnObject implements ColumnsContainer {
 
     /** Database */
-    @NonNull protected final DatabaseObject db;
+    @NonNull
+    protected final DatabaseObject db;
 
     /** Entity the column belongs to */
-    @NonNull protected final EntityObject<?> entity;
+    @NonNull
+    protected final EntityObject<?> entity;
 
     /** Field the column is generated from */
-    @NonNull public final Field field;
+    @NonNull
+    public final Field field;
 
     /** Column name */
-    @NonNull public final String name;
+    public String name;
 
     /** Custom column definition */
-    @Nullable public final String customColumnDefinition;
+    @Nullable
+    public String customColumnDefinition;
 
-    /**
-     * Column type
-     *
-     * This field may contain a wrong value until the entities relationships has not been
-     * checked with the {@link EntityObject#checkConsistence()} method
-     */
-    @NonNull public Class<?> type;
+    /** Column type */
+    public Class<?> type;
 
     /** Nullable column property */
-    public boolean nullable;
+    public Boolean nullable;
 
     /** Primary key column property */
-    public final boolean primaryKey;
+    public Boolean primaryKey;
 
     /** Unique column property */
-    public final boolean unique;
+    public Boolean unique;
 
     /** Default value */
-    @Nullable public final String defaultValue;
+    @Nullable
+    public String defaultValue;
 
 
     /**
      * Constructor
      *
-     * @param db                        database
-     * @param entity                    entity the column belongs to
-     * @param field                     field the column is generated from
-     * @param name                      column name
-     * @param customColumnDefinition    column custom definition
-     * @param type                      column type
-     * @param nullable                  nullable property
-     * @param primaryKey                primary key property
-     * @param unique                    unique property
-     * @param defaultValue              default value
+     * @param db                database
+     * @param entity            entity the column belongs to
+     * @param field             field the column is generated from
+     * @param mappingPhases     number of mapping phases to be traversed before the column can
+     *                          be considered mapped
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
                             @NonNull Field field,
-                            @NonNull String name,
-                            @Nullable String customColumnDefinition,
-                            @NonNull Class<?> type,
-                            boolean nullable,
-                            boolean primaryKey,
-                            boolean unique,
-                            @Nullable String defaultValue) {
+                            @IntRange(from = 0) int mappingPhases) {
 
-        this.db                     = db;
-        this.entity                 = entity;
-        this.field                  = field;
-        this.name                   = name;
-        this.customColumnDefinition = customColumnDefinition;
-        this.type                   = type;
-        this.nullable               = nullable;
-        this.primaryKey             = primaryKey;
-        this.unique                 = unique;
-        this.defaultValue           = defaultValue;
+        this.db = db;
+        this.entity = entity;
+        this.field = field;
+        entity.columns.mappingStatus.incrementAndGet();
     }
 
 
+    @NonNull
     @Override
     public final String toString() {
-        return name + " (" + type.getSimpleName() + ")";
+        return name;
     }
 
 
@@ -114,6 +99,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
     }
 
 
+    @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new SingleColumnIterator(this);

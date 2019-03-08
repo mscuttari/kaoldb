@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +21,8 @@ import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
+
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 
 class Columns implements ColumnsContainer {
 
@@ -33,6 +37,15 @@ class Columns implements ColumnsContainer {
 
     /** Primary keys of the table (subset of {@link #columns}) */
     private final Collection<BaseColumnObject> primaryKeys = new HashSet<>();
+
+    /** Used to track the concurrent mapping. When 0, it means that all the columns have been mapped */
+    public final AtomicInteger mappingStatus = new AtomicInteger(0);
+
+    /** Whether the parent columns have been added, in case of JOINED inheritance */
+    public final AtomicBoolean joinedColumnsInherited = new AtomicBoolean(false);
+
+    /** Whether the parent columns have been added, in case of SINGLE_TABLE inheritance */
+    public final AtomicBoolean singleTableColumnsInherited = new AtomicBoolean(false);
 
 
     /**
@@ -59,23 +72,17 @@ class Columns implements ColumnsContainer {
     }
 
 
+    @NonNull
     @Override
     public String toString() {
         return columns.toString();
     }
 
 
+    @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new ColumnsIterator(columns);
-    }
-
-
-    @Override
-    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
-        for (BaseColumnObject column : this) {
-            column.fixType(entities);
-        }
     }
 
 
@@ -160,13 +167,16 @@ class Columns implements ColumnsContainer {
                 namesMap.put(column.name, column);
 
                 // Check if the column is a primary key
+                waitWhile(column, () -> column.primaryKey == null);
+
                 if (column.primaryKey)
                     primaryKeys.add(column);
 
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] added column " + column);
             }
 
-            return this.columns.add(container);
+            return columns.add(container);
+
         } finally {
             notifyAll();
         }
@@ -251,13 +261,13 @@ class Columns implements ColumnsContainer {
         Collection<ColumnsContainer> result = new HashSet<>();
 
         if (field.isAnnotationPresent(Column.class)) {
-            result.add(new SimpleColumnObject(db, entity, field));
+            result.add(SimpleColumnObject.map(db, entity, field));
 
         } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            result.add(new JoinColumnObject(db, entity, field, field.getAnnotation(JoinColumn.class)));
+            result.add(JoinColumnObject.map(db, entity, field, field.getAnnotation(JoinColumn.class)));
 
         } else if (field.isAnnotationPresent(JoinColumns.class)) {
-            result.add(new JoinColumnsObject(db, entity, field));
+            result.add(JoinColumnsObject.map(db, entity, field));
 
         } else if (field.isAnnotationPresent(JoinTable.class)) {
             // Fields annotated with @JoinTable are skipped because they don't lead to new columns.

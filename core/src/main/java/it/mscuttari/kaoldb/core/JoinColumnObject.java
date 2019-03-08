@@ -4,6 +4,7 @@ import android.content.ContentValues;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,6 +16,8 @@ import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 import static it.mscuttari.kaoldb.core.PojoAdapter.insertDataIntoContentValues;
 
 /**
@@ -25,13 +28,15 @@ import static it.mscuttari.kaoldb.core.PojoAdapter.insertDataIntoContentValues;
 final class JoinColumnObject extends BaseColumnObject {
 
     /** The {@link JoinColumn} annotation that is responsible of this column properties */
-    @NonNull private final JoinColumn annotation;
+    @NonNull
+    private final JoinColumn annotation;
 
     /**
      * Propagation actions for foreign keys
      * Null if the column is not a foreign key
      */
-    @Nullable public final Propagation propagation;
+    @Nullable
+    public Propagation propagation;
 
 
     /**
@@ -42,149 +47,76 @@ final class JoinColumnObject extends BaseColumnObject {
      * @param field         field the column is generated from
      * @param annotation    JoinColumn annotation the column is generated from
      */
-    public JoinColumnObject(@NonNull DatabaseObject db,
+    private JoinColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
                             @NonNull Field field,
                             @NonNull JoinColumn annotation) {
 
-        super(db, entity, field,
-                getColumnName(field, annotation),
-                getCustomColumnDefinition(annotation),
-                getType(field),
-                getNullableProperty(field, annotation),
-                getPrimaryKeyProperty(field),
-                getUniqueProperty(annotation),
-                getDefaultValue(annotation)
-        );
+        super(db, entity, field, 7);
 
-        this.annotation  = annotation;
-        this.propagation = initializePropagation();
+        this.annotation = annotation;
     }
 
 
     /**
-     * Get column name
+     * Create the JoinColumnObject linked to a field annotated with {@link JoinColumn}
+     * and start the mapping process.
      *
+     * @param db            database
+     * @param entity        entity the column belongs to
      * @param field         field the column is generated from
      * @param annotation    JoinColumn annotation the column is generated from
      *
-     * @return column name
+     * @return column object
      */
-    @NonNull
-    private static String getColumnName(@NonNull Field field, @NonNull JoinColumn annotation) {
-        return annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
+    public static JoinColumnObject map(@NonNull DatabaseObject db,
+                                       @NonNull EntityObject<?> entity,
+                                       @NonNull Field field,
+                                       @NonNull JoinColumn annotation) {
+
+        JoinColumnObject result = new JoinColumnObject(db, entity, field, annotation);
+        result.loadName();
+
+        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
+
+        executorService.submit(() -> {
+            result.loadCustomColumnDefinition();
+            result.loadType();
+            result.loadNullableProperty();
+            result.loadPrimaryKeyProperty();
+            result.loadUniqueProperty();
+            result.loadDefaultValue();
+            result.loadPropagationProperty();
+
+            doAndNotifyAll(entity.columns, () -> entity.columns.mappingStatus.decrementAndGet());
+        });
+
+        return result;
     }
 
 
     /**
-     * Get custom column definition
-     *
-     * @param annotation    JoinColumn annotation the column is generated from
-     * @return custom column definition (null if not provided)
+     * Determine the column name
      */
-    @Nullable
-    private static String getCustomColumnDefinition(@NonNull JoinColumn annotation) {
-        return annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+    private void loadName() {
+        String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
+        doAndNotifyAll(this, () -> name = result);
     }
 
 
     /**
-     * Get column type.
-     * The type must be checked later by using {@link #fixType(Map)}.
-     *
-     * @param field     field the column is generated from
-     * @return column type
+     * Determine the custom column definition
      */
-    @NonNull
-    private static Class<?> getType(@NonNull Field field) {
-        return field.getType();
+    private void loadCustomColumnDefinition() {
+        String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+        doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
 
 
     /**
-     * Get nullable property
-     *
-     * @param field         field the column is generated from
-     * @param annotation    JoinColumn annotation the column is generated from
-     *
-     * @return  whether the column is nullable or not
+     * Determine the column type
      */
-    private static boolean getNullableProperty(@NonNull Field field, @NonNull JoinColumn annotation) {
-        // If the columns is nullable by itself, then the relationship optionality doesn't matter
-        if (annotation.nullable())
-            return true;
-
-        // A non nullable may be null if the relationship is optional
-        if (field.isAnnotationPresent(OneToOne.class)) {
-            return field.getAnnotation(OneToOne.class).optional();
-        } else if (field.isAnnotationPresent(ManyToOne.class)) {
-            return field.getAnnotation(ManyToOne.class).optional();
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Get primary key property
-     *
-     * @param field     field the column is generated from
-     * @return whether the column is a primary key or not
-     */
-    private static boolean getPrimaryKeyProperty(@NonNull Field field) {
-        return field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
-    }
-
-
-    /**
-     * Get unique property
-     *
-     * @param annotation    JoinColumn annotation the column is generated from
-     * @return whether the column value should be unique or not
-     */
-    private static boolean getUniqueProperty(@NonNull JoinColumn annotation) {
-        return annotation.unique();
-    }
-
-
-    /**
-     * Get default value
-     *
-     * @param annotation    JoinColumn annotation the column is generated from
-     * @return column default value (null if not provided)
-     */
-    @Nullable
-    private static String getDefaultValue(@NonNull JoinColumn annotation) {
-        return annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
-    }
-
-
-    /**
-     * Get the foreign key policy to be used during the table creation phase
-     *
-     * @return SQL statement (null if there is no custom column definition)
-     */
-    private Propagation initializePropagation() {
-        if (field.isAnnotationPresent(JoinTable.class)) {
-            return new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
-        }
-
-        if (nullable) {
-            return new Propagation(Propagation.Action.CASCADE, Propagation.Action.SET_NULL);
-        } else {
-            return new Propagation(Propagation.Action.CASCADE, Propagation.Action.RESTRICT);
-        }
-    }
-
-
-    @Override
-    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
-        // Class doesn't have column field
-        if (field == null)
-            return;
-
-        // Determine the correct column type
-
+    private void loadType() {
         Class<?> referencedClass = null;
         String referencedColumnName = null;
 
@@ -192,8 +124,8 @@ final class JoinColumnObject extends BaseColumnObject {
             // The linked column directly belongs to the linked entity class, so to determine the
             // column type is sufficient to search for that foreign key and get its type
 
+            referencedClass = field.getType();
             referencedColumnName = annotation.referencedColumnName();
-            referencedClass = type;
 
         } else if (field.isAnnotationPresent(JoinTable.class)) {
             // The linked column belongs to a middle join table, so to determine the column type
@@ -220,34 +152,120 @@ final class JoinColumnObject extends BaseColumnObject {
             }
 
             if (direct) {
-                referencedClass = field.getDeclaringClass();
+                referencedClass = joinTableAnnotation.joinClass();
             } else {
-                referencedClass = type;
+                referencedClass = joinTableAnnotation.inverseJoinClass();
             }
         }
 
         if (referencedClass == null) {
-            // Normally not reachable. Just a security check
+            // Security check. Normally not reachable.
             throw new InvalidConfigException("Field \"" + field.getName() + "\": can't determine the referenced class");
         }
 
         // Search the referenced column
-        EntityObject<?> referencedEntity = entities.get(referencedClass);
-
-        if (referencedEntity == null)
+        if (!db.getEntityClasses().contains(referencedClass))
             throw new InvalidConfigException("Field \"" + field.getName() + "\": \"" + referencedClass.getSimpleName() + "\" is not an entity");
 
+        EntityObject<?> referencedEntity = db.getEntity(referencedClass);
         BaseColumnObject referencedColumn = null;
 
         while (referencedEntity != null && referencedColumn == null) {
-            referencedColumn = referencedEntity.columns.getNamesMap().get(referencedColumnName);
+            Map<String, BaseColumnObject> namesMap = referencedEntity.columns.getNamesMap();
+            String refColName = referencedColumnName;
+
+            // Wait for the referenced column to be mapped
+            waitWhile(referencedEntity.columns, () -> namesMap.get(refColName) == null);
+            referencedColumn = namesMap.get(referencedColumnName);
+
+            // Go up in entity hierarchy
             referencedEntity = referencedEntity.parent;
         }
 
-        if (referencedColumn == null)
+        if (referencedColumn == null) {
             throw new InvalidConfigException("Field \"" + field.getName() + "\": referenced column \"" + referencedColumnName + "\" not found");
+        }
 
-        this.type = referencedColumn.type;
+        BaseColumnObject column = referencedColumn;
+
+        // Wait for the referenced column type to be determined
+        waitWhile(column, () -> column.type == null);
+
+        // Save the current column type
+        doAndNotifyAll(this, () -> type = column.type);
+    }
+
+
+    /**
+     * Determine whether the column is nullable or not
+     */
+    private void loadNullableProperty() {
+        boolean result;
+
+        if (annotation.nullable()) {
+            // If the columns is nullable by itself, then the relationship optionality doesn't matter
+            result = true;
+
+        } else {
+            // A non nullable column may be null if the relationship is optional
+
+            if (field.isAnnotationPresent(OneToOne.class)) {
+                result = field.getAnnotation(OneToOne.class).optional();
+
+            } else if (field.isAnnotationPresent(ManyToOne.class)) {
+                result = field.getAnnotation(ManyToOne.class).optional();
+
+            } else {
+                result = false;
+            }
+        }
+
+        doAndNotifyAll(this, () -> nullable = result);
+    }
+
+
+    /**
+     * Determine whether the column is a primary key or not
+     */
+    private void loadPrimaryKeyProperty() {
+        boolean result = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
+        doAndNotifyAll(this, () -> primaryKey = result);
+    }
+
+
+    /**
+     * Determine whether the column value should be unique or not
+     */
+    private void loadUniqueProperty() {
+        boolean result = annotation.unique();
+        doAndNotifyAll(this, () -> unique = result);
+    }
+
+
+    /**
+     * Determine the default value
+     */
+    private void loadDefaultValue() {
+        String result = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
+        doAndNotifyAll(this, () -> defaultValue = result);
+    }
+
+
+    /**
+     * Determine the propagation property
+     */
+    private void loadPropagationProperty() {
+        if (field.isAnnotationPresent(JoinTable.class)) {
+            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
+        }
+
+        waitWhile(this, () -> nullable == null);
+
+        if (nullable) {
+            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.SET_NULL);
+        } else {
+            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.RESTRICT);
+        }
     }
 
 

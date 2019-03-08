@@ -1,5 +1,6 @@
 package it.mscuttari.kaoldb.processor;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -8,6 +9,9 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.type.TypeMirror;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -164,6 +168,10 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
      *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
      *  -   The field is annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
      *      {@link ManyToMany} annotations.
+     *  -   The {@link JoinTable#joinClass()} is the same of the declaring class.
+     *  -   The {@link JoinTable#inverseJoinClass()} is the same of the field type (in case of
+     *      {@link OneToOne} and {@link ManyToOne}) or the same of Collection elements type (in
+     *      case of {@link OneToMany} and {@link ManyToMany}).
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -179,6 +187,52 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
 
         if (oneToOneAnnotation == null && oneToManyAnnotation == null && manyToOneAnnotation == null && manyToManyAnnotation == null) {
             throw new ProcessorException("Field annotated with @JoinColumn must be annotated with @OneToOne, @OneToMany, @ManyToOne or @ManyToMany", field);
+        }
+
+        // Check the joinClass and the inverseJoinClass values
+        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+
+        // Direct join class
+        TypeMirror joinClass = null;
+
+        try {
+            joinTableAnnotation.joinClass();
+        } catch (MirroredTypeException e) {
+            joinClass = e.getTypeMirror();
+        }
+
+        TypeMirror enclosingClass = field.getEnclosingElement().asType();
+
+        if (!enclosingClass.equals(joinClass)) {
+            throw new ProcessorException("Invalid joinClass: expected " + enclosingClass + ", found " + joinClass, field);
+        }
+
+        // Inverse join class
+        TypeMirror inverseJoinClass = null;
+
+        try {
+            joinTableAnnotation.inverseJoinClass();
+        } catch (MirroredTypeException e) {
+            inverseJoinClass = e.getTypeMirror();
+        }
+
+        TypeMirror fieldType = field.asType();
+
+        if (oneToOneAnnotation != null || manyToOneAnnotation != null) {
+            if (!fieldType.equals(inverseJoinClass)) {
+                throw new ProcessorException("Invalid inverseJoinClass: expected " + fieldType + ", found " + inverseJoinClass, field);
+            }
+
+        } else {
+            List<? extends TypeMirror> collectionInterfaceArguments = ((DeclaredType) fieldType).getTypeArguments();
+
+            if (collectionInterfaceArguments.size() != 0) {
+                TypeMirror linkedClass = collectionInterfaceArguments.get(0);
+
+                if (!linkedClass.equals(inverseJoinClass)) {
+                    throw new ProcessorException("Invalid inverseJoinClass: expected " + linkedClass + ", found " + inverseJoinClass, field);
+                }
+            }
         }
     }
 

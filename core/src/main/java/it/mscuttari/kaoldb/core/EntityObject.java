@@ -5,11 +5,8 @@ import android.text.TextUtils;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,8 +25,11 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -38,51 +38,53 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 class EntityObject<T> {
 
     /** Database the entity belongs to */
-    @NonNull public final DatabaseObject db;
+    public final DatabaseObject db;
 
     /** Entity class */
-    @NonNull public final Class<T> clazz;
+    public final Class<T> clazz;
 
     /**
      * Inheritance type.
      * Null if the entity has no children.
      */
-    @Nullable public InheritanceType inheritanceType;
-    private final AtomicBoolean joinedColumnsInherited      = new AtomicBoolean(false);
-    private final AtomicBoolean singleTableColumnsInherited = new AtomicBoolean(false);
+    @Nullable
+    public InheritanceType inheritanceType;
+
 
     /**
      * Parent entity.
      * Null if the entity has no parent.
      */
-    @Nullable public final EntityObject<? super T> parent;
+    @Nullable
+    public EntityObject<? super T> parent;
 
     /**
      * Discriminator value.
      * Null if the entity has no parent.
      */
-    @Nullable public Object discriminatorValue;
+    @Nullable
+    public Object discriminatorValue;
 
     /** Children entities */
-    @NonNull public final Collection<EntityObject<? extends T>> children = new HashSet<>();
+    @NonNull
+    public Collection<EntityObject<? extends T>> children = new HashSet<>();
 
     /** Whether the entity has a real table or not */
-    @NonNull public final Boolean realTable;
+    public Boolean realTable;
 
     /**
      * Table name.
      * Null if the entity doesn't require a real table.
      */
-    @Nullable public final String tableName;
+    @Nullable
+    public String tableName;
 
     /** Columns of the table */
-    @NonNull public final Columns columns = new Columns(this);
+    public Columns columns = new Columns(this);
 
-    /**
-     * Discriminator column.
-     * Null until the entities relationships has not been checked with {@link EntityObject#checkConsistence()}.
-     */
-    @Nullable public BaseColumnObject discriminatorColumn;
+    /** Discriminator column */
+    @Nullable
+    public BaseColumnObject discriminatorColumn;
 
     /**
      * Relationships
@@ -91,7 +93,7 @@ class EntityObject<T> {
      * excluded) that are annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne}
      * or {@link ManyToMany}.
      */
-    @NonNull public final Collection<Field> relationships;
+    public Collection<Field> relationships = new HashSet<>();
 
 
     /**
@@ -100,47 +102,46 @@ class EntityObject<T> {
      * @param db        database the entity belongs to
      * @param clazz     entity class
      */
-    public EntityObject(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
+    private EntityObject(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
         this.db = db;
-        this.clazz = clazz;
+        this.clazz = checkNotNull(clazz);
+    }
 
-        synchronized (this.db) {
-            this.inheritanceType = getInheritanceType();
-            this.parent = getParent();
-            this.discriminatorValue = getDiscriminatorValue();
-            this.realTable = isRealTable();
-            this.tableName = getTableName();
-            this.relationships = getRelationships();
+
+    /**
+     * Create the entity object linked to an entity class and start the mapping process.
+     *
+     * @param db        database the entity belongs to
+     * @param clazz     entity class
+     * @param <T>       entity class
+     *
+     * @return entity object
+     */
+    public static <T> EntityObject<T> map(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
+        EntityObject<T> result = new EntityObject<>(db, clazz);
+
+        try {
+            return result;
+
+        } finally {
+            result.loadInheritanceType();
+            result.loadParent();
+            result.loadDiscriminatorValue();
+            result.loadTableExistence();
+            result.loadTableName();
+            result.loadRelationships();
         }
     }
 
 
+    @NonNull
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
-
-        result.append("Class: ")
-                .append(getName())
-                .append(", ");
-
-        if (parent != null) {
-            result.append("Parent: ")
-                    .append(parent.getName())
-                    .append(", ");
-        }
-
-        result.append("Children: [");
-        result.append(StringUtils.implode(children, EntityObject::getName, ", "));
-        result.append("], ");
-
-        result.append("Columns: ")
-                .append(columns)
-                .append(", ");
-
-        result.append("Primary keys: ")
-                .append(columns.getPrimaryKeys());
-
-        return result.toString();
+        return "Class: " + getName() + ", " +
+                "Parent: " + (parent == null ? "null" : parent.getName()) + ", " +
+                "Children: {" + StringUtils.implode(children, EntityObject::getName, ", ") + "}, " +
+                "Columns: {" + columns + "}, " +
+                "Primary keys: {" + columns.getPrimaryKeys() + "}";
     }
 
 
@@ -150,9 +151,7 @@ class EntityObject<T> {
             return false;
 
         EntityObject entityObject = (EntityObject) obj;
-
-        return (clazz == null && entityObject.clazz == null) ||
-                (clazz != null && clazz.equals(entityObject.clazz));
+        return clazz.equals(entityObject.clazz);
     }
 
 
@@ -173,194 +172,134 @@ class EntityObject<T> {
 
 
     /**
-     * Get inheritance type
-     *
-     * @return inheritance type
+     * Determine the inheritance type
      */
-    @Nullable
-    private InheritanceType getInheritanceType() {
-        try {
-            if (!clazz.isAnnotationPresent(Inheritance.class))
-                return null;
-
-            Inheritance inheritance = clazz.getAnnotation(Inheritance.class);
-            return inheritance.strategy();
-
-        } finally {
-            db.notifyAll();
-        }
+    private void loadInheritanceType() {
+        Inheritance annotation = clazz.getAnnotation(Inheritance.class);
+        InheritanceType type = annotation == null ? null : annotation.strategy();
+        doAndNotifyAll(this, () -> inheritanceType = type);
     }
 
 
     /**
-     * Determine if the class is linked to a real table
-     *
-     * @return true if a table should exists for this class; false if not
-     * @throws MappingException if a newly implemented inheritance type is not taken into consideration
+     * Determine if the class is linked to a real table.
+     * Must be called after {@link #loadParent()}.
      */
-    private boolean isRealTable() {
-        try {
-            if (inheritanceType == null) {
-                try {
-                    Class<?> superClass = clazz.getSuperclass();
-                    Collection<Class<?>> classes = db.getEntityClasses();
+    private void loadTableExistence() {
+        boolean result;
 
-                    while (superClass != Object.class) {
-                        if (classes.contains(superClass)) {
-                            EntityObject parent = db.getEntity(superClass);
-                            return parent.inheritanceType != InheritanceType.SINGLE_TABLE;
-                        }
+        if (parent == null) {
+            result = true;
 
-                        superClass = superClass.getSuperclass();
-                    }
-
-                    return true;
-
-                } catch (Exception e) {
-                    throw new MappingException(e);
-                }
-            }
-
-            switch (inheritanceType) {
-                case SINGLE_TABLE:
-                case JOINED:
-                    if (parent == null)
-                        return true;
-
-                    while (parent.inheritanceType == null) {
-                        try {
-                            db.wait();
-                        } catch (InterruptedException e) {
-                            throw new MappingException(e);
-                        }
-                    }
-
-                    return parent.inheritanceType != InheritanceType.SINGLE_TABLE;
-            }
-
-            throw new MappingException("Inheritance type not found");
-
-        } finally {
-            db.notifyAll();
+        } else {
+            waitWhile(parent, () -> parent.inheritanceType == null);
+            result = parent.inheritanceType != InheritanceType.SINGLE_TABLE;
         }
+
+        doAndNotifyAll(this, () -> realTable = result);
     }
 
 
     /**
-     * Get table name
+     * Determine the table name
      *
      * If the table is not specified, the following policy is applied:
      * Uppercase characters are replaces with underscore followed by the same character converted to lowercase
      * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
      * Example: ModelClassName => model_class_name
      *
-     * @return table name (null if the class doesn't need a real table)
      * @throws InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
      */
-    @Nullable
-    private String getTableName() {
-        try {
-            if (!clazz.isAnnotationPresent(Table.class)) {
-                if (realTable) {
-                    throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have the @Table annotation");
-                } else {
-                    return null;
-                }
+    private void loadTableName() {
+        String result;
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+
+        if (tableAnnotation == null) {
+            waitWhile(this, () -> realTable == null);
+
+            if (realTable) {
+                throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have the @Table annotation");
+            } else {
+                result = null;
             }
 
-            // Get specified table tableName
-            Table table = clazz.getAnnotation(Table.class);
-            if (!table.name().isEmpty()) return table.name();
-            LogUtils.w(clazz.getSimpleName() + ": table tableName not specified, using the default one based on class tableName");
+        } else if (!tableAnnotation.name().isEmpty()) {
+            // Get specified table name
+            result = tableAnnotation.name();
 
-            // Default table tableName
+        } else {
+            // Default table name
+            LogUtils.w(clazz.getSimpleName() + ": table tableName not specified, using the default one based on class name");
+
             String className = clazz.getSimpleName();
             char c[] = className.toCharArray();
             c[0] = Character.toLowerCase(c[0]);
             className = new String(c);
-            return className.replaceAll("([A-Z])", "_$1").toLowerCase();
-
-        } finally {
-            db.notifyAll();
+            result = className.replaceAll("([A-Z])", "_$1").toLowerCase();
         }
+
+        doAndNotifyAll(this, () -> tableName = result);
     }
 
 
     /**
-     * Get the parent entity and eventually add this entity to its children
-     *
-     * @return parent entity (null if there is no parent entity)
+     * Determine the parent entity and eventually add this entity to its children
      */
-    @Nullable
-    private EntityObject getParent() {
-        try {
-            Class<?> superClass = clazz.getSuperclass();
-            EntityObject parent = null;
+    private void loadParent() {
+        EntityObject<? super T> parent = null;
+        Class<? super T> superClass = clazz.getSuperclass();
+        Collection<Class<?>> classes = db.getEntityClasses();
 
-            while (superClass != Object.class && parent == null) {
+        while (superClass != null && superClass != Object.class && parent == null) {
+            // We need to check if the current class is one of the mapped classes,
+            // because there could be non-entity classes between the child and the
+            // parent entities.
+
+            if (classes.contains(superClass)) {
                 parent = db.getEntity(superClass);
-                superClass = superClass.getSuperclass();
             }
 
-            if (parent != null)
-                parent.children.add(this);
-
-            return parent;
-
-        } finally {
-            db.notifyAll();
+            // Go up in the class hierarchy (which can be, as explained before,
+            // different from entity hierarchy.
+            superClass = superClass.getSuperclass();
         }
+
+        if (parent != null) {
+            parent.children.add(this);
+        }
+
+        EntityObject<? super T> result = parent;
+        doAndNotifyAll(this, () -> this.parent = result);
     }
 
 
     /**
-     * Get discriminator value
-     *
-     * @return discriminator vale (null if the entity doesn't have a parent)
+     * Determine the discriminator value
      */
-    @Nullable
-    private Object getDiscriminatorValue() {
-        try {
-            if (!clazz.isAnnotationPresent(DiscriminatorValue.class))
-                return null;
-
-            DiscriminatorValue annotation = clazz.getAnnotation(DiscriminatorValue.class);
-            return annotation.value();
-
-        } finally {
-            db.notifyAll();
-        }
+    private void loadDiscriminatorValue() {
+        DiscriminatorValue annotation = clazz.getAnnotation(DiscriminatorValue.class);
+        Object value = annotation == null ? null : annotation.value();
+        doAndNotifyAll(this, () -> discriminatorValue = value);
     }
 
 
     /**
-     * Get entity relationships fields
+     * Determine the relationships fields
      *
      * Each field is considered a relationship one if it is annotated with {@link OneToOne},
      * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
-     *
-     * @return relationships fields
      */
-    private Collection<Field> getRelationships() {
-        try {
-            Collection<Field> relationships = new HashSet<>();
+    private void loadRelationships() {
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
 
-            for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
+            if (field.isAnnotationPresent(OneToOne.class) ||
+                    field.isAnnotationPresent(OneToMany.class) ||
+                    field.isAnnotationPresent(ManyToOne.class) ||
+                    field.isAnnotationPresent(ManyToMany.class)) {
 
-                if (field.isAnnotationPresent(OneToOne.class) ||
-                        field.isAnnotationPresent(OneToMany.class) ||
-                        field.isAnnotationPresent(ManyToOne.class) ||
-                        field.isAnnotationPresent(ManyToMany.class)) {
-
-                    relationships.add(field);
-                }
+                doAndNotifyAll(this, () -> relationships.add(field));
             }
-
-            return Collections.unmodifiableCollection(relationships);
-
-        } finally {
-            db.notifyAll();
         }
     }
 
@@ -375,12 +314,12 @@ class EntityObject<T> {
         Collection<Collection<BaseColumnObject>> result = new ArrayList<>();
 
         // Single unique column constraints
-        Columns columns = new Columns(this);
-        columns.addAll(this.columns);
+        Columns columns = new Columns(this, this.columns.getColumns());
 
         // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
-        if (clazz.isAnnotationPresent(Table.class)) {
-            Table table = clazz.getAnnotation(Table.class);
+        Table table = clazz.getAnnotation(Table.class);
+
+        if (table != null) {
             UniqueConstraint[] uniqueConstraints = table.uniqueConstraints();
 
             for (UniqueConstraint uniqueConstraint : uniqueConstraints) {
@@ -401,7 +340,7 @@ class EntityObject<T> {
 
         // Children constraints (in case of SINGLE_TABLE inheritance strategy)
         if (inheritanceType == InheritanceType.SINGLE_TABLE) {
-            for (EntityObject child : children) {
+            for (EntityObject<? extends T> child : children) {
                 Collection<Collection<BaseColumnObject>> childConstrains = child.getMultipleUniqueColumns();
                 result.addAll(childConstrains);
             }
@@ -446,44 +385,31 @@ class EntityObject<T> {
             // In fact, those annotations should only map the existing table columns to the join table ones.
         }
 
-        try {
-            // Parent inherited primary keys (in case of JOINED inheritance strategy)
-            synchronized (joinedColumnsInherited) {
-                if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
-                    synchronized (parent.joinedColumnsInherited) {
-                        while (!parent.joinedColumnsInherited.get()) {
-                            parent.joinedColumnsInherited.wait();
-                        }
-                    }
+        waitWhile(columns, () -> columns.mappingStatus.get() != 0);
+        LogUtils.i("[Entity \"" + getName() + "\"] own columns mapped");
 
-                    columns.addAll(parent.columns.getPrimaryKeys());
-                }
 
-                joinedColumnsInherited.set(true);
-                joinedColumnsInherited.notifyAll();
-            }
-
-            // Children columns (in case of SINGLE_TABLE inheritance strategy)
-            synchronized (singleTableColumnsInherited) {
-                if (inheritanceType == InheritanceType.SINGLE_TABLE) {
-                    for (EntityObject child : children) {
-                        synchronized (child.singleTableColumnsInherited) {
-                            while (!child.singleTableColumnsInherited.get()) {
-                                child.singleTableColumnsInherited.wait();
-                            }
-
-                            columns.addAll(child.columns);
-                        }
-                    }
-                }
-
-                singleTableColumnsInherited.set(true);
-                singleTableColumnsInherited.notifyAll();
-            }
-
-        } catch (InterruptedException e) {
-            throw new MappingException(e);
+        // Parent inherited primary keys (in case of JOINED inheritance strategy)
+        if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
+            waitWhile(parent.columns, () -> !parent.columns.joinedColumnsInherited.get());
+            columns.addAll(parent.columns.getPrimaryKeys());
         }
+
+        doAndNotifyAll(columns, () -> columns.joinedColumnsInherited.set(true));
+        LogUtils.i("[Entity \"" + getName() + "\"] JOINED inherited columns added");
+
+
+        // Children columns (in case of SINGLE_TABLE inheritance strategy)
+        if (inheritanceType == InheritanceType.SINGLE_TABLE) {
+            for (EntityObject child : children) {
+                waitWhile(child, () -> !child.columns.singleTableColumnsInherited.get());
+                columns.addAll(child.columns);
+            }
+        }
+
+        doAndNotifyAll(columns, () -> columns.singleTableColumnsInherited.set(true));
+        LogUtils.i("[Entity \"" + getName() + "\"] SINGLE_TABLE inherited columns added");
+
 
         // Discriminator column
         if (children.size() != 0) {
@@ -494,6 +420,12 @@ class EntityObject<T> {
                 throw new InvalidConfigException("Class " + getName() + " has @Inheritance annotation but not @DiscriminatorColumn");
 
             DiscriminatorColumn discriminatorColumnAnnotation = clazz.getAnnotation(DiscriminatorColumn.class);
+
+            if (discriminatorColumnAnnotation == null) {
+                // Security check. Normally not reachable
+                throw new MappingException("Class " + getName() + " doesn't have @DiscriminatorColumn annotation");
+            }
+
             if (discriminatorColumnAnnotation.name().isEmpty())
                 throw new InvalidConfigException("Class " + getName() + ": empty discriminator column");
 
@@ -502,40 +434,25 @@ class EntityObject<T> {
             if (discriminatorColumn == null)
                 throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
 
-            discriminatorColumn.nullable = false;
+            doAndNotifyAll(discriminatorColumn, () -> discriminatorColumn.nullable = false);
+
+            // Fix the discriminator value type
+            for (EntityObject<? extends T> child : children) {
+                doAndNotifyAll(child, () -> {
+                    assert child.discriminatorValue != null;
+
+                    switch (discriminatorColumnAnnotation.discriminatorType()) {
+                        case INTEGER:
+                            child.discriminatorValue = Integer.valueOf((String) child.discriminatorValue);
+                            break;
+                    }
+                });
+            }
         }
 
         // Discriminator value
         if (parent != null && discriminatorValue == null) {
             throw new InvalidConfigException("Class " + getName() + " doesn't have @DiscriminatorValue annotation");
-        }
-    }
-
-
-    /**
-     * Check entity consistence
-     *
-     * @throws KaolDBException if the configuration is invalid
-     */
-    void checkConsistence() {
-        Map<Class<?>, EntityObject<?>> entities = db.getEntitiesMap();
-
-        // Fix join columns types
-        for (ColumnsContainer column : this.columns) {
-            column.fixType(entities);
-        }
-
-        // Fix discriminator value type
-        if (discriminatorColumn != null) {
-            DiscriminatorColumn discriminatorColumnAnnotation = this.clazz.getAnnotation(DiscriminatorColumn.class);
-
-            for (EntityObject child : this.children) {
-                switch (discriminatorColumnAnnotation.discriminatorType()) {
-                    case INTEGER:
-                        child.discriminatorValue = Integer.valueOf((String)child.discriminatorValue);
-                        break;
-                }
-            }
         }
     }
 

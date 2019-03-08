@@ -3,12 +3,13 @@ package it.mscuttari.kaoldb.core;
 import android.content.ContentValues;
 
 import java.lang.reflect.Field;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Id;
+
+import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 
 /**
  * This class allows to map a column acting as a basic entity attribute
@@ -24,115 +25,116 @@ final class SimpleColumnObject extends BaseColumnObject {
      * @param entity    entity the column belongs to
      * @param field     field the column is generated from
      */
-    public SimpleColumnObject(@NonNull DatabaseObject db,
-                              @NonNull EntityObject<?> entity,
-                              @NonNull Field field) {
+    private SimpleColumnObject(@NonNull DatabaseObject db,
+                               @NonNull EntityObject<?> entity,
+                               @NonNull Field field) {
 
-        super(db, entity, field,
-                getColumnName(field),
-                getCustomColumnDefinition(field),
-                getType(field),
-                getNullableProperty(field),
-                getPrimaryKeyProperty(field),
-                getUniqueProperty(field),
-                getDefaultValue(field)
-        );
+        super(db, entity, field, 6);
     }
 
 
     /**
-     * Get column name
+     * Create the SimpleColumnObject linked to a field annotated with {@link Column}
+     * and start the mapping process.
      *
+     * @param db        database
+     * @param entity    entity the column belongs to
      * @param field     field the column is generated from
-     * @return column name
+     *
+     * @return column object
      */
-    @NonNull
-    private static String getColumnName(@NonNull Field field) {
+    public static SimpleColumnObject map(@NonNull DatabaseObject db,
+                                         @NonNull EntityObject<?> entity,
+                                         @NonNull Field field) {
+
+        SimpleColumnObject result = new SimpleColumnObject(db, entity, field);
+        result.loadName();
+
+        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
+
+        executorService.submit(() -> {
+            result.loadCustomColumnDefinition();
+            result.loadType();
+            result.loadNullableProperty();
+            result.loadPrimaryKeyProperty();
+            result.loadUniqueProperty();
+            result.loadDefaultValue();
+
+            doAndNotifyAll(entity.columns, () -> entity.columns.mappingStatus.decrementAndGet());
+        });
+
+        return result;
+    }
+
+
+    /**
+     * Determine the column name
+     */
+    private void loadName() {
         Column annotation = field.getAnnotation(Column.class);
-        return annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
+        String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
+        doAndNotifyAll(this, () -> name = result);
     }
 
 
     /**
-     * Get custom column definition
-     *
-     * @param field     field the column is generated from
-     * @return custom column definition (null if not provided)
+     * Determine the custom column definition
      */
-    @Nullable
-    private static String getCustomColumnDefinition(@NonNull Field field) {
+    private void loadCustomColumnDefinition() {
         Column annotation = field.getAnnotation(Column.class);
-        return annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+        String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
+        doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
 
 
     /**
-     * Get column type
-     *
-     * @param field     field the column is generated from
-     * @return column type
+     * Determine the column type
      */
-    @NonNull
-    private static Class<?> getType(@NonNull Field field) {
-        return field.getType();
+    private void loadType() {
+        Class<?> result = field.getType();
+        doAndNotifyAll(this, () -> type = result);
     }
 
 
     /**
-     * Get nullable property
-     *
-     * @param field     field the column is generated from
-     * @return whether the column is nullable or not
+     * Determine whether the column is nullable or not
      */
-    private static boolean getNullableProperty(@NonNull Field field) {
+    private void loadNullableProperty() {
         Column annotation = field.getAnnotation(Column.class);
-        return annotation.nullable();
+        boolean result = annotation.nullable();
+        doAndNotifyAll(this, () -> nullable = result);
     }
 
 
     /**
-     * Get primary key property
-     *
-     * @param field     field the column is generated from
-     * @return whether the column is a primary key or not
+     * Determine whether the column is a primary key or not
      */
-    private static boolean getPrimaryKeyProperty(@NonNull Field field) {
-        return field.isAnnotationPresent(Id.class);
+    private void loadPrimaryKeyProperty() {
+        boolean result = field.isAnnotationPresent(Id.class);
+        doAndNotifyAll(this, () -> primaryKey = result);
     }
 
 
     /**
-     * Get unique property
-     *
-     * @param field     field the column is generated from
-     * @return whether the column value should be unique or not
+     * Determine whether the column value should be unique or not
      */
-    private static boolean getUniqueProperty(@NonNull Field field) {
+    private void loadUniqueProperty() {
         Column annotation = field.getAnnotation(Column.class);
-        return annotation.unique();
+        boolean result = annotation.unique();
+        doAndNotifyAll(this, () -> unique = result);
     }
 
 
     /**
-     * Get default value
+     * Determine the default value
      *
      * The value is stored as a string in order to be ready for SQL statement generation.
      * // TODO: check for data type compatibility
-     *
-     * @param field     field the column is generated from
-     * @return column default value (null if not provided)
      */
-    @Nullable
-    private static String getDefaultValue(@NonNull Field field) {
+    private void loadDefaultValue() {
         Column annotation = field.getAnnotation(Column.class);
-        return annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
-    }
-
-
-    @Override
-    public void fixType(Map<Class<?>, EntityObject<?>> entities) {
-        // Nothing to be done. The column represent a basic entity attribute and therefore its
-        // type is directly the field one (e.g. String or Integer).
+        String result = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
+        doAndNotifyAll(this, () -> defaultValue = result);
     }
 
 

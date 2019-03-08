@@ -11,4 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface JoinTable {
 
+    Class<?> joinClass();
+    Class<?> inverseJoinClass();
+
 }

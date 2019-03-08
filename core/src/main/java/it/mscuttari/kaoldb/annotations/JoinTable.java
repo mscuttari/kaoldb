@@ -11,7 +11,9 @@ import java.lang.annotation.Target;
 public @interface JoinTable {
 
     String name();
+    Class<?> joinClass();
     JoinColumn[] joinColumns();
+    Class<?> inverseJoinClass();
     JoinColumn[] inverseJoinColumns();
     //UniqueConstraint[] uniqueConstraints() default {};
 

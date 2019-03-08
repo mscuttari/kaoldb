@@ -39,7 +39,6 @@ public class Person {
     @ManyToMany(mappedBy = "actors")
     public Collection<Film> acting = new ArrayList<>();
 
-
     /**
      * Default constructor
      */

@@ -2,10 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
 
-import java.util.Map;
-
 import androidx.annotation.NonNull;
-import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 
 /**
@@ -22,19 +19,6 @@ import it.mscuttari.kaoldb.exceptions.PojoException;
  * @see JoinTableObject
  */
 interface ColumnsContainer extends Iterable<BaseColumnObject> {
-
-    /**
-     * Fix column name and type according to its origin
-     *
-     * This method called during the mapping consistence check
-     *
-     * @see EntityObject#checkConsistence()
-     *
-     * @param entities      map of all entities
-     * @throws InvalidConfigException if the configuration is invalid
-     */
-    void fixType(Map<Class<?>, EntityObject<?>> entities);
-
 
     /**
      * Add the columns to a {@link ContentValues} data set

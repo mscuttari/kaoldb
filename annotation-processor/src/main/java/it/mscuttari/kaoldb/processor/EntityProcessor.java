@@ -27,6 +27,7 @@ import javax.lang.model.util.ElementFilter;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -79,12 +80,18 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                 // Get all parents fields
                 Element currentElement = classElement;
 
+                boolean primaryKeyFound = false;
+
                 while (!ClassName.get(currentElement.asType()).equals(ClassName.OBJECT)) {
                     // Columns
                     List<? extends Element> internalElements = currentElement.getEnclosedElements();
 
                     for (Element internalElement : internalElements) {
                         if (internalElement.getKind() != ElementKind.FIELD) continue;
+
+                        // Check if the field has the @Id annotation, in order to establish if
+                        // the entity has at least one primary key
+                        primaryKeyFound |= internalElement.getAnnotation(Id.class) != null;
 
                         // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
                         Column columnAnnotation           = internalElement.getAnnotation(Column.class);
@@ -171,6 +178,10 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                     // Superclass
                     TypeMirror superClassTypeMirror = ((TypeElement) currentElement).getSuperclass();
                     currentElement = ((DeclaredType) superClassTypeMirror).asElement();
+                }
+
+                if (!primaryKeyFound) {
+                    logError("Entity " + classElement.getSimpleName() + " doesn't have a primary key", classElement);
                 }
 
                 // Create class file

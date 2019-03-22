@@ -4,6 +4,7 @@ import com.squareup.javapoet.ClassName;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Stack;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -120,23 +121,81 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final Element getCollectionType(Element field) throws ProcessorException {
         if (field.getKind() != ElementKind.FIELD) {
             // Security check
-            throw new ProcessorException("Element " + field.getSimpleName() + " is not a field", field);
+            throw new ProcessorException("Element \"" + field.getSimpleName() + "\" is not a field", field);
         }
 
-        TypeMirror fieldType = field.asType();
         TypeMirror collectionType = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
+        boolean isCollection = getTypeUtils().isAssignable(getTypeUtils().erasure(field.asType()), collectionType);
 
-        // Check that the field is declared as a Collection
-        if (!getTypeUtils().erasure(fieldType).equals(collectionType))
-            throw new ProcessorException("Field is not a Collection", field);
+        if (!isCollection) {
+            throw new ProcessorException("Field doesn't implement the Collection interface", field);
+        }
 
-        // Check the presence of the diamond operator
-        List<? extends TypeMirror> collectionInterfaceArguments = ((DeclaredType) fieldType).getTypeArguments();
+        // Search the Collection interface
+        Stack<Element> elements = new Stack<>();
+        elements.push(field);
 
-        if (collectionInterfaceArguments.size() == 0)
-            throw new ProcessorException("Collection data type not specified (no diamond operator found)", field);
+        while (!elements.isEmpty()) {
+            Element element = elements.peek();
 
-        return getElement(collectionInterfaceArguments.get(0));
+            if (getTypeUtils().erasure(element.asType()).equals(collectionType)) {
+                // Check the presence of the diamond operator
+                List<? extends TypeMirror> collectionInterfaceArguments = ((DeclaredType) element.asType()).getTypeArguments();
+
+                if (collectionInterfaceArguments.size() == 0)
+                    throw new ProcessorException("Collection data type not specified (no diamond operator found)", field);
+
+                // Get the data type. It may be a generic, and in that case we need to map it back
+                // to the effective class
+
+                Element dataType = getElement(collectionInterfaceArguments.get(0));
+
+                while (!elements.empty()) {
+                    Element parent = elements.pop();
+
+                    // Get the position of the generic in the parent class declaration
+                    int parentGenericIndex = 0;
+                    List<? extends TypeMirror> parentGenerics = ((DeclaredType) parent.asType()).getTypeArguments();
+
+                    for (TypeMirror generic : parentGenerics) {
+                        if (generic.toString().equals(dataType.asType().toString()))
+                            break;
+
+                        parentGenericIndex++;
+                    }
+
+                    // Generic is not propagated to child
+                    if (parentGenericIndex >= parentGenerics.size() || elements.empty())
+                        return dataType;
+
+                    // Get the label used in the child for the same generic
+                    Element child = elements.peek();
+                    List<? extends TypeMirror> childInterfaces = getTypeUtils().directSupertypes(child.asType());
+
+                    for (TypeMirror interf : childInterfaces) {
+                        if (getTypeUtils().erasure(interf).equals(getTypeUtils().erasure(parent.asType()))) {
+                            TypeMirror genericType = ((DeclaredType) interf).getTypeArguments().get(parentGenericIndex);
+                            dataType = getElement(genericType);
+                            break;
+                        }
+                    }
+                }
+
+                return dataType;
+            }
+
+            // Add the superclass and the interfaces to the stack
+            List<? extends TypeMirror> superTypes = getTypeUtils().directSupertypes(element.asType());
+
+            for (TypeMirror typeMirror : superTypes) {
+                if (getTypeUtils().isAssignable(getTypeUtils().erasure(typeMirror), collectionType)) {
+                    elements.add(getElement(typeMirror));
+                    break;
+                }
+            }
+        }
+
+        throw new ProcessorException("Field doesn't implement the Collection interface", field);
     }
 
 
@@ -155,7 +214,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final Element getLinkedClass(Element field) throws ProcessorException {
         if (field.getKind() != ElementKind.FIELD) {
             // Security check
-            throw new ProcessorException("Element " + field.getSimpleName() + " is not a field", field);
+            throw new ProcessorException("Element \"" + field.getSimpleName() + "\" is not a field", field);
         }
 
         OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
@@ -182,7 +241,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final Element getColumnElement(Element clazz, boolean includeParents, String columnName) throws ProcessorException {
         if (clazz.getKind() != ElementKind.CLASS) {
             // Security check
-            throw new ProcessorException("Element " + clazz.getSimpleName() + " is not a class", clazz);
+            throw new ProcessorException("Element \"" + clazz.getSimpleName() + "\" is not a class", clazz);
         }
 
         for (Element element : clazz.getEnclosedElements()) {
@@ -223,7 +282,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
                 return getColumnElement(parent, includeParents, columnName);
         }
 
-        throw new ProcessorException("Column " + columnName + " not found in class " + clazz.getSimpleName(), clazz);
+        throw new ProcessorException("Column \"" + columnName + "\" not found in class \"" + clazz.getSimpleName() + "\"", clazz);
     }
 
 }

@@ -147,7 +147,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field doesn't have {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
      *      {@link JoinTable} annotations.
-     *  -   The field is declared as a {@link Collection}.
+     *  -   The field class implements the {@link Collection} interface.
      *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
      *      with {@link ManyToOne}.
      *
@@ -167,6 +167,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         if (columnAnnotation != null || joinColumnAnnotation != null || joinColumnsAnnotation != null || joinTableAnnotation != null)
             throw new ProcessorException("@OneToMany can't coexist with @Column, @JoinColumn, @JoinColumns or @JoinTable", field);
 
+        // Check the linked field
         Element linkedClass = getLinkedClass(field);
 
         OneToMany oneToManyAnnotation = field.getAnnotation(OneToMany.class);
@@ -219,7 +220,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
      *  -   The field is annotated with {@link JoinTable}.
-     *  -   The field is declared as a {@link Collection}.
+     *  -   The field class implements the {@link Collection} interface.
      *  -   The {@link OneToMany#mappedBy()} field, if specified, exists, is a {@link Collection}
      *      of compatible type and is annotated with a {@link ManyToMany} annotation denoted by
      *      having an empty {@link OneToMany#mappedBy()} (in order to have an owning side of the
@@ -234,7 +235,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         // Check absence of @OneToOne, @OneToMany and @ManyToOne annotations
         checkAnnotationCount(field);
 
-        // The field must be a Collection
+        // Check the linked field
         Element linkedClass = getLinkedClass(field);
 
         if (annotation.mappedBy().isEmpty()) {

@@ -12,6 +12,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface JoinTable {
 
     Class<?> joinClass();
+    JoinColumn[] joinColumns();
     Class<?> inverseJoinClass();
+    JoinColumn[] inverseJoinColumns();
 
 }

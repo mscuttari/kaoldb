@@ -83,7 +83,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * It ensures the following constraints are respected:
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
      *  -   In case of owning side, the field is also annotated with {@link JoinColumn},
      *      {@link JoinColumns} or {@link JoinTable}.
      *  -   In case of non-owning side, the field is not annotated with {@link JoinColumn},
@@ -219,7 +218,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * It ensures the following constraints are respected:
      *  -   The field doesn't have more than one annotation between {@link OneToOne},
      *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   The field is annotated with {@link JoinTable}.
+     *  -   In case of owning side, the field is annotated with {@link JoinTable}.
      *  -   The field class implements the {@link Collection} interface.
      *  -   The {@link OneToMany#mappedBy()} field, if specified, exists, is a {@link Collection}
      *      of compatible type and is annotated with a {@link ManyToMany} annotation denoted by
@@ -230,10 +229,10 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      * @throws  ProcessorException if some constraint are not respected
      */
     private void checkManyToManyRelationship(Element field) throws ProcessorException {
-        ManyToMany annotation = field.getAnnotation(ManyToMany.class);
-
         // Check absence of @OneToOne, @OneToMany and @ManyToOne annotations
         checkAnnotationCount(field);
+
+        ManyToMany annotation = field.getAnnotation(ManyToMany.class);
 
         // Check the linked field
         Element linkedClass = getLinkedClass(field);

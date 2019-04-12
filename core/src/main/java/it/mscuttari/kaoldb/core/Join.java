@@ -36,6 +36,7 @@ final class Join<L, R> implements RootInt<L> {
             this.clause = clause;
         }
 
+        @NonNull
         @Override
         public String toString() {
             return clause;

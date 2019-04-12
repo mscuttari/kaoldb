@@ -149,6 +149,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public String getAlias() {
         return alias;

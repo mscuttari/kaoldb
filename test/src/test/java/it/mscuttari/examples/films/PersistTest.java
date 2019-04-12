@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldbtest.films;
+package it.mscuttari.examples.films;
 
 import org.junit.Test;
 

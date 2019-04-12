@@ -2,6 +2,7 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.sqlite.SQLiteDatabase;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +31,7 @@ class DatabaseObject {
     /** Database version */
     private Integer version;
 
-    /** Schema migrator to be used for database version changed */
+    /** Schema migrator to be used for database version changes */
     private Class<? extends DatabaseSchemaMigrator> migrator;
 
     /** Entities */
@@ -135,6 +136,8 @@ class DatabaseObject {
     public void setSchemaMigrator(Class<? extends DatabaseSchemaMigrator> migrator) {
         if (migrator == null) {
             throw new InvalidConfigException("Database schema migrator can't be null");
+        } else if (Modifier.isAbstract(migrator.getModifiers())) {
+            throw new InvalidConfigException("Database schema migrator can't be abstract");
         }
 
         LogUtils.d("[Database \"" + name + "\"] setting schema migrator " + migrator.getSimpleName());
@@ -144,7 +147,7 @@ class DatabaseObject {
 
     /**
      * Get an unmodifiable {@link Collection} of all entities classes
-     * To add new classes, use {@link #addEntityClass(Class)} or {@link #setEntityClasses(Collection)}
+     * To add new classes, use {@link #addEntityClass(Class)}
      *
      * @return entity classes
      */
@@ -169,21 +172,7 @@ class DatabaseObject {
             throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have @Entity annotation");
         }
 
-        classes.add(clazz);
-    }
-
-
-    /**
-     * Set entity classes
-     *
-     * @param classes       entity classes
-     * @throws InvalidConfigException if any of the classes isn't annotated with {@link Entity}
-     */
-    public void setEntityClasses(Collection<Class<?>> classes) {
-        this.classes.clear();
-
-        for (Class<?> clazz : classes)
-            addEntityClass(clazz);
+        doAndNotifyAll(this, () -> classes.add(clazz));
     }
 
 
@@ -206,36 +195,12 @@ class DatabaseObject {
 
 
     /**
-     * Get an unmodifiable {@link Map} between the classes and their entity objects
-     *
-     * @return mapped entities
-     */
-    public Map<Class<?>, EntityObject<?>> getEntitiesMap() {
-        return Collections.unmodifiableMap(entities);
-    }
-
-
-    /**
-     * Get an unmodifiable {@link Collection} of all entity objects
-     * To set a map, use {@link #setEntitiesMap(Map)}
+     * Get an unmodifiable {@link Collection} of all the entity objects
      *
      * @return mapped entities
      */
     public Collection<EntityObject<?>> getEntities() {
         return Collections.unmodifiableCollection(entities.values());
-    }
-
-
-    /**
-     * Set entities mapping
-     *
-     * @param map   map between entity class and {@link EntityObject}
-     */
-    public void setEntitiesMap(Map<Class<?>, EntityObject<?>> map) {
-        doAndNotifyAll(this, () -> {
-            this.entities.clear();
-            this.entities.putAll(map);
-        });
     }
 
 
@@ -251,9 +216,9 @@ class DatabaseObject {
      * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
      * mapping consistence
      *
-     * @param classes       collection of all classes
+     * @throws MappingException in case of inconsistent mapping
      */
-    public void mapEntities(Collection<Class<?>> classes) {
+    public void mapEntities() {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
         doAndNotifyAll(this, entities::clear);
@@ -271,8 +236,7 @@ class DatabaseObject {
             }
 
             for (Future<?> task : mappingTasks) {
-                if (!task.isDone())
-                    task.get();
+                task.get();
             }
 
             // Second scan to setup the columns
@@ -289,9 +253,7 @@ class DatabaseObject {
 
             LogUtils.d("[Database \"" + name + "\"] entities mapped");
 
-        } catch (ExecutionException e) {
-            throw new MappingException(e);
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             throw new MappingException(e);
         }
     }

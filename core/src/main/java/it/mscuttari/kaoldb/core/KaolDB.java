@@ -117,7 +117,7 @@ public final class KaolDB {
         // Map the entities
         for (String dbName : getConfig().getDatabaseMapping().keySet()) {
             DatabaseObject database = getConfig().getDatabaseMapping().get(dbName);
-            database.mapEntities(database.getEntityClasses());
+            database.mapEntities();
         }
     }
 

@@ -1,6 +1,6 @@
-package it.mscuttari.kaoldbtest.films;
+package it.mscuttari.examples.films;
 
-import it.mscuttari.kaoldbtest.AbstractTest;
+import it.mscuttari.examples.AbstractTest;
 
 public abstract class AbstractFilmTest extends AbstractTest {
 

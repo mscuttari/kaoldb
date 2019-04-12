@@ -1,4 +1,4 @@
-package it.mscuttari.kaoldbtest;
+package it.mscuttari.examples;
 
 import org.junit.After;
 import org.junit.Before;
@@ -9,6 +9,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.Calendar;
 
+import it.mscuttari.R;
 import it.mscuttari.kaoldb.core.KaolDB;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 

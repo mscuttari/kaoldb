@@ -49,29 +49,22 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
         ClassName collectionPropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "CollectionProperty");
 
         for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
-            if (classElement.getKind() != ElementKind.CLASS) {
-                logError("Element " + classElement.getSimpleName() + " should not have @Entity annotation", classElement);
-                continue;
-            }
-
-            // Check the existence of a default constructor
             try {
+                if (classElement.getKind() != ElementKind.CLASS) {
+                    throw new ProcessorException("Element \"" + classElement.getSimpleName() + "\" should not have the @Entity annotation", classElement);
+                }
+
+                // Check the existence of a default constructor
                 checkForDefaultConstructor((TypeElement) classElement);
 
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
-                continue;
-            }
+                // Get package name
+                Element enclosing = classElement;
+                while (enclosing.getKind() != ElementKind.PACKAGE)
+                    enclosing = enclosing.getEnclosingElement();
 
-            // Get package name
-            Element enclosing = classElement;
-            while (enclosing.getKind() != ElementKind.PACKAGE)
-                enclosing = enclosing.getEnclosingElement();
+                PackageElement packageElement = (PackageElement) enclosing;
+                String packageName = packageElement.getQualifiedName().toString();
 
-            PackageElement packageElement = (PackageElement) enclosing;
-            String packageName = packageElement.getQualifiedName().toString();
-
-            try {
                 // Entity class
                 TypeName classType = ClassName.get(classElement.asType());
                 TypeSpec.Builder entityClass = TypeSpec.classBuilder(classElement.getSimpleName().toString() + ENTITY_SUFFIX);
@@ -94,10 +87,10 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         primaryKeyFound |= internalElement.getAnnotation(Id.class) != null;
 
                         // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
-                        Column columnAnnotation           = internalElement.getAnnotation(Column.class);
-                        JoinColumn joinColumnAnnotation   = internalElement.getAnnotation(JoinColumn.class);
+                        Column columnAnnotation = internalElement.getAnnotation(Column.class);
+                        JoinColumn joinColumnAnnotation = internalElement.getAnnotation(JoinColumn.class);
                         JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
-                        JoinTable joinTableAnnotation     = internalElement.getAnnotation(JoinTable.class);
+                        JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
 
                         if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
                             continue;
@@ -133,18 +126,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
                         // Get field name and type
                         String fieldName = internalElement.getSimpleName().toString();
-                        TypeName fieldType = ClassName.get(internalElement.asType());
-
-                        if (isCollectionProperty) {
-                            // Remove the Collection class and get the type class ("Collection<Type>" is converted to "Type")
-                            while (fieldType instanceof ParameterizedTypeName)
-                                fieldType = ((ParameterizedTypeName) fieldType).typeArguments.get(0);
-
-                        } else {
-                            // Remove the diamond operator, if present ("Collection<Type>.class" is not allowed, but "Collection.class" is)
-                            if (fieldType instanceof ParameterizedTypeName)
-                                fieldType = ((ParameterizedTypeName) fieldType).rawType;
-                        }
+                        TypeName fieldType = ClassName.get(getLinkedClass(internalElement).asType());
 
                         // Create the property
                         ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(
@@ -177,18 +159,22 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
                     // Superclass
                     TypeMirror superClassTypeMirror = ((TypeElement) currentElement).getSuperclass();
-                    currentElement = ((DeclaredType) superClassTypeMirror).asElement();
+                    currentElement = getElement(superClassTypeMirror);
                 }
 
+                // The entity must have at least a primary key
                 if (!primaryKeyFound) {
-                    logError("Entity " + classElement.getSimpleName() + " doesn't have a primary key", classElement);
+                    throw new ProcessorException("Entity \"" + classElement.getSimpleName() + "\" doesn't have a primary key", classElement);
                 }
 
                 // Create class file
                 JavaFile.builder(packageName, entityClass.build()).build().writeTo(getFiler());
 
+            } catch (ProcessorException e) {
+                logError(e.getMessage(), e.getElement());
+
             } catch (IOException e) {
-                logError(e.getMessage());
+                logError(e.getMessage(), classElement);
             }
         }
 

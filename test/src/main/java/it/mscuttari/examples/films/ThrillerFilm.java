@@ -1,19 +1,19 @@
-package it.mscuttari.kaoldbtest.films;
+package it.mscuttari.examples.films;
 
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
-@Table(name = "fantasy_films")
-@DiscriminatorValue(value = "Fantasy")
-public final class FantasyFilm extends Film {
+@Table(name = "thriller_films")
+@DiscriminatorValue(value = "Thriller")
+public final class ThrillerFilm extends Film {
 
     /**
      * Default constructor
      */
-    public FantasyFilm() {
-        this(null, null, null, null, FilmRestriction.NONE);
+    public ThrillerFilm() {
+        this(null, null, null, null, FilmRestriction.MIN14);
     }
 
 
@@ -26,8 +26,8 @@ public final class FantasyFilm extends Film {
      * @param   length          length
      * @param   restriction     restriction
      */
-    public FantasyFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
-        super(title, year, new Genre("Fantasy"), director, length, restriction);
+    public ThrillerFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
+        super(title, year, new Genre("Thriller"), director, length, restriction);
     }
 
 }

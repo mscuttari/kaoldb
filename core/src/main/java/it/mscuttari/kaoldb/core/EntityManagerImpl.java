@@ -74,12 +74,9 @@ class EntityManagerImpl implements EntityManager {
 
                             JoinTableObject joinTableObject = JoinTableObject.map(database, entity, field);
                             String joinTableCreateSQL = joinTableObject.getSQL();
-
-                            if (joinTableCreateSQL != null && !joinTableCreateSQL.isEmpty()) {
-                                LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
-                                db.execSQL(joinTableCreateSQL);
-                                LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
-                            }
+                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
+                            db.execSQL(joinTableCreateSQL);
+                            LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
                         }
                     }
 

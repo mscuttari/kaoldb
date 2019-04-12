@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
@@ -76,6 +77,8 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @param field     field the table and its columns are generated from
      *
      * @return join table object
+     *
+     * @throws MappingException if the field doesn't have a {@link JoinTable} annotation
      */
     public static JoinTableObject map(@NonNull DatabaseObject db,
                                       @NonNull EntityObject<?> entity,
@@ -85,7 +88,11 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
         JoinTable annotation = field.getAnnotation(JoinTable.class);
 
-        LogUtils.d("[Table \"" + annotation.name() + "\"]: adding direct join columns");
+        if (annotation == null) {
+            throw new MappingException("[Entity \"" + entity.getName() + "\"] @JoinTable annotation not found on field \"" + field.getName() + "\"");
+        }
+
+        LogUtils.d("[Table \"" + annotation.name() + "\"] adding direct join columns");
 
         for (JoinColumn directJoinColumn : annotation.joinColumns()) {
             BaseColumnObject column = JoinColumnObject.map(db, entity, field, directJoinColumn);
@@ -96,7 +103,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
             });
         }
 
-        LogUtils.d("[Table \"" + annotation.name() + "\"]: adding inverse join columns");
+        LogUtils.d("[Table \"" + annotation.name() + "\"] adding inverse join columns");
 
         for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
             BaseColumnObject column = JoinColumnObject.map(db, entity, field, inverseJoinColumn);
@@ -128,11 +135,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      *
      * @return SQL query
      */
-    @Nullable
     public String getSQL() {
-        if (!field.isAnnotationPresent(JoinTable.class))
-            return null;
-
         JoinTable annotation = field.getAnnotation(JoinTable.class);
         StringBuilder result = new StringBuilder();
 
@@ -153,10 +156,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
         // Foreign keys
         String foreignKeysSql = getJoinTableForeignKeysSql();
-
-        if (foreignKeysSql != null && !foreignKeysSql.isEmpty()) {
-            result.append(", ").append(foreignKeysSql);
-        }
+        result.append(", ").append(foreignKeysSql);
 
         result.append(");");
 
@@ -192,18 +192,11 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * Differently from {@link EntityObject#getTableForeignKeysSql()}, this method
      * is used for the foreign keys of a join table
      *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement
      */
-    @Nullable
-    private  String getJoinTableForeignKeysSql() {
-        if (field == null || !field.isAnnotationPresent(JoinTable.class))
-            return null;
-
+    private String getJoinTableForeignKeysSql() {
         StringBuilder result = new StringBuilder();
         JoinTable annotation = field.getAnnotation(JoinTable.class);
-
-        if (annotation.joinColumns().length == 0 || annotation.inverseJoinColumns().length == 0)
-            return null;
 
         String separator = "";
 

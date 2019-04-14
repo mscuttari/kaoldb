@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.core;
 
+import androidx.annotation.NonNull;
+
 class Propagation {
 
     public enum Action {
@@ -15,6 +17,7 @@ class Propagation {
             this.action = action;
         }
 
+        @NonNull
         @Override
         public String toString() {
             return action;
@@ -38,9 +41,10 @@ class Propagation {
     }
 
 
+    @NonNull
     @Override
     public String toString() {
-        return "ON UPDATE " + onUpdate + " on DELETE " + onDelete;
+        return "ON UPDATE " + onUpdate + " ON DELETE " + onDelete + " DEFERRABLE INITIALLY DEFERRED";
     }
 
 }

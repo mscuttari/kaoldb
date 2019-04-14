@@ -31,12 +31,11 @@ final class JoinColumnObject extends BaseColumnObject {
     @NonNull
     private final JoinColumn annotation;
 
-    /**
-     * Propagation actions for foreign keys
-     * Null if the column is not a foreign key
-     */
-    @Nullable
+    /** Foreign key constraints */
     public Propagation propagation;
+
+    /** Linked column */
+    public BaseColumnObject linkedColumn;
 
 
     /**
@@ -87,6 +86,7 @@ final class JoinColumnObject extends BaseColumnObject {
             result.loadUniqueProperty();
             result.loadDefaultValue();
             result.loadPropagationProperty();
+            result.loadLinkedColumn();
 
             doAndNotifyAll(entity.columns, () -> entity.columns.mappingStatus.decrementAndGet());
         });
@@ -255,10 +255,6 @@ final class JoinColumnObject extends BaseColumnObject {
      * Determine the propagation property
      */
     private void loadPropagationProperty() {
-        if (field.isAnnotationPresent(JoinTable.class)) {
-            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
-        }
-
         waitWhile(this, () -> nullable == null);
 
         if (nullable) {
@@ -266,6 +262,39 @@ final class JoinColumnObject extends BaseColumnObject {
         } else {
             propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.RESTRICT);
         }
+    }
+
+
+    /**
+     * Determine the linked column
+     */
+    private void loadLinkedColumn() {
+        EntityObject<?> linkedEntity;
+
+        if (field.isAnnotationPresent(JoinTable.class)) {
+            JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
+
+            // Determine if the join column is a direct or inverse one
+            boolean direct = false;
+
+            for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                if (joinColumn.equals(annotation)) {
+                    direct = true;
+                    break;
+                }
+            }
+
+            Class<?> linkedEntityClass = direct ? joinTableAnnotation.joinClass() : joinTableAnnotation.inverseJoinClass();
+            linkedEntity = db.getEntity(linkedEntityClass);
+
+        } else {
+            linkedEntity = db.getEntity(field.getType());
+        }
+
+        // Wait for the linked column to be mapped
+        waitWhile(linkedEntity.columns, () -> !linkedEntity.columns.contains(annotation.referencedColumnName()));
+
+        linkedColumn = linkedEntity.columns.getNamesMap().get(annotation.referencedColumnName());
     }
 
 

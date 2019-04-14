@@ -1,7 +1,5 @@
 package it.mscuttari.kaoldb.core;
 
-import android.text.TextUtils;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -314,7 +312,7 @@ class EntityObject<T> {
         Collection<Collection<BaseColumnObject>> result = new ArrayList<>();
 
         // Single unique column constraints
-        Columns columns = new Columns(this, this.columns.getColumns());
+        Columns columns = new Columns(this, this.columns.getColumnsContainers());
 
         // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
         Table table = clazz.getAnnotation(Table.class);
@@ -630,10 +628,8 @@ class EntityObject<T> {
 
 
     /**
-     * Get the foreign keys SQL constraints to be inserted in the create table query
-     *
+     * Get the foreign keys SQL constraints to be inserted in the create table query.
      * This method is used to create the foreign keys of a table directly associated to an entity.
-     * See {@link } to do the same for a join table.
      *
      * Example:
      * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
@@ -662,7 +658,7 @@ class EntityObject<T> {
         if (constraints.size() == 0)
             return null;
 
-        return TextUtils.join(", ", constraints);
+        return StringUtils.implode(constraints, obj -> obj, ", ");
     }
 
 
@@ -677,7 +673,7 @@ class EntityObject<T> {
      */
     @Nullable
     private String getTableInheritanceConstraints() {
-        if (this.parent == null)
+        if (parent == null)
             return null;
 
         EntityObject parent = this.parent;
@@ -686,32 +682,18 @@ class EntityObject<T> {
         while (parent != null && !parent.realTable)
             parent = parent.parent;
 
-        // Check if there's a real parent table (TABLE_PER_CLASS strategy makes this unknown)
+        // Check if there's a real parent table (TABLE_PER_CLASS strategy would make this unknown)
         if (parent == null)
             return null;
 
-        Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
-
-        // Normally not happening
-        if (parentPrimaryKeys.size() == 0)
-            return null;
-
         // Create associations
-        StringBuilder local = new StringBuilder();          // Local columns
-        StringBuilder referenced = new StringBuilder();     // Referenced columns
+        Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
+        String columns = StringUtils.implode(parentPrimaryKeys, obj -> obj.name, ", ");
+        Propagation propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
 
-        String separator = "";
-
-        for (BaseColumnObject primaryKey : parentPrimaryKeys) {
-            local.append(separator).append(primaryKey.name);
-            referenced.append(separator).append(primaryKey.name);
-
-            separator = ", ";
-        }
-
-        return "FOREIGN KEY(" + local.toString() + ")" +
-                " REFERENCES " + parent.tableName + "(" + referenced.toString() + ")" +
-                " ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED";
+        return "FOREIGN KEY(" + columns + ") " +
+                "REFERENCES " + parent.tableName + "(" + columns + ") " +
+                propagation;
     }
 
 
@@ -735,60 +717,49 @@ class EntityObject<T> {
      */
     @Nullable
     private String getTableRelationshipsConstraints() {
-        boolean empty = true;
-        StringBuilder result = new StringBuilder();
+        Collection<String> constraints = new ArrayList<>();
 
-        for (Field field : relationships) {
-            // Join columns are present only if there is a @JoinColumn annotation or if
-            // there is a @JoinColumns annotation and its content is not empty.
+        for (ColumnsContainer container : columns.getColumnsContainers()) {
+            if (container instanceof JoinColumnObject) {
+                // @JoinColumn
+                JoinColumnObject joinColumn = (JoinColumnObject) container;
+                JoinColumn annotation = joinColumn.field.getAnnotation(JoinColumn.class);
+                EntityObject<?> linkedEntity = db.getEntity(joinColumn.field.getType());
 
-            if (!field.isAnnotationPresent(JoinColumn.class) &&
-                    ((!field.isAnnotationPresent(JoinColumns.class) || (field.isAnnotationPresent(JoinColumns.class) && field.getAnnotation(JoinColumns.class).value().length == 0))))
-                continue;
+                constraints.add(
+                        "FOREIGN KEY(" + joinColumn.name + ") " +
+                        "REFERENCES " + linkedEntity.tableName + "(" + annotation.referencedColumnName() + ") " +
+                        joinColumn.propagation
+                );
 
-            if (!empty) result.append(", ");
-            empty = false;
+            } else if (container instanceof JoinColumnsObject) {
+                // @JoinColumns
+                JoinColumnsObject joinColumns = (JoinColumnsObject) container;
+                EntityObject<?> linkedEntity = db.getEntity(joinColumns.field.getType());
 
-            // Get the linked entity in order to get its table name
-            EntityObject linkedEntity = db.getEntity(field.getType());
+                List<String> local = new ArrayList<>();          // Local columns
+                List<String> referenced = new ArrayList<>();     // Referenced columns
 
-            // @JoinColumn
-            if (field.isAnnotationPresent(JoinColumn.class)) {
-                JoinColumn annotation = field.getAnnotation(JoinColumn.class);
-
-                result.append("FOREIGN KEY(").append(annotation.name()).append(")")
-                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(")
-                        .append(annotation.referencedColumnName()).append(")")
-                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
-            }
-
-            // @JoinColumns
-            if (field.isAnnotationPresent(JoinColumns.class)) {
-                JoinColumns annotation = field.getAnnotation(JoinColumns.class);
-
-                StringBuilder local = new StringBuilder();          // Local columns
-                StringBuilder referenced = new StringBuilder();     // Referenced columns
-
-                String separator = "";
-
-                for (JoinColumn joinColumn : annotation.value()) {
-                    local.append(separator).append(joinColumn.name());
-                    referenced.append(separator).append(joinColumn.referencedColumnName());
-
-                    separator = ", ";
+                for (BaseColumnObject column : joinColumns) {
+                    JoinColumnObject joinColumn = (JoinColumnObject) column;
+                    local.add(joinColumn.name);
+                    referenced.add(joinColumn.linkedColumn.name);
                 }
 
-                result.append("FOREIGN KEY(").append(local).append(")")
-                        .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(referenced).append(")")
-                        .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+                constraints.add(
+                        "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                        "REFERENCES " + linkedEntity.tableName + "(" +
+                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                        joinColumns.propagation
+                );
             }
         }
 
-        if (empty) {
+        if (constraints.size() == 0) {
             return null;
-        } else {
-            return result.toString();
         }
+
+        return StringUtils.implode(constraints, obj -> obj, ", ");
     }
 
 }

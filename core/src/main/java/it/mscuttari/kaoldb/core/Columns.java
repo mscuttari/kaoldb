@@ -99,7 +99,7 @@ class Columns implements ColumnsContainer {
      *
      * @return columns
      */
-    public final synchronized Collection<ColumnsContainer> getColumns() {
+    public final synchronized Collection<ColumnsContainer> getColumnsContainers() {
         return Collections.unmodifiableCollection(columns);
     }
 
@@ -125,18 +125,32 @@ class Columns implements ColumnsContainer {
 
 
     /**
+     * CHeck if a column is already mapped
+     *
+     * @param columnName    column name to search for
+     * @return true if the column is already present; false otherwise
+     */
+    public final synchronized boolean contains(String columnName) {
+        return namesMap.containsKey(columnName);
+    }
+
+
+    /**
      * Check if a column is already mapped
      *
      * @param o     column to search for
      * @return true if the column is already present; false otherwise
      */
     public final synchronized boolean contains(BaseColumnObject o) {
+        return namesMap.containsValue(o);
+        /*
         for (BaseColumnObject column : this) {
             if (column.equals(o))
                 return true;
         }
 
         return false;
+        */
     }
 
 

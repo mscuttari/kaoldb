@@ -5,6 +5,9 @@ import java.lang.reflect.Field;
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
+import it.mscuttari.kaoldb.annotations.OneToOne;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 
 /**
  * This class allows to group the join columns that are declared together
@@ -13,7 +16,11 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
  */
 final class JoinColumnsObject extends Columns implements ColumnsContainer {
 
-    private final Field field;
+    /** Field annotated with {@link JoinColumns} */
+    public final Field field;
+
+    /** Foreign keys constraints */
+    public final Propagation propagation;
 
 
     /**
@@ -29,6 +36,27 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
 
         super(entity);
         this.field = field;
+
+        if (field.isAnnotationPresent(OneToOne.class)) {
+            OneToOne annotation = field.getAnnotation(OneToOne.class);
+
+            propagation = new Propagation(
+                    Propagation.Action.CASCADE,
+                    annotation.optional() ? Propagation.Action.SET_NULL : Propagation.Action.RESTRICT
+                    );
+
+        } else if (field.isAnnotationPresent(ManyToOne.class)) {
+            ManyToOne annotation = field.getAnnotation(ManyToOne.class);
+
+            propagation = new Propagation(
+                    Propagation.Action.CASCADE,
+                    annotation.optional() ? Propagation.Action.SET_NULL : Propagation.Action.RESTRICT
+            );
+
+        } else {
+            // Normally not reachable
+            throw new MappingException("@OneToOne or @ManyToOne annotations not found on field \"" + field.getName() + "\"");
+        }
     }
 
 

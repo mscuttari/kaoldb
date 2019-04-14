@@ -1,8 +1,10 @@
 package it.mscuttari.kaoldb.core;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -195,35 +197,50 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @return SQL statement
      */
     private String getJoinTableForeignKeysSql() {
-        StringBuilder result = new StringBuilder();
-        JoinTable annotation = field.getAnnotation(JoinTable.class);
+        Collection<String> constraints = new ArrayList<>(2);
 
-        String separator = "";
+        List<String> local = new ArrayList<>();         // Local columns
+        List<String> referenced = new ArrayList<>();    // Referenced columns
+
+        JoinTable annotation = field.getAnnotation(JoinTable.class);
+        Propagation propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
 
         // Direct join columns
-        for (JoinColumn joinColumn : annotation.joinColumns()) {
-            EntityObject<?> linkedEntity = db.getEntity(field.getDeclaringClass());
+        EntityObject<?> directJoinEntity = db.getEntity(annotation.joinClass());
 
-            result.append(separator)
-                    .append("FOREIGN KEY(").append(joinColumn.name()).append(")")
-                    .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(joinColumn.referencedColumnName()).append(")")
-                    .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
-
-            separator = ", ";
+        for (BaseColumnObject column : directJoinColumns) {
+            JoinColumnObject joinColumn = (JoinColumnObject) column;
+            local.add(joinColumn.name);
+            referenced.add(joinColumn.linkedColumn.name);
         }
+
+        constraints.add(
+                "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                        "REFERENCES " + directJoinEntity.tableName + "(" +
+                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                        propagation
+        );
+
+        local.clear();
+        referenced.clear();
 
         // Inverse join columns
-        for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
-            ParameterizedType collectionType = (ParameterizedType) field.getGenericType();
-            EntityObject<?> linkedEntity = db.getEntity((Class<?>) collectionType.getActualTypeArguments()[0]);
+        EntityObject<?> inverseJoinEntity = db.getEntity(annotation.inverseJoinClass());
 
-            result.append(separator)
-                    .append("FOREIGN KEY(").append(inverseJoinColumn.name()).append(")")
-                    .append(" REFERENCES ").append(linkedEntity.tableName).append("(").append(inverseJoinColumn.referencedColumnName()).append(")")
-                    .append(" ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED");
+        for (BaseColumnObject column : inverseJoinColumns) {
+            JoinColumnObject joinColumn = (JoinColumnObject) column;
+            local.add(joinColumn.name);
+            referenced.add(joinColumn.linkedColumn.name);
         }
 
-        return result.toString();
+        constraints.add(
+                "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                        "REFERENCES " + inverseJoinEntity.tableName + "(" +
+                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                        propagation
+        );
+
+        return StringUtils.implode(constraints, obj -> obj, ", ");
     }
 
 }

@@ -31,7 +31,6 @@ import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
- * Mapping includes table columns, parent and children classes.
  */
 class EntityObject<T> {
 
@@ -44,6 +43,8 @@ class EntityObject<T> {
     /**
      * Inheritance type.
      * Null if the entity has no children.
+     *
+     * @see #loadInheritanceType()
      */
     @Nullable
     public InheritanceType inheritanceType;
@@ -52,6 +53,8 @@ class EntityObject<T> {
     /**
      * Parent entity.
      * Null if the entity has no parent.
+     *
+     * @see #loadParent()
      */
     @Nullable
     public EntityObject<? super T> parent;
@@ -59,28 +62,56 @@ class EntityObject<T> {
     /**
      * Discriminator value.
      * Null if the entity has no parent.
+     *
+     * @see #loadDiscriminatorValue()
      */
     @Nullable
     public Object discriminatorValue;
 
-    /** Children entities */
+    /**
+     * Children entities.
+     * The children entities are determined during the parent determination process. Every time
+     * an entity find its parent entity, it is also added to the children list of the latter.
+     *
+     * @see #loadParent()
+     */
     @NonNull
     public Collection<EntityObject<? extends T>> children = new HashSet<>();
 
-    /** Whether the entity has a real table or not */
+    /**
+     * Whether the entity has a real table or not
+     *
+     * @see #loadTableExistence()
+     */
     public Boolean realTable;
 
     /**
      * Table name.
      * Null if the entity doesn't require a real table.
+     *
+     * @see #loadTableName()
      */
     @Nullable
     public String tableName;
 
-    /** Columns of the table */
+    /**
+     * Columns of the table.
+     * Populated during the 2nd phase of the mapping process.
+     * At the end of the mapping process, it contains all and only the columns that build
+     * the real table in the database. Therefore, it contains also the inherited primary key
+     * columns in case of a JOINED inheritance strategy or the children columns in case of a
+     * SINGLE_TABLE inheritance strategy.
+     *
+     * @see #loadColumns()
+     */
     public Columns columns = new Columns(this);
 
-    /** Discriminator column */
+    /**
+     * Discriminator column.
+     * Determined during the 2nd phase of the mapping process.
+     *
+     * @see #loadColumns()
+     */
     @Nullable
     public BaseColumnObject discriminatorColumn;
 
@@ -91,7 +122,7 @@ class EntityObject<T> {
      * excluded) that are annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne}
      * or {@link ManyToMany}.
      */
-    public Collection<Field> relationships = new HashSet<>();
+    public Collection<Relationship> relationships = new HashSet<>();
 
 
     /**
@@ -202,17 +233,21 @@ class EntityObject<T> {
      * Determine the table name
      *
      * If the table is not specified, the following policy is applied:
-     * Uppercase characters are replaces with underscore followed by the same character converted to lowercase
-     * Only the first class tableName character, if uppercase, is converted to lowercase avoiding the underscore
-     * Example: ModelClassName => model_class_name
+     * Uppercase characters are replaces with underscore followed by the same character converted
+     * to lowercase. Only the first class name character, if uppercase, is converted to lowercase
+     * while avoiding the underscore.
+     * Example: EntityClassName => entity_class_name
      *
-     * @throws InvalidConfigException if the class doesn't have the @Table annotation and the inheritance type is not TABLE_PER_CLASS
+     * @throws InvalidConfigException if the class doesn't have the @Table annotation and doesn't
+     *                                expect a real table (possible only in case of TABLE_PER_CLASS
+     *                                inheritance strategy, which is anyway not supported)
      */
     private void loadTableName() {
         String result;
-        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        Table annotation = clazz.getAnnotation(Table.class);
 
-        if (tableAnnotation == null) {
+        if (annotation == null) {
+            // Wait for the table existence property to be determined
             waitWhile(this, () -> realTable == null);
 
             if (realTable) {
@@ -221,13 +256,13 @@ class EntityObject<T> {
                 result = null;
             }
 
-        } else if (!tableAnnotation.name().isEmpty()) {
+        } else if (!annotation.name().isEmpty()) {
             // Get specified table name
-            result = tableAnnotation.name();
+            result = annotation.name();
 
         } else {
             // Default table name
-            LogUtils.w(clazz.getSimpleName() + ": table tableName not specified, using the default one based on class name");
+            LogUtils.w("[Class \"" + clazz.getSimpleName() + "\"] table name not specified, using the default one based on class name");
 
             String className = clazz.getSimpleName();
             char c[] = className.toCharArray();
@@ -296,7 +331,9 @@ class EntityObject<T> {
                     field.isAnnotationPresent(ManyToOne.class) ||
                     field.isAnnotationPresent(ManyToMany.class)) {
 
-                doAndNotifyAll(this, () -> relationships.add(field));
+                //relationshipsNew.add(new Relationship(field));
+
+                doAndNotifyAll(this, () -> relationships.add(new Relationship(db, field)));
             }
         }
     }
@@ -306,28 +343,26 @@ class EntityObject<T> {
      * Get the unique columns sets (both the unique columns specified in the @Table annotation)
      *
      * @return list of unique columns sets
+     * @throws InvalidConfigException if a column with the specified name doesn't exist
      * @see Table#uniqueConstraints()
      */
     private Collection<Collection<BaseColumnObject>> getMultipleUniqueColumns() {
         Collection<Collection<BaseColumnObject>> result = new ArrayList<>();
-
-        // Single unique column constraints
         Columns columns = new Columns(this, this.columns.getColumnsContainers());
-
-        // Multiple unique columns constraints (their consistence must be checked later, when all the tables have their columns assigned)
         Table table = clazz.getAnnotation(Table.class);
 
         if (table != null) {
             UniqueConstraint[] uniqueConstraints = table.uniqueConstraints();
 
             for (UniqueConstraint uniqueConstraint : uniqueConstraints) {
-                List<BaseColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
+                Collection<BaseColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
 
                 for (String columnName : uniqueConstraint.columnNames()) {
                     BaseColumnObject column = columns.getNamesMap().get(columnName);
 
-                    if (column == null)
+                    if (column == null) {
                         throw new InvalidConfigException("Unique constraint: column " + columnName + " not found");
+                    }
 
                     multipleUniqueColumns.add(column);
                 }
@@ -359,7 +394,7 @@ class EntityObject<T> {
      *
      * @throws InvalidConfigException in case of multiple column declaration
      */
-    public void setupColumns() {
+    public void loadColumns() {
         // Normal and join columns
         Field[] allFields = clazz.getDeclaredFields();
 
@@ -457,11 +492,11 @@ class EntityObject<T> {
 
     /**
      * Get field of a class given its name.
-     * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
+     * The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
      * @param fieldName     field name
      * @return accessible field
-     * @throws MappingException if there is no field in the class with the specified name
+     * @throws MappingException if there is no field in {@link #clazz} with the specified name
      */
     public Field getField(String fieldName) {
         return getField(clazz, fieldName);
@@ -470,7 +505,7 @@ class EntityObject<T> {
 
     /**
      * Get field of a class given its name.
-     * The field is already set as accessible using {@link Field#setAccessible(boolean)}.
+     * The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.
      *
      * @param clazz         class the field belongs to
      * @param fieldName     field name
@@ -492,7 +527,7 @@ class EntityObject<T> {
 
 
     /**
-     * Get the SQL query to create an entity table
+     * Get the SQL query to create the entity table
      *
      * The result can be used to create just the table directly linked to the provided entity.
      * Optional join tables that are related to eventual internal fields must be managed
@@ -541,7 +576,6 @@ class EntityObject<T> {
         }
 
         result.append(");");
-        //result.append(") WITHOUT ROWID;");
 
         return result.toString();
     }
@@ -565,7 +599,7 @@ class EntityObject<T> {
             return null;
 
         StringBuilder result = new StringBuilder();
-        String prefix = "PRIMARY KEY(";
+        String prefix = "PRIMARY KEY (";
 
         for (BaseColumnObject column : primaryKeys) {
             result.append(prefix).append(column.name);
@@ -598,32 +632,19 @@ class EntityObject<T> {
         if (uniqueColumns == null || uniqueColumns.size() == 0)
             return null;
 
-        StringBuilder result = new StringBuilder();
-        boolean empty = true;
+        Collection<String> uniqueSets = new ArrayList<>(uniqueColumns.size());
 
         for (Collection<BaseColumnObject> uniqueSet : uniqueColumns) {
-            if (uniqueSet.size() == 0)
+            if (uniqueSet == null || uniqueSet.size() == 0)
                 continue;
 
-            if (!empty) result.append(", ");
-            empty = false;
-            result.append("UNIQUE(");
-
-            String prefixInternal = "UNIQUE(";
-
-            for (BaseColumnObject column : uniqueSet) {
-                result.append(prefixInternal).append(column.name);
-                prefixInternal = ", ";
-            }
-
-            result.append(")");
+            uniqueSets.add("UNIQUE (" + StringUtils.implode(uniqueSet, obj -> obj.name, ", ") +")");
         }
 
-        if (empty) {
+        if (uniqueSets.size() == 0)
             return null;
-        } else {
-            return result.toString();
-        }
+
+        return StringUtils.implode(uniqueSets, obj -> obj, ", ");
     }
 
 
@@ -691,8 +712,8 @@ class EntityObject<T> {
         String columns = StringUtils.implode(parentPrimaryKeys, obj -> obj.name, ", ");
         Propagation propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
 
-        return "FOREIGN KEY(" + columns + ") " +
-                "REFERENCES " + parent.tableName + "(" + columns + ") " +
+        return "FOREIGN KEY (" + columns + ") " +
+                "REFERENCES " + parent.tableName + " (" + columns + ") " +
                 propagation;
     }
 
@@ -727,8 +748,8 @@ class EntityObject<T> {
                 EntityObject<?> linkedEntity = db.getEntity(joinColumn.field.getType());
 
                 constraints.add(
-                        "FOREIGN KEY(" + joinColumn.name + ") " +
-                        "REFERENCES " + linkedEntity.tableName + "(" + annotation.referencedColumnName() + ") " +
+                        "FOREIGN KEY (" + joinColumn.name + ") " +
+                        "REFERENCES " + linkedEntity.tableName + " (" + annotation.referencedColumnName() + ") " +
                         joinColumn.propagation
                 );
 
@@ -747,8 +768,8 @@ class EntityObject<T> {
                 }
 
                 constraints.add(
-                        "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                        "REFERENCES " + linkedEntity.tableName + "(" +
+                        "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                        "REFERENCES " + linkedEntity.tableName + " (" +
                         StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
                         joinColumns.propagation
                 );

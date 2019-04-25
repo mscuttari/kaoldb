@@ -181,15 +181,18 @@ class DatabaseObject {
      *
      * @param clazz     entity class
      * @return entity object
-     * @throws InvalidConfigException  if the entity has not been found in the mapped ones
+     * @throws InvalidConfigException if the class is not an entity or doesn't belong to this database
      */
     @SuppressWarnings("unchecked")
     public <T> EntityObject<T> getEntity(Class<T> clazz) {
+        // Check if the class is an entity of this database
         if (!classes.contains(clazz)) {
             throw new InvalidConfigException("Entity " + clazz.getSimpleName() + " not found");
         }
 
+        // Wait for the entity to be mapped
         waitWhile(this, () -> entities.get(clazz) == null);
+
         return (EntityObject<T>) entities.get(clazz);
     }
 
@@ -205,16 +208,11 @@ class DatabaseObject {
 
 
     /**
-     * Generate entities mapping
+     * Create an {@link EntityObject} for each class contained in {@link #classes}
      *
-     * The mapping is done in three steps:
-     *  1.  Get the basic data in order to establish the paternity relationships
+     * The mapping process is done in two phases:
+     *  1.  Get the basic entity data in order to establish the paternity relationships
      *  2.  Determine the columns of each table (own columns and inherited ones)
-     *  3.  Check the consistency of the previously found information that can not be checked
-     *      at compile time through the annotation processors and fix the join columns types
-     *
-     * Create a {@link EntityObject} for each class annotated with {@link Entity} and check for
-     * mapping consistence
      *
      * @throws MappingException in case of inconsistent mapping
      */
@@ -239,19 +237,19 @@ class DatabaseObject {
                 task.get();
             }
 
-            // Second scan to setup the columns
+            // Second scan to load the columns
             Collection<Future<?>> columnsTasks = new ArrayList<>();
-            LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to setup the columns");
+            LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to load the columns");
 
             for (EntityObject<?> entity : entities.values()) {
-                columnsTasks.add(executorService.submit(entity::setupColumns));
+                columnsTasks.add(executorService.submit(entity::loadColumns));
             }
 
             for (Future<?> task : columnsTasks) {
                 task.get();
             }
 
-            LogUtils.d("[Database \"" + name + "\"] entities mapped");
+            LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
 
         } catch (ExecutionException | InterruptedException e) {
             throw new MappingException(e);

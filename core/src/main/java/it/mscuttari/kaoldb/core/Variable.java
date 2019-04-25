@@ -1,19 +1,33 @@
 package it.mscuttari.kaoldb.core;
 
 import androidx.annotation.NonNull;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
+ * This class is basically a wrapper for a property or an immediate ("raw") value.
+ *
  * @param   <T>     data type
  */
 class Variable<T> {
 
+    /**
+     * The same property can be used in more than once in a query.
+     * Therefore a property can be distinguished from the others by referring
+     * to the {@link Root} using that particular instance of the property.
+     *
+     * The field is null in case of raw data.
+     */
     private final String tableAlias;
+
+    /** Property involved in the expression */
     private final Property<?, T> property;
+
+    /** Immediate value */
     private final T value;
 
 
     /**
-     * Constructor
+     * Constructor for property based variable
      *
      * @param tableAlias    table alias
      * @param property      entity property
@@ -26,7 +40,7 @@ class Variable<T> {
 
 
     /**
-     * Constructor
+     * Constructor for immediate based variable
      *
      * @param   value       simple object value
      */
@@ -48,7 +62,7 @@ class Variable<T> {
 
 
     /**
-     * Check if the variable has a property
+     * Check if the variable has a property or raw data
      *
      * @return true if {@link #property} is set; false otherwise
      */
@@ -58,9 +72,10 @@ class Variable<T> {
 
 
     /**
-     * Get the property
+     * Get the property.
+     * Returns null if {@link #hasProperty()} is false.
      *
-     * @return property
+     * @return property (null if the variable has raw data instead of a property)
      */
     public Property<?, T> getProperty() {
         return property;
@@ -68,9 +83,10 @@ class Variable<T> {
 
 
     /**
-     * Get the raw data
+     * Get the raw data.
+     * Returns null if {@link #hasProperty()} is true.
      *
-     * @return raw data
+     * @return raw data (null if the variable has a property instead of raw data)
      */
     public T getRawData() {
         return value;
@@ -78,8 +94,10 @@ class Variable<T> {
 
 
     /**
-     * String wrapper class.
-     * Used in the Variable class creation in order to avoid the quotation marks in the resulting query.
+     * String wrapper class
+     *
+     * Used in the Variable class instantiation in order to avoid the
+     * quotation marks in the resulting query.
      */
     public static class StringWrapper {
 
@@ -89,6 +107,7 @@ class Variable<T> {
             this.value = value;
         }
 
+        @NonNull
         @Override
         public String toString() {
             return value;

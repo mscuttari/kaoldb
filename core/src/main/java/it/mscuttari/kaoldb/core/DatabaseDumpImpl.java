@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.exceptions.DumpException;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
@@ -38,6 +39,7 @@ class DatabaseDumpImpl implements DatabaseDump {
     }
 
 
+    @NonNull
     @Override
     public String toString() {
         return "{" +

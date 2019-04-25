@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * This class allows to temporarily skip the relationships data load and run the associated queries
  * only when needed
  *
- * @param <T>   POJO class
+ * @param <T>   entity class
  * @param <S>   container type (e.g. {@link List})
  */
 abstract class LazyCollection<T, S extends Collection<T>> implements Collection<T> {
@@ -65,7 +65,8 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Check if the data has been loaded at least once
+     * Check if the data has been loaded at least once.
+     * If not, it loads it by running the query.
      */
     protected void checkInitialization() {
         if (!initialized)
@@ -74,7 +75,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Load the data
+     * Load the data by running the query
      */
     private void initialize() {
         initialized = true;
@@ -102,6 +103,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
+    @NonNull
     @Override
     public String toString() {
         checkInitialization();

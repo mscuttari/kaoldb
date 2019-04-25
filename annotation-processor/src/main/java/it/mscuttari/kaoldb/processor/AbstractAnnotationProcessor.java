@@ -4,6 +4,7 @@ import com.squareup.javapoet.ClassName;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -111,10 +112,11 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     /**
      * Get the data type of a field that implements the {@link Collection} interface
      *
-     * @param field     field declared as a Collection
+     * @param field     field implementing the Collection interface
      *
-     * @return data type (class specified in the diamond operator)
+     * @return data type (class specified in the diamond operator of the Collection)
      *
+     * @throws ProcessorException if the given element is not a field
      * @throws ProcessorException if the field is not a Collection
      * @throws ProcessorException if the diamond operator is not specified
      */
@@ -196,6 +198,44 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         }
 
         throw new ProcessorException("Field doesn't implement the Collection interface", field);
+    }
+
+
+    /**
+     * Check if a field is eligible for lazy loading.
+     * A field is considered eligible for lazy loading only if it is declared as a
+     * {@link Collection}, a {@link List} or a {@link Set}.
+     *
+     * @param field     field implementing the Collection interface
+     * @return true if the field is eligible for lazy loading; false otherwise
+     * @throws ProcessorException if the given element is not a field
+     *
+     */
+    protected final boolean isLazyLoadingAllowed(Element field) throws ProcessorException {
+        if (field.getKind() != ElementKind.FIELD) {
+            // Security check
+            throw new ProcessorException("Element \"" + field.getSimpleName() + "\" is not a field", field);
+        }
+
+        // Remove the diamond operator
+        TypeMirror erasure = getTypeUtils().erasure(field.asType());
+
+        // Collection
+        TypeMirror collectionType = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
+        boolean isCollection = getTypeUtils().isAssignable(erasure, collectionType);
+        if (isCollection) return true;
+
+        // Type
+        TypeMirror listType = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.List").asType());
+        boolean isList = getTypeUtils().isAssignable(erasure, listType);
+        if (isList) return true;
+
+        // Set
+        TypeMirror setType = getTypeUtils().erasure(getElementUtils().getTypeElement("java.util.Set").asType());
+        boolean isSet = getTypeUtils().isAssignable(erasure, setType);
+        if (isSet) return true;
+
+        return false;
     }
 
 

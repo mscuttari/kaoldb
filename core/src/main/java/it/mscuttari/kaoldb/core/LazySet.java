@@ -20,7 +20,7 @@ class LazySet<T> extends LazyCollection<T, Set<T>> {
      * @param query         query to be executed to load data
      */
     public LazySet(Set<T> container, @NonNull Query<T> query) {
-        super(container == null ? new HashSet<T>() : container, query);
+        super(container == null ? new HashSet<>() : container, query);
     }
 
 }

@@ -215,10 +215,10 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                        "REFERENCES " + directJoinEntity.tableName + "(" +
-                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
-                        propagation
+                "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                "REFERENCES " + directJoinEntity.tableName + " (" +
+                StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                propagation
         );
 
         local.clear();
@@ -234,10 +234,10 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY(" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                        "REFERENCES " + inverseJoinEntity.tableName + "(" +
-                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
-                        propagation
+                "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
+                "REFERENCES " + inverseJoinEntity.tableName + " (" +
+                StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                propagation
         );
 
         return StringUtils.implode(constraints, obj -> obj, ", ");

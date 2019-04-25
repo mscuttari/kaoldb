@@ -6,7 +6,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,11 +67,11 @@ class EntityManagerImpl implements EntityManager {
                         }
 
                         // Join tables
-                        for (Field field : entity.relationships) {
-                            if (!field.isAnnotationPresent(JoinTable.class))
+                        for (Relationship relationship : entity.relationships) {
+                            if (!relationship.field.isAnnotationPresent(JoinTable.class))
                                 continue;
 
-                            JoinTableObject joinTableObject = JoinTableObject.map(database, entity, field);
+                            JoinTableObject joinTableObject = JoinTableObject.map(database, entity, relationship.field);
                             String joinTableCreateSQL = joinTableObject.getSQL();
                             LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
                             db.execSQL(joinTableCreateSQL);

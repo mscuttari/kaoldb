@@ -1,6 +1,7 @@
 package it.mscuttari.kaoldb.processor;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -10,6 +11,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -150,6 +152,10 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
      *      with {@link ManyToOne}.
      *
+     * If the field class implements the {@link Collection} interface but is not declared as a
+     * {@link Collection}, {@link List} or {@link Set}, a warning specifying lazy loading
+     * disabling is raised.
+     *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
      */
@@ -184,6 +190,11 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         ManyToOne manyToOneAnnotation = linkedField.getAnnotation(ManyToOne.class);
         if (manyToOneAnnotation == null)
             throw new ProcessorException("Field \"" + oneToManyAnnotation.mappedBy() + "\" must have @ManyToOne annotation", linkedField);
+
+        if (!isLazyLoadingAllowed(field)) {
+            // Lazy load disabled warning
+            logWarning("Field \"" + field.getSimpleName() + "\" is not declared as Collection, List or Set. Lazy loading is disabled for this field", field);
+        }
     }
 
 
@@ -224,6 +235,10 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
      *      of compatible type and is annotated with a {@link ManyToMany} annotation denoted by
      *      having an empty {@link OneToMany#mappedBy()} (in order to have an owning side of the
      *      relationship).
+     *
+     * If the field class implements the {@link Collection} interface but is not declared as a
+     * {@link Collection}, {@link List} or {@link Set}, a warning specifying lazy loading
+     * disabling is raised.
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraint are not respected
@@ -266,6 +281,11 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
             if (!getTypeUtils().isAssignable(field.getEnclosingElement().asType(), linkedCollectionType.asType()))
                 throw new ProcessorException("Collection type must be of type " + getTypeUtils().asElement(field.getEnclosingElement().asType()).getSimpleName(), linkedField);
+        }
+
+        if (!isLazyLoadingAllowed(field)) {
+            // Lazy load disabled warning
+            logWarning("Field \"" + field.getSimpleName() + "\" is not declared as Collection, List or Set. Lazy loading is disabled for this field", field);
         }
     }
 

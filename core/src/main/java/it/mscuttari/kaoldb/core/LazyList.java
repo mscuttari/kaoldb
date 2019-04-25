@@ -27,7 +27,7 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
      * @param query         query to be executed to load data
      */
     public LazyList(List<T> container, @NonNull Query<T> query) {
-        super(container == null ? new ArrayList<T>() : container, query);
+        super(container == null ? new ArrayList<>() : container, query);
     }
 
 
@@ -40,7 +40,7 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
-    public void replaceAll(UnaryOperator<T> operator) {
+    public void replaceAll(@NonNull UnaryOperator<T> operator) {
         checkInitialization();
         getContainer().replaceAll(operator);
     }

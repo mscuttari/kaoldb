@@ -62,7 +62,6 @@ class PojoAdapter {
      * @throws PojoException if the child class is not found (wrong discriminator column value) or
      *                       if it can not be instantiated
      */
-    @Nullable
     public static <T> T cursorToObject(DatabaseObject db,
                                        Cursor c,
                                        Map<String, Integer> cursorMap,
@@ -79,6 +78,7 @@ class PojoAdapter {
 
         while (resultEntity.children.size() != 0) {
             // Get the discriminator value
+            assert resultEntity.discriminatorColumn != null;
             String discriminatorColumnName = alias + "." + resultEntity.discriminatorColumn.name;
             int columnIndex = cursorMap.get(discriminatorColumnName);
             Object discriminatorValue = null;
@@ -129,9 +129,6 @@ class PojoAdapter {
         while (entity != null) {
             if (entity.realTable) {
                 for (BaseColumnObject column : entity.columns) {
-                    if (column.field == null)
-                        continue;
-
                     Object fieldValue;
 
                     if (!column.field.isAnnotationPresent(OneToOne.class) &&
@@ -259,6 +256,8 @@ class PojoAdapter {
 
         // Discriminator column
         if (childEntity != null) {
+            assert currentEntity.discriminatorColumn != null;
+
             if (cv.containsKey(currentEntity.discriminatorColumn.name)) {
                 // Discriminator value has been manually set
                 // Checking if it is in accordance with the child entity class

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Scuttari Michele
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package it.mscuttari.kaoldb.core;
 
 import java.lang.reflect.Field;
@@ -15,7 +31,6 @@ import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
@@ -121,6 +136,8 @@ class EntityObject<T> {
      * The collection contains the fields declared in {@link #clazz} (superclasses are
      * excluded) that are annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne}
      * or {@link ManyToMany}.
+     *
+     * @see #loadRelationships()
      */
     public Collection<Relationship> relationships = new HashSet<>();
 
@@ -319,7 +336,7 @@ class EntityObject<T> {
     /**
      * Determine the relationships fields
      *
-     * Each field is considered a relationship one if it is annotated with {@link OneToOne},
+     * A field is considered a relationship one if it is annotated with {@link OneToOne},
      * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
      */
     private void loadRelationships() {
@@ -331,9 +348,8 @@ class EntityObject<T> {
                     field.isAnnotationPresent(ManyToOne.class) ||
                     field.isAnnotationPresent(ManyToMany.class)) {
 
-                //relationshipsNew.add(new Relationship(field));
-
-                doAndNotifyAll(this, () -> relationships.add(new Relationship(db, field)));
+                Relationship relationship = new Relationship(db, field);
+                doAndNotifyAll(this, () -> relationships.add(relationship));
             }
         }
     }

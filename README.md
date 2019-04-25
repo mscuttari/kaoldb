@@ -23,4 +23,4 @@ Pull requests are welcome and encouraged. The only requirement is to comment the
 * The test module uses [Robolectric](https://github.com/robolectric/robolectric) to run the tests in a virtual Android environment.
 
 ## License
-The project is distributed under the MIT license.
+The project is distributed under the Apache 2.0 license.

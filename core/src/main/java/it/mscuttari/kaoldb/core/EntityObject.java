@@ -43,6 +43,7 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -726,7 +727,7 @@ class EntityObject<T> {
         // Create associations
         Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
         String columns = StringUtils.implode(parentPrimaryKeys, obj -> obj.name, ", ");
-        Propagation propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
+        Propagation propagation = new Propagation(CASCADE, CASCADE);
 
         return "FOREIGN KEY (" + columns + ") " +
                 "REFERENCES " + parent.tableName + " (" + columns + ") " +

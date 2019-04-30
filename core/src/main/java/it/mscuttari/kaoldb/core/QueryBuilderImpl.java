@@ -103,7 +103,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
     public Query<T> build(@NonNull Root<T> root) {
         // The "FROM" clause must be set
         if (from == null) {
-            throw new QueryException("\"From\" clause not set");
+            throw new QueryException("\"FROM\" clause not set");
         }
 
         if (!(root instanceof RootInt)) {

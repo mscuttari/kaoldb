@@ -6,11 +6,11 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
-@Table(name = "b")
+@Table(name = "table_b")
 public class EntityB {
 
     @Id
     @Column(name = "id")
-    public int id;
+    public long id;
 
 }

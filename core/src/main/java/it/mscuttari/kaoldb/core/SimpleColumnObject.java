@@ -48,7 +48,7 @@ final class SimpleColumnObject extends BaseColumnObject {
                                @NonNull EntityObject<?> entity,
                                @NonNull Field field) {
 
-        super(db, entity, field, 6);
+        super(db, entity, field);
     }
 
 

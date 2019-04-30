@@ -147,10 +147,6 @@ class Relationship {
 
                     // Get the position of the generic in the parent class declaration
                     int parentGenericIndex = 0;
-
-                    //ParameterizedType parameterizedParent = (ParameterizedType) parent;
-                    //Type[] parentGenerics = parameterizedParent.getActualTypeArguments();
-
                     Type[] parentGenerics = getTypeRawClass(parent).getTypeParameters();
 
                     for (Type generic : parentGenerics) {

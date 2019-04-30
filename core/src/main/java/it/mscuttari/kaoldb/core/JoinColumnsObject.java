@@ -25,6 +25,8 @@ import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 
+import static it.mscuttari.kaoldb.core.Propagation.Action.*;
+
 /**
  * This class allows to group the join columns that are declared together
  *
@@ -55,19 +57,11 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
 
         if (field.isAnnotationPresent(OneToOne.class)) {
             OneToOne annotation = field.getAnnotation(OneToOne.class);
-
-            propagation = new Propagation(
-                    Propagation.Action.CASCADE,
-                    annotation.optional() ? Propagation.Action.SET_NULL : Propagation.Action.RESTRICT
-                    );
+            propagation = new Propagation(CASCADE, annotation.optional() ? SET_NULL : RESTRICT);
 
         } else if (field.isAnnotationPresent(ManyToOne.class)) {
             ManyToOne annotation = field.getAnnotation(ManyToOne.class);
-
-            propagation = new Propagation(
-                    Propagation.Action.CASCADE,
-                    annotation.optional() ? Propagation.Action.SET_NULL : Propagation.Action.RESTRICT
-            );
+            propagation = new Propagation(CASCADE, annotation.optional() ? SET_NULL : RESTRICT);
 
         } else {
             // Normally not reachable

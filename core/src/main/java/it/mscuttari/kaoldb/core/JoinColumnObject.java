@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -35,6 +34,7 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
 import static it.mscuttari.kaoldb.core.PojoAdapter.insertDataIntoContentValues;
+import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
  * This class allows to map a column acting as a foreign key
@@ -67,7 +67,7 @@ final class JoinColumnObject extends BaseColumnObject {
                             @NonNull Field field,
                             @NonNull JoinColumn annotation) {
 
-        super(db, entity, field, 7);
+        super(db, entity, field);
 
         this.annotation = annotation;
     }
@@ -274,9 +274,9 @@ final class JoinColumnObject extends BaseColumnObject {
         waitWhile(this, () -> nullable == null);
 
         if (nullable) {
-            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.SET_NULL);
+            propagation = new Propagation(CASCADE, SET_NULL);
         } else {
-            propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.RESTRICT);
+            propagation = new Propagation(CASCADE, RESTRICT);
         }
     }
 

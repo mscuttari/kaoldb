@@ -30,6 +30,7 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
  * This class allows to group the columns belonging to the same join table
@@ -219,7 +220,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         List<String> referenced = new ArrayList<>();    // Referenced columns
 
         JoinTable annotation = field.getAnnotation(JoinTable.class);
-        Propagation propagation = new Propagation(Propagation.Action.CASCADE, Propagation.Action.CASCADE);
+        Propagation propagation = new Propagation(CASCADE, CASCADE);
 
         // Direct join columns
         EntityObject<?> directJoinEntity = db.getEntity(annotation.joinClass());

@@ -21,7 +21,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 
-import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.exceptions.PojoException;
@@ -77,13 +76,10 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @param db                database
      * @param entity            entity the column belongs to
      * @param field             field the column is generated from
-     * @param mappingPhases     number of mapping phases to be traversed before the column can
-     *                          be considered mapped
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
-                            @NonNull Field field,
-                            @IntRange(from = 0) int mappingPhases) {
+                            @NonNull Field field) {
 
         this.db = db;
         this.entity = entity;

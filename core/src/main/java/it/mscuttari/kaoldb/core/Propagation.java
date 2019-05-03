@@ -18,6 +18,9 @@ package it.mscuttari.kaoldb.core;
 
 import androidx.annotation.NonNull;
 
+/**
+ * Describes the actions to be taken when a foreign key constraint changes
+ */
 class Propagation {
 
     public enum Action {

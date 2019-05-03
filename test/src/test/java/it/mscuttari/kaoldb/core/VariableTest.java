@@ -85,7 +85,7 @@ public class VariableTest extends AbstractTest {
     @Entity
     @Table(name = "table_a")
     private static class EntityA {
-        
+
         @Id
         @Column(name = "id")
         public long id;

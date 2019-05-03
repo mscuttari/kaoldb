@@ -140,7 +140,7 @@ class QueryImpl<M> implements Query<M> {
     @Override
     public M getSingleResult() {
         List<M> resultList = getResultList();
-        return resultList == null || resultList.size() == 0 ? null : resultList.get(0);
+        return resultList == null || resultList.isEmpty() ? null : resultList.get(0);
     }
 
 

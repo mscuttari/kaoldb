@@ -3,7 +3,9 @@ package it.mscuttari.kaoldb.core;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
@@ -417,11 +419,15 @@ public class RelationshipTest extends AbstractTest {
         public EntityA oneToOne;
 
         @OneToMany(mappedBy = "manyToOne")
-        public Collection<EntityA> oneToMany;
+        public List<EntityA> oneToMany;
 
         @ManyToMany(mappedBy = "manyToMany")
-        public Collection<EntityA> manyToMany;
-        
+        public CustomCollectionA manyToMany;
+
+        private static class CustomCollectionA extends ArrayList<EntityA> {
+
+        }
+
     }
 
 }

@@ -33,6 +33,8 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
+ * Maps the fields of an entity
+ *
  * @param <M>   entity class
  * @param <T>   data type
  */
@@ -47,14 +49,14 @@ public abstract class Property<M, T> {
     /** The class of the entity involved by the property */
     @NonNull final Class<T> fieldType;
 
-    /** Field name (as specified in the model) */
+    /** Field name (as specified in the entity class) */
     @NonNull final String fieldName;
 
     /**
      * Column annotation class (used for a rapid column type lookup).
      * It is one of {@link Column}, {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
      */
-    @NonNull final Class<? extends Annotation> columnAnnotation;
+    @Nullable final Class<? extends Annotation> columnAnnotation;
 
     /**
      * Relationship annotation class (used for a rapid relationship type lookup).
@@ -71,30 +73,8 @@ public abstract class Property<M, T> {
      * @param fieldType     field type
      * @param field         field the property is generated from
      */
-    public Property(@NonNull Class<M> entityClass,
-                    @NonNull Class<T> fieldType,
-                    @NonNull Field field) {
-
+    Property(@NonNull Class<M> entityClass, @NonNull Class<T> fieldType, @NonNull Field field) {
         this(entityClass, entityClass, fieldType, field.getName(), getColumnAnnotation(field), getRelationshipAnnotation(field));
-    }
-
-
-    /**
-     * Constructor
-     *
-     * @param entityClass               current entity class (the parent class is set to the set of the current class)
-     * @param fieldType                 field type
-     * @param fieldName                 field name
-     * @param columnAnnotation          column class
-     * @param relationshipAnnotation    relationship class
-     */
-    public Property(@NonNull Class<M> entityClass,
-                    @NonNull Class<T> fieldType,
-                    @NonNull String fieldName,
-                    @NonNull Class<? extends Annotation> columnAnnotation,
-                    @Nullable Class<? extends Annotation> relationshipAnnotation) {
-
-        this(entityClass, entityClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);
     }
 
 
@@ -112,14 +92,14 @@ public abstract class Property<M, T> {
                     @NonNull Class<? super M> fieldParentClass,
                     @NonNull Class<T> fieldType,
                     @NonNull String fieldName,
-                    @NonNull Class<? extends Annotation> columnAnnotation,
+                    @Nullable Class<? extends Annotation> columnAnnotation,
                     @Nullable Class<? extends Annotation> relationshipAnnotation) {
 
         this.entityClass            = checkNotNull(entityClass);
         this.fieldParentClass       = checkNotNull(fieldParentClass);
         this.fieldType              = checkNotNull(fieldType);
         this.fieldName              = checkNotNull(fieldName);
-        this.columnAnnotation       = checkNotNull(columnAnnotation);
+        this.columnAnnotation       = columnAnnotation;
         this.relationshipAnnotation = relationshipAnnotation;
     }
 
@@ -141,11 +121,8 @@ public abstract class Property<M, T> {
      *
      * @return class of the column annotation linked to the field
      *         (null if the field is not annotated with any column annotation)
-     *
-     * @throws IllegalArgumentException if the field doesn't have {@link Column}, {@link JoinColumn},
-     *                                  {@link JoinColumns} or {@link JoinTable} annotations
      */
-    @NonNull
+    @Nullable
     private static Class<? extends Annotation> getColumnAnnotation(Field field) {
         if (field.isAnnotationPresent(Column.class))
             return Column.class;
@@ -159,7 +136,7 @@ public abstract class Property<M, T> {
         if (field.isAnnotationPresent(JoinTable.class))
             return JoinTable.class;
 
-        throw new IllegalArgumentException("Field doesn't have @Column, @JoinColumn, @JoinColumns or @JoinTable annotations");
+        return null;
     }
 
 

@@ -46,25 +46,6 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
     /**
      * Constructor
      *
-     * @param entityClass               current entity class (the parent class is set to the set of the current class)
-     * @param fieldType                 field type
-     * @param fieldName                 field name
-     * @param columnAnnotation          column class
-     * @param relationshipAnnotation    relationship class
-     */
-    public CollectionProperty(@NonNull Class<M> entityClass,
-                              @NonNull Class<T> fieldType,
-                              @NonNull String fieldName,
-                              @NonNull Class<? extends Annotation> columnAnnotation,
-                              @Nullable Class<? extends Annotation> relationshipAnnotation) {
-
-        super(entityClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);
-    }
-
-
-    /**
-     * Constructor
-     *
      * @param entityClass               current entity class
      * @param fieldParentClass          the class the property really belongs to
      * @param fieldType                 field type

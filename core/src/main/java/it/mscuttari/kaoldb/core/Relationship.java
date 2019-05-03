@@ -34,6 +34,18 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 
 import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.*;
 
+/**
+ * Maps a relationship.
+ * The possible combinations of column and relationship annotation specified on {@link #field} are
+ * the following ones:
+ *                          | Column | JoinColumn | JoinColumns | JoinTable
+ * OneToOne (mapping)       |   No   |    Yes     |     Yes     |    Yes
+ * OneToOne (non-mapping)   |   No   |    No      |     No      |    No
+ * OneToMany                |   No   |    No      |     No      |    No
+ * ManyToOne                |   No   |    Yes     |     Yes     |    Yes
+ * ManyToMany (mapping)     |   No   |    No      |     No      |    Yes
+ * ManyToMany (non-mapping) |   No   |    No      |     No      |    No
+ */
 class Relationship {
 
     public enum RelationshipType {

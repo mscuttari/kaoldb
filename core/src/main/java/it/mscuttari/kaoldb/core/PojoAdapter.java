@@ -26,7 +26,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
-import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;

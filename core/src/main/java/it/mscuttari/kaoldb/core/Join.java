@@ -16,8 +16,6 @@
 
 package it.mscuttari.kaoldb.core;
 
-import android.util.Pair;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +32,11 @@ import it.mscuttari.kaoldb.core.Variable.StringWrapper;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
+
+import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.MANY_TO_MANY;
+import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.MANY_TO_ONE;
+import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.ONE_TO_MANY;
+import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.ONE_TO_ONE;
 
 /**
  * @param <L>   left side entity of the join
@@ -176,10 +179,10 @@ final class Join<L, R> implements RootInt<L> {
                 // The join doesn't have a right subtree, so the join can be performed without further exploration.
                 // In the example, the nodes satisfying this condition are the 1 and 5.
 
-                List<Pair<String, Expression>> clauses = getJoinClauses(db, join.type, root, join.right, join.property, join.on);
+                List<String> clauses = getJoinClauses(db, join.type, root, join.right, join.property, join.on);
 
-                for (Pair<String, Expression> clause : clauses) {
-                    result = new StringBuilder("(" + result + clause.first + " ON " + clause.second + ")");
+                for (String clause : clauses) {
+                    result = new StringBuilder("(" + result + clause + ")");
                 }
 
             } else if (join.right instanceof Join) {
@@ -195,10 +198,10 @@ final class Join<L, R> implements RootInt<L> {
                 }
 
                 // Perform the join (i.e. between 4 and 6)
-                List<Pair<String, Expression>> clauses = getJoinClauses(db, join.type, root, rightRoot, join.property, join.on);
+                List<String> clauses = getJoinClauses(db, join.type, root, rightRoot, join.property, join.on);
 
-                for (Pair<String, Expression> clause : clauses) {
-                    result = new StringBuilder("(" + result + clause.first + " ON " + clause.second + ")");
+                for (String clause : clauses) {
+                    result = new StringBuilder("(" + result + clause + ")");
                 }
 
                 // Save the leaf as the new left-most leaf (the bigger tree analysis has already finished)
@@ -207,26 +210,6 @@ final class Join<L, R> implements RootInt<L> {
         }
 
         return result.toString();
-    }
-
-
-    /**
-     * Get left root
-     *
-     * @return left root
-     */
-    public RootInt<L> getLeftRoot() {
-        return left;
-    }
-
-
-    /**
-     * Get right root
-     *
-     * @return right root
-     */
-    public RootInt<R> getRightRoot() {
-        return right;
     }
 
 
@@ -389,62 +372,176 @@ final class Join<L, R> implements RootInt<L> {
     /**
      * Get the join clauses of a join
      *
-     * @param db        database
-     * @param type      join type
-     * @param left      left root
-     * @param right     right root
-     * @param property  linking property
-     * @param on        "ON" custom clause
+     * @param db            database
+     * @param type          join type
+     * @param local         local root root
+     * @param joined        joined root
+     * @param property      linking property
+     * @param on            "ON" custom clause
      *
-     * @return list of the clauses (each clause is composed by two elements: the first is something
-     *         like " INNER JOIN table", while the second is the "ON" expression). Note that the
+     * @return list of the clauses (in the form " INNER JOIN table ON expression"). Note that the
      *         left table name is not included and must be added by the caller
+     *
+     * @see Relationship for the compatibility between column and relationship annotations
      */
-    private static List<Pair<String, Expression>> getJoinClauses(DatabaseObject db, JoinType type, RootInt<?> left, RootInt<?> right, Property<?, ?> property, Expression on) {
+    private static List<String> getJoinClauses(DatabaseObject db, JoinType type, RootInt<?> local, RootInt<?> joined, Property<?, ?> property, Expression on) {
         // Predefined ON clause
         if (on != null) {
-            return Collections.singletonList(new Pair<>(
-                    " " + type + " " + right.toString(),
-                    on)
-            );
+            return Collections.singletonList(" " + type + " " + joined.toString() + " ON " + on);
         }
 
-        // ON clause dependent on the property
+        // Get the relationship linked to the property
+        EntityObject<?> leftEntity = db.getEntity(local.getEntityClass());
+        Relationship relationship = leftEntity.relationships.getByField(property.fieldName);
 
-        if (property.columnAnnotation == JoinColumn.class) {
-            return Collections.singletonList(new Pair<>(
-                    " " + type + " " + right.toString(),
-                    getTwoTablesOnClause(db, left, right, property.getField().getAnnotation(JoinColumn.class))
-            ));
+        if (relationship.type == ONE_TO_ONE) {
+            if (relationship.owning) {
+                if (property.columnAnnotation == JoinColumn.class) {
+                    on = getTwoTablesOnClause(db, local, joined, relationship.mappingField.getAnnotation(JoinColumn.class));
+                    String result = " " + type + " " + joined.toString() + " ON " + on;
+                    return Collections.singletonList(result);
+                }
 
-        } else if (property.columnAnnotation == JoinColumns.class) {
-            return Collections.singletonList(new Pair<>(
-                    " " + type + " " + right.toString(),
-                    getTwoTablesOnClause(db, left, right, property.getField().getAnnotation(JoinColumns.class))
-            ));
+                if (property.columnAnnotation == JoinColumns.class) {
+                    on = getTwoTablesOnClause(db, local, joined, relationship.mappingField.getAnnotation(JoinColumns.class));
+                    String result = " " + type + " " + joined.toString() + " ON " + on;
+                    return Collections.singletonList(result);
+                }
 
-        } else if (property.columnAnnotation == JoinTable.class) {
-            JoinTable annotation = property.getField().getAnnotation(JoinTable.class);
-            String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
+                if (property.columnAnnotation == JoinTable.class) {
+                    JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                    String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
 
-            Expression onLeft = getThreeTablesLeftOnClause(db, left, right, annotation);
-            Expression onRight = getThreeTablesRightOnClause(db, left, right, annotation);
+                    Expression onLeft = getThreeTablesDirectOnClause(db, local, joined, annotation);
+                    Expression onRight = getThreeTablesInverseOnClause(db, local, joined, annotation);
 
-            List<Pair<String, Expression>> result = new ArrayList<>(2);
+                    List<String> result = new ArrayList<>(2);
 
-            result.add(new Pair<>(
-                    " " + type + " " + midTable,
-                    onLeft
-            ));
+                    result.add(" " + type + " " + midTable + " ON " + onLeft);
+                    result.add(" " + type + " " + joined   + " ON " + onRight);
 
-            result.add(new Pair<>(
-                    " " + type + " " + right,
-                    onRight
-            ));
+                    return result;
+                }
+            } else {
+                if (relationship.mappingField.isAnnotationPresent(JoinColumn.class)) {
+                    on = getTwoTablesOnClause(db, joined, local, relationship.mappingField.getAnnotation(JoinColumn.class));
+                    String result = " " + type + " " + joined.toString() + " ON " + on;
+                    return Collections.singletonList(result);
+                }
 
-            return result;
+                if (relationship.mappingField.isAnnotationPresent(JoinColumns.class)) {
+                    on = getTwoTablesOnClause(db, joined, local, relationship.mappingField.getAnnotation(JoinColumns.class));
+                    String result = " " + type + " " + joined.toString() + " ON " + on;
+                    return Collections.singletonList(result);
+                }
+
+                if (relationship.mappingField.isAnnotationPresent(JoinTable.class)) {
+                    JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                    String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
+
+                    Expression onLeft = getThreeTablesInverseOnClause(db, local, joined, annotation);
+                    Expression onRight = getThreeTablesDirectOnClause(db, local, joined, annotation);
+
+                    List<String> result = new ArrayList<>(2);
+
+                    result.add(" " + type + " " + midTable + " ON " + onLeft);
+                    result.add(" " + type + " " + joined   + " ON " + onRight);
+
+                    return result;
+                }
+            }
         }
 
+        if (relationship.type == ONE_TO_MANY) {
+            if (relationship.mappingField.isAnnotationPresent(JoinColumn.class)) {
+                on = getTwoTablesOnClause(db, joined, local, relationship.mappingField.getAnnotation(JoinColumn.class));
+                String result = " " + type + " " + joined.toString() + " ON " + on;
+                return Collections.singletonList(result);
+            }
+
+            if (relationship.mappingField.isAnnotationPresent(JoinColumns.class)) {
+                on = getTwoTablesOnClause(db, joined, local, relationship.mappingField.getAnnotation(JoinColumns.class));
+                String result = " " + type + " " + joined.toString() + " ON " + on;
+                return Collections.singletonList(result);
+            }
+
+            if (relationship.mappingField.isAnnotationPresent(JoinTable.class)) {
+                JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
+
+                Expression onLeft = getThreeTablesInverseOnClause(db, local, joined, annotation);
+                Expression onRight = getThreeTablesDirectOnClause(db, local, joined, annotation);
+
+                List<String> result = new ArrayList<>(2);
+
+                result.add(" " + type + " " + midTable + " ON " + onLeft);
+                result.add(" " + type + " " + joined   + " ON " + onRight);
+
+                return result;
+            }
+        }
+
+        if (relationship.type == MANY_TO_ONE) {
+            if (property.columnAnnotation == JoinColumn.class) {
+                on = getTwoTablesOnClause(db, local, joined, relationship.mappingField.getAnnotation(JoinColumn.class));
+                String result = " " + type + " " + joined.toString() + " ON " + on;
+                return Collections.singletonList(result);
+            }
+
+            if (property.columnAnnotation == JoinColumns.class) {
+                on = getTwoTablesOnClause(db, local, joined, relationship.mappingField.getAnnotation(JoinColumns.class));
+                String result = " " + type + " " + joined.toString() + " ON " + on;
+                return Collections.singletonList(result);
+            }
+
+            if (property.columnAnnotation == JoinTable.class) {
+                JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
+
+                Expression onLeft = getThreeTablesDirectOnClause(db, local, joined, annotation);
+                Expression onRight = getThreeTablesInverseOnClause(db, local, joined, annotation);
+
+                List<String> result = new ArrayList<>(2);
+
+                result.add(" " + type + " " + midTable + " ON " + onLeft);
+                result.add(" " + type + " " + joined   + " ON " + onRight);
+
+                return result;
+            }
+        }
+
+        if (relationship.type == MANY_TO_MANY) {
+            if (relationship.owning) {
+                JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
+
+                Expression onLeft = getThreeTablesDirectOnClause(db, local, joined, annotation);
+                Expression onRight = getThreeTablesInverseOnClause(db, local, joined, annotation);
+
+                List<String> result = new ArrayList<>(2);
+
+                result.add(" " + type + " " + midTable + " ON " + onLeft);
+                result.add(" " + type + " " + joined   + " ON " + onRight);
+
+                return result;
+
+            } else {
+                JoinTable annotation = relationship.mappingField.getAnnotation(JoinTable.class);
+                String midTable = annotation.name() + " AS " + getJoinTableAlias(annotation.name(), local.getAlias(), joined.getAlias());
+
+                Expression onLeft = getThreeTablesInverseOnClause(db, local, joined, annotation);
+                Expression onRight = getThreeTablesDirectOnClause(db, local, joined, annotation);
+
+                List<String> result = new ArrayList<>(2);
+
+                result.add(" " + type + " " + midTable + " ON " + onLeft);
+                result.add(" " + type + " " + joined   + " ON " + onRight);
+
+                return result;
+            }
+        }
+
+        // Normally not reachable
         throw new QueryException("Invalid join field \"" + property.fieldName + "\"");
     }
 
@@ -453,37 +550,37 @@ final class Join<L, R> implements RootInt<L> {
      * Get the "ON" expression for the direct join columns of a {@link JoinColumn} annotated property
      *
      * @param db            database
-     * @param left          left root
-     * @param right         right root
+     * @param owning        owning root
+     * @param referenced    referenced (non-owning) root
      * @param annotation    JoinColumn annotation
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinColumn annotation) {
-        Pair<String, String> columnsPair = new Pair<>(
-                left.getAlias()  + "." + annotation.name(),
-                right.getAlias() + "." + annotation.referencedColumnName()
+    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> owning, RootInt<?> referenced, JoinColumn annotation) {
+        return getColumnsEqualityExpression(
+                db,
+                owning,
+                owning.getAlias()     + "." + annotation.name(),
+                referenced.getAlias() + "." + annotation.referencedColumnName()
         );
-
-        return columnsPairToExpression(db, left, columnsPair);
     }
 
 
     /**
-     * Get the "ON" expression for the direct join columns of a {@link JoinColumns} annotated property
+     * Get the "ON" expression for the join columns of a {@link JoinColumns} annotated property
      *
      * @param db            database
-     * @param left          left root
-     * @param right         right root
+     * @param owning        owning root
+     * @param referenced    referenced (non-owning) root
      * @param annotation    JoinColumns annotation
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinColumns annotation) {
+    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> owning, RootInt<?> referenced, JoinColumns annotation) {
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.value()) {
-            Expression expression = getTwoTablesOnClause(db, left, right, joinColumn);
+            Expression expression = getTwoTablesOnClause(db, owning, referenced, joinColumn);
             result = result == null ? expression : result.and(expression);
         }
 
@@ -495,23 +592,24 @@ final class Join<L, R> implements RootInt<L> {
      * Get the "ON" expression for the direct join columns of a {@link JoinTable} annotated property
      *
      * @param db            database
-     * @param left          left root
-     * @param right         right root
+     * @param direct        direct join root
+     * @param inverse       inverse join root
      * @param annotation    JoinTable annotation
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesLeftOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinTable annotation) {
-        String joinTableAlias = getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
+    private static Expression getThreeTablesDirectOnClause(DatabaseObject db, RootInt<?> direct, RootInt<?> inverse, JoinTable annotation) {
+        String joinTableAlias = getJoinTableAlias(annotation.name(), direct.getAlias(), inverse.getAlias());
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.joinColumns()) {
-            Pair<String, String> columnsPair = new Pair<>(
-                    left.getAlias() + "." + joinColumn.referencedColumnName(),
+            Expression expression = getColumnsEqualityExpression(
+                    db,
+                    direct,
+                    direct.getAlias() + "." + joinColumn.referencedColumnName(),
                     joinTableAlias + "." + joinColumn.name()
             );
 
-            Expression expression = columnsPairToExpression(db, left, columnsPair);
             result = result == null ? expression : result.and(expression);
         }
 
@@ -523,23 +621,24 @@ final class Join<L, R> implements RootInt<L> {
      * Get the "ON" expression for the inverse join columns of a {@link JoinTable} annotated property
      *
      * @param db            database
-     * @param left          left root
-     * @param right         right root
+     * @param direct        direct join root
+     * @param inverse       inverse join root
      * @param annotation    JoinTable annotation
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesRightOnClause(DatabaseObject db, RootInt<?> left, RootInt<?> right, JoinTable annotation) {
-        String joinTableAlias = getJoinTableAlias(annotation.name(), left.getAlias(), right.getAlias());
+    private static Expression getThreeTablesInverseOnClause(DatabaseObject db, RootInt<?> direct, RootInt<?> inverse, JoinTable annotation) {
+        String joinTableAlias = getJoinTableAlias(annotation.name(), direct.getAlias(), inverse.getAlias());
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.inverseJoinColumns()) {
-            Pair<String, String> columnsPair = new Pair<>(
-                    right.getAlias() + "." + joinColumn.referencedColumnName(),
+            Expression expression = getColumnsEqualityExpression(
+                    db,
+                    inverse,
+                    inverse.getAlias() + "." + joinColumn.referencedColumnName(),
                     joinTableAlias + "." + joinColumn.name()
             );
 
-            Expression expression = columnsPairToExpression(db, right, columnsPair);
             result = result == null ? expression : result.and(expression);
         }
 
@@ -548,16 +647,17 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Convert a column association pair to the equivalent expression
+     * Given two column names, get an equality expression between them
      *
-     * @param db        database
-     * @param pair      column association
+     * @param db            database
+     * @param firstColumn   first column, prepended with table alias (i.e. "alias.column")
+     * @param secondColumn  second column, prepended with table alias (i.e. "alias.column")
      *
-     * @return expression
+     * @return equality expression
      */
-    private static Expression columnsPairToExpression(DatabaseObject db, RootInt<?> root, Pair<String, String> pair) {
-        Variable<StringWrapper> a = new Variable<>(new StringWrapper(pair.first));
-        Variable<StringWrapper> b = new Variable<>(new StringWrapper(pair.second));
+    private static Expression getColumnsEqualityExpression(DatabaseObject db, RootInt<?> root, String firstColumn, String secondColumn) {
+        Variable<StringWrapper> a = new Variable<>(new StringWrapper(firstColumn));
+        Variable<StringWrapper> b = new Variable<>(new StringWrapper(secondColumn));
 
         return PredicateImpl.eq(db, root, a, b);
     }

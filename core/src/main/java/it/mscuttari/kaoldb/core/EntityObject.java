@@ -140,7 +140,7 @@ class EntityObject<T> {
      *
      * @see #loadRelationships()
      */
-    public Collection<Relationship> relationships = new HashSet<>();
+    public Relationships relationships = new Relationships();
 
 
     /**

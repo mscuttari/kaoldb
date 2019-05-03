@@ -59,6 +59,7 @@ final class PredicateImpl<T> implements ExpressionInt {
             this.cardinality = cardinality;
         }
 
+        @NonNull
         @Override
         public String toString() {
             return operation;
@@ -202,6 +203,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      * @throws QueryException if the requested configuration is invalid
      * @throws IllegalStateException if the operation cardinality is unexpected
      */
+    @NonNull
     @Override
     public String toString() {
         if (operation.cardinality == 1) {

@@ -47,6 +47,7 @@ final class ExpressionImpl implements ExpressionInt {
             this.cardinality = cardinality;
         }
 
+        @NonNull
         @Override
         public String toString() {
             return operation;
@@ -172,6 +173,7 @@ final class ExpressionImpl implements ExpressionInt {
      * @return string representation
      * @throws IllegalStateException if {@link #operation} is unknown
      */
+    @NonNull
     @Override
     public String toString() {
         switch (operation) {
@@ -197,7 +199,7 @@ final class ExpressionImpl implements ExpressionInt {
     @Override
     public Expression not() {
         // Double negation: NOT(NOT(expression)) = expression
-        if (operation == ExpressionType.NOT && x != null)
+        if (operation == ExpressionType.NOT)
             return x;
 
         return new ExpressionImpl(ExpressionType.NOT, this, null);
@@ -336,6 +338,9 @@ final class ExpressionImpl implements ExpressionInt {
                 stack.push((ExpressionImpl) expression.x);
                 expression = (ExpressionImpl) expression.x;
             }
+
+            if (expression == null)
+                return null;
 
             return (PredicateImpl) expression.x;
         }

@@ -59,6 +59,9 @@ class DatabaseObject {
     /** Whether the database version is being changed */
     public final AtomicBoolean upgrading = new AtomicBoolean(false);
 
+    /** Whether the entities have been mapped or not */
+    private boolean mapped = false;
+
 
     /**
      * Get database name
@@ -197,17 +200,25 @@ class DatabaseObject {
      *
      * @param clazz     entity class
      * @return entity object
-     * @throws InvalidConfigException if the class is not an entity or doesn't belong to this database
+     * @throws InvalidConfigException if the entities have not been mapped yet and the entity class
+     *                                doesn't belong to this database
      */
     @SuppressWarnings("unchecked")
     public <T> EntityObject<T> getEntity(Class<T> clazz) {
-        // Check if the class is an entity of this database
-        if (!classes.contains(clazz)) {
-            throw new InvalidConfigException("Entity " + clazz.getSimpleName() + " not found");
-        }
+        // Check if the entity should exists and eventually wait for it to be mapped, but only
+        // if the entities have not been mapped yet.
+        // When the mapping process is finished, all the constraint should be consistent by design
+        // and therefore this check is not needed.
 
-        // Wait for the entity to be mapped
-        waitWhile(this, () -> entities.get(clazz) == null);
+        if (!mapped) {
+            // Check if the class is an entity of this database
+            if (!classes.contains(clazz)) {
+                throw new InvalidConfigException("Entity \"" + clazz.getSimpleName() + "\" not found");
+            }
+
+            // Wait for the entity to be mapped
+            waitWhile(this, () -> entities.get(clazz) == null);
+        }
 
         return (EntityObject<T>) entities.get(clazz);
     }
@@ -235,6 +246,7 @@ class DatabaseObject {
     public void mapEntities() {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
+        mapped = false;
         doAndNotifyAll(this, entities::clear);
         ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
@@ -265,6 +277,7 @@ class DatabaseObject {
                 task.get();
             }
 
+            mapped = true;
             LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
 
         } catch (ExecutionException | InterruptedException e) {

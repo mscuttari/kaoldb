@@ -194,7 +194,13 @@ final class SimpleColumnObject extends BaseColumnObject {
     @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {
         Object value = getValue(obj);
-        PojoAdapter.insertDataIntoContentValues(cv, name, value);
+        insertIntoContentValues(cv, name, value);
+    }
+
+
+    @Override
+    public boolean hasRelationship() {
+        return false;
     }
 
 }

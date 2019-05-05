@@ -286,7 +286,6 @@ final class ExpressionImpl implements ExpressionInt {
         private final Stack<ExpressionImpl> stack = new Stack<>();
         private PredicateImpl next;
 
-
         /**
          * Constructor
          *
@@ -303,12 +302,10 @@ final class ExpressionImpl implements ExpressionInt {
             this.next = (PredicateImpl) expression.x;
         }
 
-
         @Override
         public boolean hasNext() {
             return next != null;
         }
-
 
         @Override
         public PredicateImpl next() {
@@ -316,7 +313,6 @@ final class ExpressionImpl implements ExpressionInt {
             next = fetchNext();
             return result;
         }
-
 
         /**
          * Fetch next node

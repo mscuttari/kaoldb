@@ -55,6 +55,8 @@ public abstract class Property<M, T> {
     /**
      * Column annotation class (used for a rapid column type lookup).
      * It is one of {@link Column}, {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
+     * It can als be null if the field doesn't have anyt column annotation (as in case of
+     * {@link OneToMany} annotation)
      */
     @Nullable final Class<? extends Annotation> columnAnnotation;
 

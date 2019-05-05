@@ -16,13 +16,20 @@
 
 package it.mscuttari.kaoldb.core;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+
 import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinColumns;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 
@@ -181,6 +188,133 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
+     * Check if the field leads to a relationship with another entity.
+     * This is the same of checking if the field is annotated with {@link JoinColumn},
+     * {@link JoinColumns} or {@link JoinTable}.
+     *
+     * @return true if the field leads to a relationship; false otherwise
+     */
+    public abstract boolean hasRelationship();
+
+
+    /**
+     * Extract the column value from a {@link Cursor}
+     *
+     * @param c             cursor
+     * @param cursorMap     map between cursor column names and column indexes
+     * @param alias         alias of the table
+     *
+     * @return column value
+     *
+     * @throws PojoException if the data type is not compatible with the one found in the database
+     */
+    @SuppressWarnings("unchecked")
+    public Object parseCursor(Cursor c, Map<String, Integer> cursorMap, String alias) {
+        Integer columnIndex = cursorMap.get(alias + "." + name);
+        assert columnIndex != null;
+        int columnType = c.getType(columnIndex);
+
+        Object value = null;
+
+        if (columnType == Cursor.FIELD_TYPE_INTEGER) {
+            if (!(type.equals(Integer.class) || type.equals(int.class) || !type.equals(Date.class) || !type.equals(Calendar.class)))
+                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Integer");
+
+            if (type.equals(Integer.class) || type.equals(int.class)) {
+                value = c.getInt(columnIndex);
+
+            } else if (type.equals(Long.class) || type.equals(long.class)) {
+                value = c.getLong(columnIndex);
+
+            } else if (type.equals(Date.class)) {
+                value = new Date(c.getLong(columnIndex));
+
+            } else if (type.equals(Calendar.class)) {
+                value = Calendar.getInstance();
+                ((Calendar) value).setTimeInMillis(c.getLong(columnIndex));
+            }
+
+        } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
+            if (!(type.equals(Float.class) || type.equals(float.class) || type.equals(Double.class) || type.equals(double.class)))
+                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Float");
+
+            if (type.equals(Float.class) || type.equals(float.class)) {
+                value = c.getFloat(columnIndex);
+
+            } else if (type.equals(Double.class) || type.equals(double.class)) {
+                value = c.getDouble(columnIndex);
+            }
+
+        } else if (columnType == Cursor.FIELD_TYPE_STRING) {
+            if (type.isEnum()) {
+                Enum enumClass = Enum.class.cast(type);
+                value = Enum.valueOf(enumClass.getClass(), c.getString(columnIndex));
+
+            } else if (String.class.isAssignableFrom(type)) {
+                value = c.getString(columnIndex);
+            }
+
+            if (!(type.equals(String.class)))
+                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found String");
+
+        }
+
+        return value;
+    }
+
+
+    /**
+     * Insert value into {@link ContentValues}
+     *
+     * The conversion of the object value to column value follows these rules:
+     *  -   If the column name is already in use, its value is replaced with the newer one.
+     *  -   Passing a null value will result in a NULL table column.
+     *  -   An empty string ("") will not generate a NULL column but a string with a length of
+     *      zero (empty string).
+     *  -   Boolean values are stored either as 1 (true) or 0 (false).
+     *  -   {@link Date} and {@link Calendar} objects are stored by saving their time in milliseconds.
+     *
+     * @param cv            content values
+     * @param column        column name
+     * @param value         value
+     */
+    protected static void insertIntoContentValues(ContentValues cv, String column, Object value) {
+        if (value == null) {
+            cv.putNull(column);
+
+        } else {
+            if (value instanceof Enum) {
+                cv.put(column, ((Enum) value).name());
+
+            } else if (value instanceof Integer || value.getClass().equals(int.class)) {
+                cv.put(column, (int) value);
+
+            } else if (value instanceof Long || value.getClass().equals(long.class)) {
+                cv.put(column, (long) value);
+
+            } else if (value instanceof Float || value.getClass().equals(float.class)) {
+                cv.put(column, (float) value);
+
+            } else if (value instanceof Double || value.getClass().equals(double.class)) {
+                cv.put(column, (double) value);
+
+            } else if (value instanceof String) {
+                cv.put(column, (String) value);
+
+            } else if (value instanceof Boolean || value.getClass().equals(boolean.class)) {
+                cv.put(column, ((boolean) value) ? 1 : 0);
+
+            } else if (value instanceof Date) {
+                cv.put(column, ((Date) value).getTime());
+
+            } else if (value instanceof Calendar) {
+                cv.put(column, ((Calendar) value).getTimeInMillis());
+            }
+        }
+    }
+
+
+    /**
      * Get columns SQL statement to be inserted in the create table query
      *
      * The columns definition takes into consideration the following parameters:
@@ -271,20 +405,16 @@ abstract class BaseColumnObject implements ColumnsContainer {
             this.column = column;
         }
 
-
         @Override
         public boolean hasNext() {
             return column != null;
         }
 
-
         @Override
         public BaseColumnObject next() {
-            try {
-                return column;
-            } finally {
-                column = null;
-            }
+            BaseColumnObject result = column;
+            column = null;
+            return result;
         }
 
     }

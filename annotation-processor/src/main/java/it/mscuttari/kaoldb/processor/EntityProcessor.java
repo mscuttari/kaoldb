@@ -106,9 +106,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         JoinColumns joinColumnsAnnotation = internalElement.getAnnotation(JoinColumns.class);
                         JoinTable joinTableAnnotation = internalElement.getAnnotation(JoinTable.class);
 
-                        if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
-                            continue;
-
                         // Field column annotation
                         ClassName propertyColumnAnnotation;
 
@@ -118,12 +115,14 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                             propertyColumnAnnotation = ClassName.get(JoinColumn.class);
                         } else if (joinColumnsAnnotation != null) {
                             propertyColumnAnnotation = ClassName.get(JoinColumns.class);
-                        } else {
+                        } else if (joinTableAnnotation != null) {
                             propertyColumnAnnotation = ClassName.get(JoinTable.class);
+                        } else {
+                            propertyColumnAnnotation = null;
                         }
 
                         // Field relationship annotation
-                        ClassName propertyRelationshipAnnotation = null;
+                        ClassName propertyRelationshipAnnotation;
 
                         if (internalElement.getAnnotation(OneToOne.class) != null) {
                             propertyRelationshipAnnotation = ClassName.get(OneToOne.class);
@@ -133,6 +132,8 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                             propertyRelationshipAnnotation = ClassName.get(ManyToOne.class);
                         } else if (internalElement.getAnnotation(ManyToMany.class) != null) {
                             propertyRelationshipAnnotation = ClassName.get(ManyToMany.class);
+                        } else {
+                            propertyRelationshipAnnotation = null;
                         }
 
                         boolean isCollectionProperty = internalElement.getAnnotation(OneToMany.class) != null ||
@@ -156,7 +157,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                                                         "$T.class, " +
                                                         "$T.class, " +
                                                         "$S, " +
-                                                        "$T.class, " +
+                                                        (propertyColumnAnnotation == null ? "$S, " : "$T.class, ") +
                                                         (propertyRelationshipAnnotation == null ? "$S" : "$T.class") +
                                                         ")",
                                                 isCollectionProperty ? collectionPropertyClass : singlePropertyClass,

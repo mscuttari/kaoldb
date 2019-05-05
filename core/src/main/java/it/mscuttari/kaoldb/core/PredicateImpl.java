@@ -34,6 +34,7 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static it.mscuttari.kaoldb.core.ExpressionImpl.ExpressionType.AND;
 
 /**
  * Predicate implementation
@@ -314,7 +315,7 @@ final class PredicateImpl<T> implements ExpressionInt {
                 return StringUtils.implode(
                         getPropertyColumns(x.getProperty(), x.getTableAlias()),
                         obj -> obj + " " + operation,
-                        " AND "
+                        " " + AND + " "
                 );
 
             } else {
@@ -343,7 +344,7 @@ final class PredicateImpl<T> implements ExpressionInt {
             return StringUtils.implode(
                     bindProperties(x.getProperty(), x.getTableAlias(), y.getProperty(), y.getTableAlias()),
                     obj -> obj.first + operation + obj.second,
-                    " AND "
+                    " " + AND + " "
             );
 
         } else if (x.hasProperty()) {
@@ -351,7 +352,7 @@ final class PredicateImpl<T> implements ExpressionInt {
             return StringUtils.implode(
                     bindPropertyObject(x.getProperty(), y.getRawData()),
                     obj -> obj.first + operation + obj.second,
-                    " AND "
+                    " " + AND + " "
             );
 
         } else {
@@ -614,7 +615,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         private PredicateImpl predicate;
 
-
         /**
          * Constructor
          *
@@ -624,12 +624,10 @@ final class PredicateImpl<T> implements ExpressionInt {
             this.predicate = predicate;
         }
 
-
         @Override
         public boolean hasNext() {
             return predicate != null;
         }
-
 
         @Override
         public PredicateImpl next() {

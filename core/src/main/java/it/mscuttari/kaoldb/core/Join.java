@@ -392,7 +392,7 @@ final class Join<L, R> implements RootInt<L> {
 
         // Get the relationship linked to the property
         EntityObject<?> leftEntity = db.getEntity(local.getEntityClass());
-        Relationship relationship = leftEntity.relationships.getByField(property.fieldName);
+        Relationship relationship = leftEntity.relationships.getByFieldName(property.fieldName);
 
         if (relationship.type == ONE_TO_ONE) {
             if (relationship.owning) {

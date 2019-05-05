@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
+ * Properties allowed for joins and query expressions
+ *
  * @param <M>   entity class
  * @param <T>   data type
  */

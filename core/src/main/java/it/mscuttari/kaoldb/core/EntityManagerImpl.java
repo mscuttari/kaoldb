@@ -243,7 +243,7 @@ class EntityManagerImpl implements EntityManager {
         try {
             while (currentEntity != null) {
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = PojoAdapter.objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
+                ContentValues cv = currentEntity.toContentValues(obj, childEntity, getContext(), this);
 
                 // Persist
                 if (cv.size() != 0) {
@@ -295,7 +295,7 @@ class EntityManagerImpl implements EntityManager {
         try {
             while (currentEntity != null) {
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = PojoAdapter.objectToContentValues(getContext(), database, currentEntity, childEntity, obj);
+                ContentValues cv = currentEntity.toContentValues(obj, childEntity, getContext(), this);
 
                 // Update
                 if (cv.size() != 0) {

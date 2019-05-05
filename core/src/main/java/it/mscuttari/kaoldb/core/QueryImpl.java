@@ -108,7 +108,7 @@ class QueryImpl<M> implements Query<M> {
         // Iterate among the rows and convert them to POJOs
         try {
             for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-                M object = PojoAdapter.cursorToObject(this.db, c, cursorMap, resultClass, alias);
+                M object = db.getEntity(resultClass).parseCursor(c, cursorMap, alias);
 
                 // This collection represent the tasks which will be concurrently executed in order
                 // to create the queries to eagerly load the many to one and one to one relationships

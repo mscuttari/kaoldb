@@ -33,7 +33,6 @@ import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
-import static it.mscuttari.kaoldb.core.PojoAdapter.insertDataIntoContentValues;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
@@ -319,13 +318,20 @@ final class JoinColumnObject extends BaseColumnObject {
         Object sourceObject = getValue(obj);
 
         if (sourceObject == null) {
-            insertDataIntoContentValues(cv, annotation.name(), null);
+            insertIntoContentValues(cv, name, null);
         } else {
             EntityObject<?> destinationEntity = db.getEntity(sourceObject.getClass());
             BaseColumnObject destinationColumn = destinationEntity.columns.getNamesMap().get(annotation.referencedColumnName());
+            assert destinationColumn != null : "Column \"" + annotation.referencedColumnName() + "\" not found in entity \"" + destinationEntity.getName() + "\"";
             Object value = destinationColumn.getValue(sourceObject);
-            insertDataIntoContentValues(cv, annotation.name(), value);
+            insertIntoContentValues(cv, name, value);
         }
+    }
+
+
+    @Override
+    public boolean hasRelationship() {
+        return true;
     }
 
 }

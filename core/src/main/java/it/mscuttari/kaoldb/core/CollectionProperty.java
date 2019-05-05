@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
+ * Properties allowed for joins only
+ *
  * @param <M>   entity class
  * @param <T>   data type
  */
@@ -57,7 +59,7 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
                               @NonNull Class<? super M> fieldParentClass,
                               @NonNull Class<T> fieldType,
                               @NonNull String fieldName,
-                              @NonNull Class<? extends Annotation> columnAnnotation,
+                              @Nullable Class<? extends Annotation> columnAnnotation,
                               @Nullable Class<? extends Annotation> relationshipAnnotation) {
 
         super(entityClass, fieldParentClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);

@@ -18,6 +18,8 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 
+import androidx.annotation.NonNull;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +68,7 @@ class RowDumpImpl implements RowDump {
     }
 
 
+    @NonNull
     @Override
     public String toString() {
         return "{" +

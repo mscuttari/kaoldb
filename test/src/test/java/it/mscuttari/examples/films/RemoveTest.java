@@ -3,6 +3,8 @@ package it.mscuttari.examples.films;
 import org.junit.Test;
 
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;

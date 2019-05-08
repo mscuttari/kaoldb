@@ -17,6 +17,8 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
+import android.os.Build;
+import android.util.ArrayMap;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -38,7 +40,7 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 
 class Columns implements ColumnsContainer {
 
@@ -49,7 +51,8 @@ class Columns implements ColumnsContainer {
     private final Collection<ColumnsContainer> columns = new HashSet<>();
 
     /** Columns mapped by name */
-    private final Map<String, BaseColumnObject> namesMap = new HashMap<>();
+    private final Map<String, BaseColumnObject> namesMap =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
 
     /** Primary keys of the table (subset of {@link #columns}) */
     private final Collection<BaseColumnObject> primaryKeys = new HashSet<>();
@@ -159,14 +162,6 @@ class Columns implements ColumnsContainer {
      */
     public final synchronized boolean contains(BaseColumnObject o) {
         return namesMap.containsValue(o);
-        /*
-        for (BaseColumnObject column : this) {
-            if (column.equals(o))
-                return true;
-        }
-
-        return false;
-        */
     }
 
 

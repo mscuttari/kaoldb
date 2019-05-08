@@ -21,14 +21,13 @@ import android.content.ContentValues;
 import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.ExecutorService;
 
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 
 /**
  * This class allows to map a column acting as a basic entity attribute
@@ -69,9 +68,9 @@ final class SimpleColumnObject extends BaseColumnObject {
         SimpleColumnObject result = new SimpleColumnObject(db, entity, field);
         result.loadName();
 
-        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
+        ConcurrentSession concurrentSession = new ConcurrentSession();
 
-        executorService.submit(() -> {
+        concurrentSession.submit(() -> {
             result.loadCustomColumnDefinition();
             result.loadType();
             result.loadNullableProperty();

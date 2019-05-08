@@ -1,5 +1,7 @@
 package it.mscuttari.examples;
 
+import androidx.test.core.app.ApplicationProvider;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -41,10 +43,10 @@ public abstract class AbstractTest {
         // KaolDB instance
         KaolDB kdb = KaolDB.getInstance();
         kdb.setDebugMode(true);
-        kdb.setConfig(RuntimeEnvironment.application, R.xml.persistence);
+        kdb.setConfig(ApplicationProvider.getApplicationContext(), R.xml.persistence);
 
         // Entity manager
-        em = kdb.getEntityManager(RuntimeEnvironment.application, databaseName);
+        em = kdb.getEntityManager(ApplicationProvider.getApplicationContext(), databaseName);
     }
 
 

@@ -17,19 +17,13 @@
 package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
-import android.database.sqlite.SQLiteCursor;
 import android.util.Pair;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
@@ -102,24 +96,23 @@ class QueryImpl<M> implements Query<M> {
         // (it's just a small performance improvement done in order to prevent the collection rescaling)
         List<M> result = new ArrayList<>(c.getCount());
 
-        // Map the cursor columns
-        Map<String, Integer> cursorMap = getCursorColumnMap(c);
-
         // Iterate among the rows and convert them to POJOs
         try {
             for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-                M object = db.getEntity(resultClass).parseCursor(c, cursorMap, alias);
+                M object = db.getEntity(resultClass).parseCursor(c, alias);
 
                 // This collection represent the tasks which will be concurrently executed in order
                 // to create the queries to eagerly load the many to one and one to one relationships
-                Collection<Pair<Field, Future<Query>>> eagerLoadFutures = getEagerLoadQueries(object);
+                ConcurrentSession<Pair<Field, Query>> eagerLoads = getEagerLoadQueries(object);
 
                 // While the queries are built, create the lazy collections
                 createLazyCollections(object);
 
                 // Run the queries and assign its result to the object field
-                for (Pair<Field, Future<Query>> queryFuture : eagerLoadFutures) {
-                    queryFuture.first.set(object, queryFuture.second.get().getSingleResult());
+                eagerLoads.waitForAll();
+
+                for (Pair<Field, Query> eagerLoad : eagerLoads) {
+                    eagerLoad.first.set(object, eagerLoad.second.getSingleResult());
                 }
 
                 result.add(object);
@@ -145,29 +138,6 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Create a {@link Map} between each cursor column name and its column index
-     *
-     * Required to work with column names containing a dot, such as tableName.columnName
-     * In fact, the default {@link SQLiteCursor} <a href="http://androidxref.com/5.1.0_r1/xref/frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java#165">implementation</a>
-     * has a section aimed to fix bug 903852, but this workaround actually breaks the usage of
-     * dots in column names.
-     *
-     * @param c     cursor to be mapped
-     * @return {@link Map} between column name and column index
-     */
-    private static Map<String, Integer> getCursorColumnMap(Cursor c) {
-        Map<String, Integer> map = new HashMap<>(c.getColumnCount(), 1);
-        String[] columnNames = c.getColumnNames();
-
-        for (int i = 0; i < c.getColumnCount(); i++) {
-            map.put(columnNames[i], i);
-        }
-
-        return map;
-    }
-
-
-    /**
      * Get the queries to be used to eagerly load data of fields with
      * {@link OneToOne} or {@link ManyToOne} annotations.
      *
@@ -176,14 +146,13 @@ class QueryImpl<M> implements Query<M> {
      * @throws QueryException if the data can't be assigned to the field
      */
     @SuppressWarnings("unchecked")
-    private Collection<Pair<Field, Future<Query>>> getEagerLoadQueries(final M object) {
+    private ConcurrentSession<Pair<Field, Query>> getEagerLoadQueries(M object) {
+        ConcurrentSession<Pair<Field, Query>> concurrentSession = new ConcurrentSession<>();
+
         if (object == null) {
             // Security check
-            return Collections.emptyList();
+            return concurrentSession;
         }
-
-        Collection<Pair<Field, Future<Query>>> futures = new ArrayList<>();
-        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
         EntityObject<? super M> entity = db.getEntity((Class<M>) object.getClass());
 
@@ -196,7 +165,7 @@ class QueryImpl<M> implements Query<M> {
                 // Run the query in a different thread
                 EntityObject<? super M> currentEntity = entity;
 
-                Future<Query> future = executorService.submit(() -> {
+                concurrentSession.submit(() -> {
                     // Create the query
                     QueryBuilder<?> qb = entityManager.getQueryBuilder(relationship.linked);
 
@@ -217,17 +186,15 @@ class QueryImpl<M> implements Query<M> {
                     }
 
                     // Build the query
-                    return qb.from(join).where(where).build(rightRoot);
+                    return new Pair<>(relationship.field, qb.from(join).where(where).build(rightRoot));
                 });
-
-                futures.add(new Pair<>(relationship.field, future));
             }
 
             // Load the fields of the parent entities
             entity = entity.parent;
         }
 
-        return futures;
+        return concurrentSession;
     }
 
 

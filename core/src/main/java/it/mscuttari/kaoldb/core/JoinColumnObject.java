@@ -20,7 +20,6 @@ import android.content.ContentValues;
 
 import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Id;
@@ -31,8 +30,8 @@ import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
@@ -91,9 +90,9 @@ final class JoinColumnObject extends BaseColumnObject {
         JoinColumnObject result = new JoinColumnObject(db, entity, field, annotation);
         result.loadName();
 
-        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
+        ConcurrentSession concurrentSession = new ConcurrentSession();
 
-        executorService.submit(() -> {
+        concurrentSession.submit(() -> {
             result.loadCustomColumnDefinition();
             result.loadType();
             result.loadNullableProperty();

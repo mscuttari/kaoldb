@@ -1,8 +1,11 @@
 package it.mscuttari.kaoldb.core;
 
-import java.lang.reflect.Field;
+import android.os.Build;
+import android.util.ArrayMap;
+
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import it.mscuttari.kaoldb.annotations.ManyToMany;
@@ -12,7 +15,9 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 
 class Relationships extends HashSet<Relationship> {
 
-    private HashMap<String, Relationship> mapByFieldName = new HashMap<>();
+    /** Map the fields by their field name in order to quickly search for the mapped relationship */
+    private final Map<String, Relationship> mapByFieldName =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
 
 
     @Override

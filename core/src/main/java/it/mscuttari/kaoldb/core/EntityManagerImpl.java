@@ -20,6 +20,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Build;
+import android.util.ArrayMap;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -49,7 +51,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 class EntityManagerImpl implements EntityManager {
 
-    private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new HashMap<>();
+    private static Map<DatabaseObject, EntityManagerImpl> entityManagers =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
 
     private final WeakReference<Context> context;
     @NonNull private final DatabaseObject database;
@@ -243,7 +246,7 @@ class EntityManagerImpl implements EntityManager {
         try {
             while (currentEntity != null) {
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = currentEntity.toContentValues(obj, childEntity, getContext(), this);
+                ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
 
                 // Persist
                 if (cv.size() != 0) {
@@ -295,7 +298,7 @@ class EntityManagerImpl implements EntityManager {
         try {
             while (currentEntity != null) {
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = currentEntity.toContentValues(obj, childEntity, getContext(), this);
+                ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
 
                 // Update
                 if (cv.size() != 0) {

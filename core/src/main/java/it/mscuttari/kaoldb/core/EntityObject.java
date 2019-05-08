@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import androidx.annotation.NonNull;
@@ -58,8 +57,8 @@ import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
@@ -300,7 +299,7 @@ class EntityObject<T> {
             LogUtils.w("[Class \"" + clazz.getSimpleName() + "\"] table name not specified, using the default one based on class name");
 
             String className = clazz.getSimpleName();
-            char c[] = className.toCharArray();
+            char[] c = className.toCharArray();
             c[0] = Character.toLowerCase(c[0]);
             className = new String(c);
             result = className.replaceAll("([A-Z])", "_$1").toLowerCase();
@@ -611,8 +610,6 @@ class EntityObject<T> {
      * the data contained in the cursor.
      *
      * @param c             cursor
-     * @param cursorMap     map between cursor column names and column indexes
-     *                      (for more details see {@link QueryImpl#getCursorColumnMap(Cursor)})
      * @param alias         result class alias
      *
      * @return populated object
@@ -620,7 +617,7 @@ class EntityObject<T> {
      * @throws PojoException if the child class is not found (wrong discriminator column value) or
      *                       if it can not be instantiated
      */
-    public T parseCursor(Cursor c, Map<String, Integer> cursorMap, String alias) {
+    public T parseCursor(Cursor c, String alias) {
         // The result class may be abstract, so we need to determine the real class of the result,
         // which will be a subclass of the requested one.
 
@@ -633,8 +630,7 @@ class EntityObject<T> {
             // Get the discriminator value
             assert resultEntity.discriminatorColumn != null;
             String discriminatorColumnName = alias + "." + resultEntity.discriminatorColumn.name;
-            Integer columnIndex = cursorMap.get(discriminatorColumnName);
-            assert columnIndex != null;
+            int columnIndex = c.getColumnIndexOrThrow(discriminatorColumnName);
             Object discriminatorValue = null;
 
             if (resultEntity.discriminatorColumn.type.equals(Integer.class)) {
@@ -666,7 +662,7 @@ class EntityObject<T> {
                     // appended to their root aliases. The current entity is not the
                     // queried one if its class is not the specified result class.
 
-                    Object fieldValue = column.parseCursor(c, cursorMap, entity.clazz.equals(clazz) ? alias: alias + entity.getName());
+                    Object fieldValue = column.parseCursor(c, entity.clazz.equals(clazz) ? alias: alias + entity.getName());
                     column.setValue(result, fieldValue);
                 }
             }
@@ -685,7 +681,6 @@ class EntityObject<T> {
      * If zero, no data needs to be saved and, if not skipped, the
      * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.
      *
-     * @param context           context
      * @param entityManager     entity manager
      * @param childEntity       child entity (can be null if this entity has no children)
      * @param obj               object to be converted
@@ -697,7 +692,7 @@ class EntityObject<T> {
      * @throws QueryException  if the field associated with the discriminator value can't be accessed
      */
     @NonNull
-    public ContentValues toContentValues(Object obj, EntityObject childEntity, Context context, EntityManager entityManager) {
+    public ContentValues toContentValues(Object obj, EntityObject childEntity, EntityManager entityManager) {
         ContentValues cv = new ContentValues();
 
         // Skip the entity if it doesn't have its own dedicated table
@@ -832,7 +827,7 @@ class EntityObject<T> {
         for (BaseColumnObject column : columns) {
             Object fieldValue = column.getValue(obj);
 
-            if (!checkDataExistence(fieldValue, context, db, entityManager))
+            if (!checkDataExistence(fieldValue, db, entityManager))
                 throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
 
             column.addToContentValues(cv, obj);
@@ -848,7 +843,6 @@ class EntityObject<T> {
      * @param obj               {@link Object} to be searched. In case of basic object type (Integer,
      *                          String, etc.) the check will be successful; in case of complex type
      *                          (custom classes), a query searching for the object is run
-     * @param context           application {@link Context}
      * @param db                {@link DatabaseObject} of the database the entity belongs to
      * @param entityManager     entity manager
      *
@@ -858,7 +852,7 @@ class EntityObject<T> {
      *                                 (not normally reachable situation)
      */
     @SuppressWarnings("unchecked")
-    private static boolean checkDataExistence(Object obj, Context context, DatabaseObject db, EntityManager entityManager) {
+    private static boolean checkDataExistence(Object obj, DatabaseObject db, EntityManager entityManager) {
         // Null data is considered to be existing
         if (obj == null)
             return true;

@@ -18,6 +18,8 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
+import android.util.ArrayMap;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +45,9 @@ class DatabaseDumpImpl implements DatabaseDump {
     public DatabaseDumpImpl(SQLiteDatabase db) {
         // Get all the table names
         Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-        tables = new HashMap<>(c.getCount(), 1);
+        Map<String, TableDump> tables = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ?
+                new ArrayMap<>(c.getCount()) :
+                new HashMap<>(c.getCount(), 1);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             // Dump each table
@@ -52,6 +56,7 @@ class DatabaseDumpImpl implements DatabaseDump {
         }
 
         c.close();
+        this.tables = Collections.unmodifiableMap(tables);
     }
 
 
@@ -71,7 +76,7 @@ class DatabaseDumpImpl implements DatabaseDump {
     @Override
     public TableDump getTable(String tableName) throws DumpException {
         if (!tables.containsKey(tableName)) {
-            throw new DumpException("Table " + tableName + " not found");
+            throw new DumpException("Table \"" + tableName + "\" not found");
         }
 
         return tables.get(tableName);
@@ -80,7 +85,7 @@ class DatabaseDumpImpl implements DatabaseDump {
 
     @Override
     public Collection<TableDump> getTables() {
-        return Collections.unmodifiableCollection(tables.values());
+        return tables.values();
     }
 
 }

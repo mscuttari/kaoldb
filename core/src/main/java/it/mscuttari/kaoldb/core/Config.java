@@ -17,6 +17,8 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.res.XmlResourceParser;
+import android.os.Build;
+import android.util.ArrayMap;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -27,26 +29,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import it.mscuttari.kaoldb.BuildConfig;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 class Config {
 
     /** Maps each database name to its {@link DatabaseObject} */
-    private final Map<String, DatabaseObject> mapping;
+    private final Map<String, DatabaseObject> mapping =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
 
 
     /** Whether the debug messages should be enabled or not */
-    private boolean debug;
-
-
-    /**
-     * Constructor
-     */
-    public Config() {
-        mapping = new HashMap<>();
-        debug = false;
-    }
+    private boolean debug = BuildConfig.DEBUG;
 
 
     /**

@@ -17,17 +17,16 @@
 package it.mscuttari.kaoldb.core;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
+import android.util.ArrayMap;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.mscuttari.kaoldb.annotations.Entity;
@@ -36,8 +35,8 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 
 class DatabaseObject {
 
@@ -54,7 +53,8 @@ class DatabaseObject {
     private final Collection<Class<?>> classes = new HashSet<>();
 
     /** Entities mapping */
-    private final Map<Class<?>, EntityObject<?>> entities = new HashMap<>();
+    private final Map<Class<?>, EntityObject<?>> entities =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
 
     /** Whether the database version is being changed */
     public final AtomicBoolean upgrading = new AtomicBoolean(false);
@@ -248,34 +248,28 @@ class DatabaseObject {
 
         mapped = false;
         doAndNotifyAll(this, entities::clear);
-        ExecutorService executorService = KaolDB.getInstance().getExecutorService();
 
         try {
             // First scan to get basic data
-            Collection<Future<?>> mappingTasks = new ArrayList<>(classes.size());
+            ConcurrentSession entitiesConcurrentSession = new ConcurrentSession();
             LogUtils.v("[Database \"" + name + "\"] entities mapping: first scan to get basic data");
 
             for (Class<?> clazz : classes) {
                 Runnable action = () -> entities.put(clazz, EntityObject.map(this, clazz));
-                Future<?> task = executorService.submit(() -> doAndNotifyAll(this, action));
-                mappingTasks.add(task);
+                entitiesConcurrentSession.submit(() -> doAndNotifyAll(this, action));
             }
 
-            for (Future<?> task : mappingTasks) {
-                task.get();
-            }
+            entitiesConcurrentSession.waitForAll();
 
             // Second scan to load the columns
-            Collection<Future<?>> columnsTasks = new ArrayList<>();
+            ConcurrentSession columnsConcurrentSession = new ConcurrentSession();
             LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to load the columns");
 
             for (EntityObject<?> entity : entities.values()) {
-                columnsTasks.add(executorService.submit(entity::loadColumns));
+                columnsConcurrentSession.submit(entity::loadColumns);
             }
 
-            for (Future<?> task : columnsTasks) {
-                task.get();
-            }
+            columnsConcurrentSession.waitForAll();
 
             mapped = true;
             LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");

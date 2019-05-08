@@ -19,6 +19,8 @@ package it.mscuttari.kaoldb.core;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +51,7 @@ class TableDumpImpl implements TableDump {
 
         // Get columns
         Cursor cColumns = db.rawQuery("PRAGMA table_info(" + tableName + ")", null);
-        columns = new ArrayList<>(cColumns.getCount());
+        List<String> columns = new ArrayList<>(cColumns.getCount());
 
         int columnNameIndex = cColumns.getColumnIndex("name");
         for (cColumns.moveToFirst(); !cColumns.isAfterLast(); cColumns.moveToNext()) {
@@ -57,25 +59,25 @@ class TableDumpImpl implements TableDump {
         }
 
         cColumns.close();
+        this.columns = Collections.unmodifiableList(columns);
 
         // Dump the rows
-        Cursor cRows = db.rawQuery("SELECT * FROM " + tableName, null);
-        rows = new ArrayList<>(cRows.getCount());
+        Cursor cRows = new CachedCursor(db.rawQuery("SELECT * FROM " + tableName, null));
+        List<RowDump> rows = new ArrayList<>(cRows.getCount());
 
         for (cRows.moveToFirst(); !cRows.isAfterLast(); cRows.moveToNext()) {
-            // Dump each row
             rows.add(new RowDumpImpl(cRows));
         }
 
         cRows.close();
+        this.rows = Collections.unmodifiableList(rows);
     }
 
 
+    @NonNull
     @Override
     public String toString() {
-        return "[" +
-                StringUtils.implode(rows, Object::toString, ", ") +
-                "]";
+        return "[" + StringUtils.implode(rows, Object::toString, ", ") + "]";
     }
 
 
@@ -87,13 +89,13 @@ class TableDumpImpl implements TableDump {
 
     @Override
     public List<String> getColumns() {
-        return Collections.unmodifiableList(columns);
+        return columns;
     }
 
 
     @Override
     public List<RowDump> getRows() {
-        return Collections.unmodifiableList(rows);
+        return rows;
     }
 
 }

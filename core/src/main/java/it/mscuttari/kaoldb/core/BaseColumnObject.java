@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -139,7 +138,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
      */
     protected static String getDefaultName(@NonNull Field field) {
         String fieldName = field.getName();
-        char c[] = fieldName.toCharArray();
+        char[] c = fieldName.toCharArray();
         c[0] = Character.toLowerCase(c[0]);
         fieldName = new String(c);
         return fieldName.replaceAll("([A-Z])", "_$1").toLowerCase();
@@ -201,7 +200,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * Extract the column value from a {@link Cursor}
      *
      * @param c             cursor
-     * @param cursorMap     map between cursor column names and column indexes
      * @param alias         alias of the table
      *
      * @return column value
@@ -209,17 +207,13 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @throws PojoException if the data type is not compatible with the one found in the database
      */
     @SuppressWarnings("unchecked")
-    public Object parseCursor(Cursor c, Map<String, Integer> cursorMap, String alias) {
-        Integer columnIndex = cursorMap.get(alias + "." + name);
-        assert columnIndex != null;
+    public Object parseCursor(Cursor c, String alias) {
+        int columnIndex = c.getColumnIndexOrThrow(alias + "." + name);
         int columnType = c.getType(columnIndex);
 
         Object value = null;
 
         if (columnType == Cursor.FIELD_TYPE_INTEGER) {
-            if (!(type.equals(Integer.class) || type.equals(int.class) || !type.equals(Date.class) || !type.equals(Calendar.class)))
-                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Integer");
-
             if (type.equals(Integer.class) || type.equals(int.class)) {
                 value = c.getInt(columnIndex);
 
@@ -232,22 +226,29 @@ abstract class BaseColumnObject implements ColumnsContainer {
             } else if (type.equals(Calendar.class)) {
                 value = Calendar.getInstance();
                 ((Calendar) value).setTimeInMillis(c.getLong(columnIndex));
+
+            } else {
+                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Integer");
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
-            if (!(type.equals(Float.class) || type.equals(float.class) || type.equals(Double.class) || type.equals(double.class)))
-                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Float");
-
             if (type.equals(Float.class) || type.equals(float.class)) {
                 value = c.getFloat(columnIndex);
 
             } else if (type.equals(Double.class) || type.equals(double.class)) {
                 value = c.getDouble(columnIndex);
+
+            } else {
+                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Float");
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
             if (type.isEnum()) {
                 Enum enumClass = Enum.class.cast(type);
+
+                if (enumClass == null)
+                    throw new PojoException("Enum class \"" + type.getSimpleName() + "\" not found");
+
                 value = Enum.valueOf(enumClass.getClass(), c.getString(columnIndex));
 
             } else if (String.class.isAssignableFrom(type)) {

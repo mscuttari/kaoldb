@@ -28,8 +28,8 @@ import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.doAndNotifyAll;
-import static it.mscuttari.kaoldb.core.ConcurrencyUtils.waitWhile;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
+import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
@@ -46,13 +46,15 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     @NonNull private final Field field;
 
     /**
-     * Direct join columns.
+     * Direct join columns
+     *
      * @see JoinTable#joinColumns()
      */
     private final Columns directJoinColumns;
 
     /**
-     * Inverse join columns.
+     * Inverse join columns
+     *
      * @see JoinTable#inverseJoinColumns()
      */
     private final Columns inverseJoinColumns;
@@ -207,9 +209,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
     /**
      * Get the foreign keys SQL constraints to be inserted in the create table query
-     *
-     * Differently from {@link EntityObject#getTableForeignKeysSql()}, this method
-     * is used for the foreign keys of a join table
      *
      * @return SQL statement
      */

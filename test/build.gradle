@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "it.mscuttari"
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
@@ -36,8 +36,17 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+
     annotationProcessor project(':annotation-processor')
     implementation project(':core')
-    testImplementation "org.robolectric:robolectric:3.8"
-    testImplementation 'junit:junit:4.12'
+
+    // https://mvnrepository.com/artifact/junit/junit
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/androidx.test/core
+    testImplementation group: 'androidx.test', name: 'core', version: '1.1.0'
+
+    // https://mvnrepository.com/artifact/org.robolectric/robolectric
+    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.2.1'
+
 }

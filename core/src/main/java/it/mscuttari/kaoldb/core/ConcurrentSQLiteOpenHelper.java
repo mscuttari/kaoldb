@@ -144,7 +144,7 @@ final class ConcurrentSQLiteOpenHelper {
         if (db == null)
             throw new DatabaseManagementException("Database must be opened first");
 
-        return db.rawQuery(sql, selectionArgs);
+        return new CachedCursor(db.rawQuery(sql, selectionArgs));
     }
 
 

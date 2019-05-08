@@ -20,10 +20,6 @@ import android.content.Context;
 import android.content.res.XmlResourceParser;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.XmlRes;
@@ -42,24 +38,14 @@ public final class KaolDB {
     private static KaolDB instance;
 
     /** Configuration */
-    private final Config config = new Config();
-
-    /** Concurrency */
-    private final ExecutorService executorService;
+    final Config config = new Config();
 
 
     /**
-     * Constructor
+     * Private constructor for singleton
      */
     private KaolDB() {
-        int cpuCores = Runtime.getRuntime().availableProcessors();
-        this.executorService = new ThreadPoolExecutor(
-                cpuCores,
-                Integer.MAX_VALUE,
-                60L,
-                TimeUnit.SECONDS,
-                new SynchronousQueue<>()
-        );
+
     }
 
 
@@ -82,17 +68,7 @@ public final class KaolDB {
      * @param enabled   whether to enable or not debug logs
      */
     public void setDebugMode(boolean enabled) {
-        getConfig().setDebugMode(enabled);
-    }
-
-
-    /**
-     * Get configuration
-     *
-     * @return configuration object
-     */
-    Config getConfig() {
-        return config;
+        config.setDebugMode(enabled);
     }
 
 
@@ -119,7 +95,7 @@ public final class KaolDB {
         LogUtils.d("Parsing the configuration file");
 
         try {
-            getConfig().parseConfigFile(xml);
+            config.parseConfigFile(xml);
 
         } catch (Exception e) {
             throw new ConfigParseException(e);
@@ -131,20 +107,10 @@ public final class KaolDB {
         LogUtils.i("Configuration loaded");
 
         // Map the entities
-        for (String dbName : getConfig().getDatabaseMapping().keySet()) {
-            DatabaseObject database = getConfig().getDatabaseMapping().get(dbName);
+        for (String dbName : config.getDatabaseMapping().keySet()) {
+            DatabaseObject database = config.getDatabaseMapping().get(dbName);
             database.mapEntities();
         }
-    }
-
-
-    /**
-     * Get executor service to be used for concurrency
-     *
-     * @return executor service
-     */
-    ExecutorService getExecutorService() {
-        return executorService;
     }
 
 
@@ -156,17 +122,24 @@ public final class KaolDB {
      * @param databaseName      database name
      *
      * @return entity manager
+     *
+     * @throws IllegalArgumentException if the database doesn't exist
      */
     public EntityManager getEntityManager(@NonNull Context context, @NonNull String databaseName) {
+        checkNotNull(databaseName);
         context = context.getApplicationContext();
 
-        if (databaseName == null || databaseName.isEmpty()) {
+        if (databaseName.isEmpty()) {
             throw new KaolDBException("Empty database name");
         }
 
-        Map<String, DatabaseObject> mapping = KaolDB.getInstance().getConfig().getDatabaseMapping();
-        DatabaseObject database = mapping.get(databaseName);
-        return EntityManagerImpl.getEntityManager(context, database);
+        Map<String, DatabaseObject> mapping = config.getDatabaseMapping();
+        DatabaseObject db = mapping.get(databaseName);
+
+        if (db == null)
+            throw new IllegalArgumentException("Database \"" + databaseName + "\" not found");
+
+        return EntityManagerImpl.getEntityManager(context, db);
     }
 
 }

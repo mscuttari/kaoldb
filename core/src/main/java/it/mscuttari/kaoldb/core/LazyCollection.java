@@ -49,8 +49,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     private final S data;
 
     /**
-     * Query to be run to get the data from the database.
-     * It is determined during the {@link QueryImpl#createLazyCollections(Object)} process.
+     * Query to be run to get the data from the database
      */
     private final Query<T> query;
 

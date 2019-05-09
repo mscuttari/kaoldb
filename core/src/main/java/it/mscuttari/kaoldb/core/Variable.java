@@ -31,7 +31,7 @@ class Variable<T> {
      * Therefore a property can be distinguished from the others by referring
      * to the {@link Root} using that particular instance of the property.
      *
-     * The field is null in case of raw data.
+     * <p>The field is <code>null</code> in case of raw data.</p>
      */
     private final String tableAlias;
 
@@ -43,7 +43,7 @@ class Variable<T> {
 
 
     /**
-     * Constructor for property based variable
+     * Constructor for property based variable.
      *
      * @param tableAlias    table alias
      * @param property      entity property
@@ -56,7 +56,7 @@ class Variable<T> {
 
 
     /**
-     * Constructor for immediate based variable
+     * Constructor for immediate based variable.
      *
      * @param   value       simple object value
      */
@@ -68,7 +68,7 @@ class Variable<T> {
 
 
     /**
-     * Get table alias
+     * Get table alias.
      *
      * @return  table alias
      */
@@ -78,9 +78,9 @@ class Variable<T> {
 
 
     /**
-     * Check if the variable has a property or raw data
+     * Check if the variable has a property or raw data.
      *
-     * @return true if {@link #property} is set; false otherwise
+     * @return <code>true</code> if {@link #property} is set; <code>false</code> otherwise
      */
     public boolean hasProperty() {
         return property != null;
@@ -89,9 +89,9 @@ class Variable<T> {
 
     /**
      * Get the property.
-     * Returns null if {@link #hasProperty()} is false.
+     * <p>Returns <code>null</code> if {@link #hasProperty()} is <code>false</code>.</p>
      *
-     * @return property (null if the variable has raw data instead of a property)
+     * @return property (<code>null</code> if the variable has raw data instead of a {@link Property property})
      */
     public Property<?, T> getProperty() {
         return property;
@@ -100,9 +100,9 @@ class Variable<T> {
 
     /**
      * Get the raw data.
-     * Returns null if {@link #hasProperty()} is true.
+     * Returns <code>null</code> if {@link #hasProperty()} is <code>true</code>.
      *
-     * @return raw data (null if the variable has a property instead of raw data)
+     * @return raw data (<code>Null</code> if the variable has a {@link Property property} instead of raw data)
      */
     public T getRawData() {
         return value;
@@ -110,10 +110,10 @@ class Variable<T> {
 
 
     /**
-     * String wrapper class
+     * String wrapper class.
      *
-     * Used in the Variable class instantiation in order to avoid the
-     * quotation marks in the resulting query.
+     * <p>Used in the Variable class instantiation in order to avoid the
+     * quotation marks in the resulting query.</p>
      */
     public static class StringWrapper {
 

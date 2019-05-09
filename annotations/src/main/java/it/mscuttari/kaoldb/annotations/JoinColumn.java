@@ -20,14 +20,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Used to specify the mapped column for a persistent property or field
  */
-@Target({FIELD})
+@Target({METHOD, FIELD})
 @Retention(RUNTIME)
-public @interface Column {
+public @interface JoinColumn {
 
     /**
      * The name of the column.
@@ -37,18 +38,24 @@ public @interface Column {
 
 
     /**
-     * Whether the database column is nullable
+     * The name of the column referenced by this foreign key column.
+     */
+    String referencedColumnName();
+
+
+    /**
+     * Whether the database column is nullable.
      */
     boolean nullable() default true;
 
 
     /**
-     * Whether the column is a unique key
+     * Whether the column is a unique key.
      *
-     * This is a shortcut for the {@link UniqueConstraint} annotation at the entity level and is
-     * useful for when the unique key constraint corresponds to only a single column.
+     * <p>This is a shortcut for the {@link UniqueConstraint} annotation at the entity level and is
+     * useful for when the unique key constraint corresponds to only a single column.<br>
      * This constraint applies in addition to any constraint entailed by primary key mapping and
-     * to constraints specified at the table level.
+     * to constraints specified at the table level.</p>
      */
     boolean unique() default false;
 

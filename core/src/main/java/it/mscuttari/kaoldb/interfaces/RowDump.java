@@ -21,7 +21,7 @@ import it.mscuttari.kaoldb.exceptions.DumpException;
 public interface RowDump {
 
     /**
-     * Get the value of a column at this row
+     * Get the value of a column at this row.
      *
      * @param columnName    column name
      * @param <T>           data type

@@ -30,7 +30,7 @@ import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 
 /**
- * Checks that the {@link DiscriminatorValue} annotation is applied on a concrete entity class
+ * Checks that the {@link DiscriminatorValue} annotation is applied on a concrete entity class.
  */
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.DiscriminatorValue")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)

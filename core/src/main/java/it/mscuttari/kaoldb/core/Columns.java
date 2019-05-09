@@ -17,8 +17,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
-import android.os.Build;
-import android.util.ArrayMap;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -51,8 +49,7 @@ class Columns implements ColumnsContainer {
     private final Collection<ColumnsContainer> columns = new HashSet<>();
 
     /** Columns mapped by name */
-    private final Map<String, BaseColumnObject> namesMap =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
+    private final Map<String, BaseColumnObject> namesMap = new HashMap<>();
 
     /** Primary keys of the table (subset of {@link #columns}) */
     private final Collection<BaseColumnObject> primaryKeys = new HashSet<>();
@@ -68,7 +65,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Default constructor
+     * Default constructor.
      *
      * @param entity    entity the columns belongs to
      */
@@ -78,7 +75,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Constructor.
+     * Constructor.<br>
      * Takes a collection of columns and sets it as the initial set.
      *
      * @param columns   columns to be added
@@ -114,7 +111,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Get an unmodifiable version of {@link #columns}
+     * Get an unmodifiable version of {@link #columns}.
      *
      * @return columns
      */
@@ -124,7 +121,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Get an unmodifiable version of {@link #namesMap}
+     * Get an unmodifiable version of {@link #namesMap}.
      *
      * @return column names map
      */
@@ -134,7 +131,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Get an unmodifiable version of {@link #primaryKeys}
+     * Get an unmodifiable version of {@link #primaryKeys}.
      *
      * @return primary keys
      */
@@ -144,10 +141,10 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * CHeck if a column is already mapped
+     * Check if a column is already mapped.
      *
      * @param columnName    column name to search for
-     * @return true if the column is already present; false otherwise
+     * @return <code>true</code> if the column is already present; <code>false</code> otherwise
      */
     public final synchronized boolean contains(String columnName) {
         return namesMap.containsKey(columnName);
@@ -155,10 +152,10 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Check if a column is already mapped
+     * Check if a column is already mapped.
      *
      * @param o     column to search for
-     * @return true if the column is already present; false otherwise
+     * @return <code>true</code> if the column is already present; <code>false</code> otherwise
      */
     public final synchronized boolean contains(BaseColumnObject o) {
         return namesMap.containsValue(o);
@@ -166,13 +163,13 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Add the columns contained by a column container
+     * Add the columns contained by a column container.
      *
      * @param container     columns container whose columns have to be added
      *
-     * @return true if the columns have been successfully added;
-     *         false if the container is null;
-     *         false if the container can't be added to the tree for some reasons.
+     * @return <code>true</code> if the columns have been successfully added;
+     *         <code>false</code> if the container is <code>null</code>;
+     *         <code>false</code> if the container can't be added to the tree for some reasons.
      *
      * @throws InvalidConfigException if any of the columns to be added are already present
      */
@@ -209,13 +206,13 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Get the columns linked to a field and add them to the columns set
+     * Get the columns linked to a field and add them to the columns set.
      *
      * @param db        database
      * @param entity    entity the column belongs to
      * @param field     field the columns are generated from
      *
-     * @return true if the columns have been successfully added; false otherwise
+     * @return <code>true</code> if the columns have been successfully added; <code>false</code> otherwise
      *
      * @throws InvalidConfigException if any column has already been defined
      */
@@ -225,10 +222,10 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Add columns
+     * Add columns.
      *
      * @param elements      columns or columns containers to be added
-     * @return true if the columns have been successfully added; false otherwise
+     * @return <code>true</code> if the columns have been successfully added; <code>false</code> otherwise
      */
     public synchronized boolean addAll(Collection<? extends ColumnsContainer> elements) {
         boolean result = true;
@@ -241,10 +238,10 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Add columns
+     * Add columns.
      *
      * @param columns       column container whose columns have to be added
-     * @return true if the columns have been successfully added; false otherwise
+     * @return <code>true</code> if the columns have been successfully added; <code>false</code> otherwise
      */
     public synchronized boolean addAll(Columns columns) {
         return addAll(columns.columns);
@@ -266,21 +263,21 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Convert column field to single or multiple column objects
+     * Convert column field to single or multiple column objects.
      *
+     * <p>
      * Fields annotated with {@link Column} or {@link JoinColumn} will lead to a
-     * {@link Collection} populated with just one element.
+     * {@link Collection} populated with just one element.<br>
      * Fields annotated with {@link JoinColumns} or {@link JoinTable} will lead to a
      * {@link Collection} populated with multiple elements according to the join
-     * columns number
+     * columns number.
+     * </p>
      *
      * @param db        database
      * @param entity    entity the column belongs to
      * @param field     class field
      *
      * @return column objects collection
-     *
-     * @throws InvalidConfigException if there is no column annotation
      */
     public static Collection<ColumnsContainer> entityFieldToColumns(DatabaseObject db, EntityObject<?> entity, Field field) {
         Collection<ColumnsContainer> result = new HashSet<>();
@@ -300,10 +297,6 @@ class Columns implements ColumnsContainer {
             // ones, which are created separately
 
             return result;
-
-        } else {
-            // No annotation found
-            throw new InvalidConfigException("No column annotation found for field " + field.getName());
         }
 
         return result;
@@ -312,9 +305,9 @@ class Columns implements ColumnsContainer {
 
     /**
      * Get the columns SQL statement to be inserted in the table creation query.
-     * Example: column 1 INTEGER UNIQUE, column 2 TEXT, column 3 REAL NOT NULL
+     * <p>Example: <code>column 1 INTEGER UNIQUE, column 2 TEXT, column 3 REAL NOT NULL</code></p>
      *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     public final String getSQL() {
@@ -334,7 +327,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Iterator to be used to navigate the columns tree and get only the leaves, that indeed are
+     * Iterator to be used to navigate the columns tree and get only the leaves, which indeed are
      * the real columns.
      */
     static class ColumnsIterator implements Iterator<BaseColumnObject> {
@@ -344,7 +337,7 @@ class Columns implements ColumnsContainer {
 
 
         /**
-         * Constructor
+         * Constructor.
          *
          * @param columns   columns collection to iterate on
          */
@@ -372,7 +365,7 @@ class Columns implements ColumnsContainer {
 
 
         /**
-         * Prefetch the next element
+         * Prefetch the next element.
          *
          * @return next element
          */

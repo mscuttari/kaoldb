@@ -21,7 +21,7 @@ import java.util.List;
 public interface TableDump {
 
     /**
-     * Get table name
+     * Get table name.
      *
      * @return table name
      */
@@ -29,7 +29,7 @@ public interface TableDump {
 
 
     /**
-     * Get all the column names
+     * Get all the column names.
      *
      * @return columns list
      */
@@ -37,7 +37,7 @@ public interface TableDump {
 
 
     /**
-     * Get row dumps
+     * Get row dumps.
      *
      * @return row dumps
      */

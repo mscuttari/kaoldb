@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -35,7 +36,7 @@ import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
- * This class allows to map a column acting as a foreign key
+ * This class allows to map a column acting as a foreign key.
  *
  * @see JoinColumn
  */
@@ -53,12 +54,12 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db            database
      * @param entity        entity the column belongs to
      * @param field         field the column is generated from
-     * @param annotation    JoinColumn annotation the column is generated from
+     * @param annotation    {@link JoinColumn} annotation the column is generated from
      */
     private JoinColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
@@ -72,13 +73,13 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Create the JoinColumnObject linked to a field annotated with {@link JoinColumn}
+     * Create the {@link JoinColumnObject} linked to a field annotated with {@link JoinColumn}
      * and start the mapping process.
      *
      * @param db            database
      * @param entity        entity the column belongs to
      * @param field         field the column is generated from
-     * @param annotation    JoinColumn annotation the column is generated from
+     * @param annotation    {@link JoinColumn} annotation the column is generated from
      *
      * @return column object
      */
@@ -110,7 +111,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the column name
+     * Determine the column name.
      */
     private void loadName() {
         String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
@@ -119,7 +120,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the custom column definition
+     * Determine the custom column definition.
      */
     private void loadCustomColumnDefinition() {
         String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
@@ -128,7 +129,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the column type
+     * Determine the column type.
      */
     private void loadType() {
         Class<?> referencedClass = null;
@@ -211,7 +212,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column is nullable or not
+     * Determine whether the column is nullable or not.
      */
     private void loadNullableProperty() {
         boolean result;
@@ -239,7 +240,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column is a primary key or not
+     * Determine whether the column is a primary key or not.
      */
     private void loadPrimaryKeyProperty() {
         boolean result = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
@@ -248,7 +249,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column value should be unique or not
+     * Determine whether the column value should be unique or not.
      */
     private void loadUniqueProperty() {
         boolean result = annotation.unique();
@@ -257,7 +258,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the default value
+     * Determine the default value.
      */
     private void loadDefaultValue() {
         String result = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
@@ -266,7 +267,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the propagation property
+     * Determine the propagation property.
      */
     private void loadPropagationProperty() {
         waitWhile(this, () -> nullable == null);
@@ -280,7 +281,7 @@ final class JoinColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the linked column
+     * Determine the linked column.
      */
     private void loadLinkedColumn() {
         EntityObject<?> linkedEntity;

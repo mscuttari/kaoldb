@@ -29,10 +29,10 @@ class StringUtils {
 
     /**
      * Convert a collection to a string representation where each element is separated by a given string.
-     * A custom object-to-string converter, implementing {@link StringConverter}, can be specified
+     * <p>A custom object-to-string converter, implementing {@link StringConverter}, can be specified
      * in order to get a define a temporary {@link Object#toString()} method. If not specified, the
-     * default {@link Object#toString()} implementation of each object is used.
-     * If the separator is set to null, a comma is placed between the elements.
+     * default {@link Object#toString()} implementation of each object is used.<br>
+     * If the separator is set to <code>null</code>, a comma is placed between the elements.</p>
      *
      * @param objs      objects collection
      * @param converter convert to be used to get the string representation of each object
@@ -67,14 +67,14 @@ class StringUtils {
 
 
     /**
-     * Interface to be used to create a custom object-to-string converter
+     * Interface to be used to create a custom object-to-string converter.
      *
      * @param <T> object type
      */
     public interface StringConverter<T> {
 
         /**
-         * Called then an object has to be converted to string
+         * Called then an object has to be converted to string.
          *
          * @param obj   object to be converted
          * @return string conversion

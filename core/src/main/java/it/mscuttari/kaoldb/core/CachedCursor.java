@@ -25,7 +25,6 @@ import android.database.sqlite.SQLiteCursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.ArrayMap;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,16 +35,18 @@ import androidx.annotation.RequiresApi;
 /**
  * Wrapper for {@link Cursor} which enables some performance improvements.
  *
+ * <p>
  * The default {@link SQLiteCursor#getColumnIndex(String)} implementation doesn't exploit any caching
  * capability and each column name lookup can cost up to the number of the column and this is is
  * obviously quite expensive if there are a lot of columns. This cost is avoid by first creating a
  * map between each column name and its index; thus the linear cost is spent only on startup and
  * the subsequent calls to {@link #getColumnIndex(String)} will have fixed cost.
  * By doing this, this wrapper also enables the usage of column names containing a dot, such
- * as tableName.columnName. In fact, the default implementation has a section aimed to fix bug
- * 903852, but this workaround actually breaks the usage of dots in column names.
+ * as <code>tableName.columnName</code>. In fact, the default implementation has a section aimed
+ * to fix bug 903852, but this workaround actually breaks the usage of dots in column names.
+ * </p>
  */
-public class CachedCursor implements Cursor {
+class CachedCursor implements Cursor {
 
     /** Original cursor */
     private final Cursor c;
@@ -55,7 +56,7 @@ public class CachedCursor implements Cursor {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param c     original cursor
      */
@@ -64,10 +65,7 @@ public class CachedCursor implements Cursor {
 
         // Build column name-index map
         String[] columnNames = c.getColumnNames();
-
-        Map<String, Integer> columnIndexMap = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ?
-                new ArrayMap<>(columnNames.length) :
-                new HashMap<>(columnNames.length, 1);
+        Map<String, Integer> columnIndexMap = new HashMap<>(columnNames.length, 1);
 
         for (int i = 0; i < columnNames.length; i++) {
             columnIndexMap.put(columnNames[i], i);

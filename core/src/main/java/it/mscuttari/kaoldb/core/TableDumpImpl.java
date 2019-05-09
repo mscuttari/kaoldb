@@ -41,7 +41,7 @@ class TableDumpImpl implements TableDump {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db        readable database
      * @param tableName name of the table to be dumped

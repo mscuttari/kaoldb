@@ -27,43 +27,46 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 public interface QueryBuilder<T> {
 
     /**
-     * Get entity root
+     * Get entity root.
      *
-     * Roots can be thought as a direct access to the entity table properties and allow to create
-     * expressions based on their values
+     * <p>Roots can be thought as a direct access to the entity table properties and allow to create
+     * expressions based on their values</p>
      *
      * @param entityClass   entity class
      * @param <M>           entity class
      *
      * @return entity root
+     *
+     * @see Root
      */
     <M> Root<M> getRoot(@NonNull Class<M> entityClass);
 
 
     /**
-     * Set "FROM" clause
+     * Set the <code>FROM</code> clause for the query to be built.
      *
      * @param from      entity root
+     * @return current query builder instance
      */
     QueryBuilder<T> from(Root<?> from);
 
 
     /**
-     * Set "WHERE" clause
+     * Set the <code>WHERE</code> clause for the query to be built.
      *
      * @param where     logic expression
-     *
-     * @return query builder
+     * @return current query builder instance
      */
     QueryBuilder<T> where(Expression where);
 
 
     /**
-     * Create the query
+     * Create the query.
      *
-     * Get the {@link Query} object corresponding to the specified query clauses (from, where, etc.).
+     * <p>Get the {@link Query} object corresponding to the specified query clauses (from, where, etc.).<br>
      * If the clauses are modified after a query build and then rebuilt, the new query will be
-     * different then the previous one and will reflect the new clauses
+     * different then the previous one and will reflect the new clauses. The previously built one
+     * will keep the clauses it was built with.</p>
      *
      * @param root      the root of the desired result entity
      *
@@ -71,6 +74,9 @@ public interface QueryBuilder<T> {
      *
      * @throws QueryException if the query configuration is invalid (see exception message for
      *                        further details)
+     *
+     * @see #from(Root)
+     * @see #where(Expression)
      */
     Query<T> build(@NonNull Root<T> root);
 

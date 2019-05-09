@@ -76,7 +76,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db            database
      * @param type          join type
@@ -102,7 +102,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db        database
      * @param type      join type
@@ -128,30 +128,33 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the "FROM" clause be used in the query
+     * Get the <code>FROM</code> clause be used in the query.
      *
-     * The join tree is spanned from the most left leaf to to the right most one.
+     * <p>The join tree is spanned from the most left leaf to to the right most one.
      * This is done because some SQLite implementations does not support, although standard-complaint,
-     * "from" clauses such as "(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)".
+     * "FROM" clauses such as <code>"(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)"</code>.
      * Therefore, the tree must be seen as a left recursive one, which lead to the equivalent but
-     * correctly interpreted clause "((table1 INNER JOIN table2 ON exp1) INNER JOIN table3 ON exp2)".
+     * correctly interpreted clause <code>"((table1 INNER JOIN table2 ON exp1) INNER JOIN table3 ON exp2)"</code>.
+     * </p>
      *
-     * For example, given the following tree, where
-     * nodes 1, 2, 5 are "join" nodes
-     * nodes 4, 6, 7, 3 are "from" nodes
-     *
+     * <p>
+     * For example, given the following tree, where<br>
+     * nodes 1, 2, 5 are {@link Join} nodes<br>
+     * nodes 4, 6, 7, 3 are {@link From} nodes<br>
+     * <pre>
      *        1
      *       / \
      *      2   3
      *     / \
      *    4   5
      *       / \
-     *      6   7
+     *      6   7</pre>
+     * the visiting order is <code>1 -> 2 -> 4 -> 5 > 6 -> 7 -> 3</code> and the resulting clause is
+     * <code>"(((4 join 6) join 7) join 3)"</code>, obviously enriched with the proper
+     * <code>ON</code> clauses.
+     * </p>
      *
-     * the visiting is be 1 -> 2 -> 4 -> 5 > 6 -> 7 -> 3 and the resulting clause is
-     * "(((4 join 6) join 7) join 3)", obviously enriched with the proper "ON" clauses.
-     *
-     * @return "FROM" clause
+     * @return <code>FROM</code> clause
      */
     @Override
     public String toString() {
@@ -232,14 +235,14 @@ final class Join<L, R> implements RootInt<L> {
 
 
     @Override
-    public <T> Expression isNull(@NonNull SingleProperty<L, T> field) {
-        return left.isNull(field);
+    public <T> Expression isNull(@NonNull SingleProperty<L, T> property) {
+        return left.isNull(property);
     }
 
 
     @Override
-    public <T> Expression eq(@NonNull SingleProperty<L, T> field, @Nullable T value) {
-        return left.eq(field, value);
+    public <T> Expression eq(@NonNull SingleProperty<L, T> property, @Nullable T value) {
+        return left.eq(property, value);
     }
 
 
@@ -250,14 +253,8 @@ final class Join<L, R> implements RootInt<L> {
 
 
     @Override
-    public <Y, T> Expression eq(@NonNull SingleProperty<L, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        return left.eq(x, yClass, yAlias, y);
-    }
-
-
-    @Override
-    public <T> Expression gt(@NonNull SingleProperty<L, T> field, @NonNull T value) {
-        return left.gt(field, value);
+    public <T> Expression gt(@NonNull SingleProperty<L, T> property, @NonNull T value) {
+        return left.gt(property, value);
     }
 
 
@@ -268,14 +265,8 @@ final class Join<L, R> implements RootInt<L> {
 
 
     @Override
-    public <Y, T> Expression gt(@NonNull SingleProperty<L, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        return left.gt(x, yClass, yAlias, y);
-    }
-
-
-    @Override
-    public <T> Expression ge(@NonNull SingleProperty<L, T> field, @NonNull T value) {
-        return left.ge(field, value);
+    public <T> Expression ge(@NonNull SingleProperty<L, T> property, @NonNull T value) {
+        return left.ge(property, value);
     }
 
 
@@ -286,14 +277,8 @@ final class Join<L, R> implements RootInt<L> {
 
 
     @Override
-    public <Y, T> Expression ge(@NonNull SingleProperty<L, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        return left.ge(x, yClass, yAlias, y);
-    }
-
-
-    @Override
-    public <T> Expression lt(@NonNull SingleProperty<L, T> field, @NonNull T value) {
-        return left.lt(field, value);
+    public <T> Expression lt(@NonNull SingleProperty<L, T> property, @NonNull T value) {
+        return left.lt(property, value);
     }
 
 
@@ -304,14 +289,8 @@ final class Join<L, R> implements RootInt<L> {
 
 
     @Override
-    public <Y, T> Expression lt(@NonNull SingleProperty<L, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        return left.lt(x, yClass, yAlias, y);
-    }
-
-
-    @Override
-    public <T> Expression le(@NonNull SingleProperty<L, T> field, @NonNull T value) {
-        return left.le(field, value);
+    public <T> Expression le(@NonNull SingleProperty<L, T> property, @NonNull T value) {
+        return left.le(property, value);
     }
 
 
@@ -321,14 +300,8 @@ final class Join<L, R> implements RootInt<L> {
     }
 
 
-    @Override
-    public <Y, T> Expression le(@NonNull SingleProperty<L, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        return left.le(x, yClass, yAlias, y);
-    }
-
-
     /**
-     * @see #toString() for an explanation about how the tree is spanned
+     * @see #toString()
      */
     @Override
     public Map<String, Root<?>> getRootsMap() {
@@ -370,19 +343,19 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the join clauses of a join
+     * Get the join clauses of a join.
      *
      * @param db            database
      * @param type          join type
      * @param local         local root root
      * @param joined        joined root
      * @param property      linking property
-     * @param on            "ON" custom clause
+     * @param on            <code>ON</code> custom clause
      *
-     * @return list of the clauses (in the form " INNER JOIN table ON expression"). Note that the
-     *         left table name is not included and must be added by the caller
+     * @return list of the clauses (in the form <code>" INNER JOIN table ON expression"</code>).
+     *         Note that the left table name is not included and must be added by the caller
      *
-     * @see Relationship for the compatibility between column and relationship annotations
+     * @see Relationship
      */
     private static List<String> getJoinClauses(DatabaseObject db, JoinType type, RootInt<?> local, RootInt<?> joined, Property<?, ?> property, Expression on) {
         // Predefined ON clause
@@ -547,7 +520,8 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the "ON" expression for the direct join columns of a {@link JoinColumn} annotated property
+     * Get the <code>ON</code> expression for the direct join columns of a {@link JoinColumn}
+     * annotated property.
      *
      * @param db            database
      * @param owning        owning root
@@ -567,7 +541,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the "ON" expression for the join columns of a {@link JoinColumns} annotated property
+     * Get the "ON" expression for the join columns of a {@link JoinColumns} annotated property.
      *
      * @param db            database
      * @param owning        owning root
@@ -589,7 +563,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the "ON" expression for the direct join columns of a {@link JoinTable} annotated property
+     * Get the "ON" expression for the direct join columns of a {@link JoinTable} annotated property.
      *
      * @param db            database
      * @param direct        direct join root
@@ -618,7 +592,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the "ON" expression for the inverse join columns of a {@link JoinTable} annotated property
+     * Get the "ON" expression for the inverse join columns of a {@link JoinTable} annotated property.
      *
      * @param db            database
      * @param direct        direct join root
@@ -647,11 +621,11 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Given two column names, get an equality expression between them
+     * Given two column names, get an equality expression between them.
      *
      * @param db            database
-     * @param firstColumn   first column, prepended with table alias (i.e. "alias.column")
-     * @param secondColumn  second column, prepended with table alias (i.e. "alias.column")
+     * @param firstColumn   first column, prepended with table alias (i.e. <code>"alias.column"</code>)
+     * @param secondColumn  second column, prepended with table alias (i.e. <code>"alias.column"</code>)
      *
      * @return equality expression
      */
@@ -664,7 +638,7 @@ final class Join<L, R> implements RootInt<L> {
 
 
     /**
-     * Get the alias to be used for the join table
+     * Get the alias to be used for the join table.
      *
      * @param tableName     join table name
      * @param xAlias        first table alias

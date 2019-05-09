@@ -23,7 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * Properties allowed for joins and query expressions
+ * Properties allowed for joins and query expressions.
  *
  * @param <M>   entity class
  * @param <T>   data type
@@ -31,7 +31,7 @@ import androidx.annotation.Nullable;
 public final class SingleProperty<M, T> extends Property<M, T> {
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param entityClass   current entity class (the parent class is set to the set of the current class)
      * @param fieldType     field type
@@ -46,7 +46,7 @@ public final class SingleProperty<M, T> extends Property<M, T> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param entityClass               current entity class
      * @param fieldParentClass          the class the property really belongs to

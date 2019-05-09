@@ -26,14 +26,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.exceptions.MappingException;
 
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
- * This class allows to group the columns belonging to the same join table
+ * This class allows to group the columns belonging to the same join table.
  *
  * @see JoinTable
  */
@@ -46,14 +45,14 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     @NonNull private final Field field;
 
     /**
-     * Direct join columns
+     * Direct join columns.
      *
      * @see JoinTable#joinColumns()
      */
     private final Columns directJoinColumns;
 
     /**
-     * Inverse join columns
+     * Inverse join columns.
      *
      * @see JoinTable#inverseJoinColumns()
      */
@@ -61,7 +60,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Direct and inverse join columns
+     * Direct and inverse join columns.
      *
      * @see #directJoinColumns
      * @see #inverseJoinColumns
@@ -70,9 +69,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param db        database the table belongs to
+     * @param db        database
      * @param entity    entity that owns the relationship
      * @param field     field the table and its columns are generated from
      */
@@ -90,7 +89,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Create the JoinTableObject linked to a field annotated with {@link JoinTable}
+     * Create the {@link JoinTableObject} linked to a field annotated with {@link JoinTable}
      * and start the mapping process.
      *
      * @param db        database the table belongs to
@@ -98,20 +97,13 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @param field     field the table and its columns are generated from
      *
      * @return join table object
-     *
-     * @throws MappingException if the field doesn't have a {@link JoinTable} annotation
      */
     public static JoinTableObject map(@NonNull DatabaseObject db,
                                       @NonNull EntityObject<?> entity,
                                       @NonNull Field field) {
 
         JoinTableObject result = new JoinTableObject(db, entity, field);
-
         JoinTable annotation = field.getAnnotation(JoinTable.class);
-
-        if (annotation == null) {
-            throw new MappingException("[Entity \"" + entity.getName() + "\"] @JoinTable annotation not found on field \"" + field.getName() + "\"");
-        }
 
         LogUtils.d("[Table \"" + annotation.name() + "\"] adding direct join columns");
 
@@ -149,10 +141,10 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Get the SQL query to create a join table
+     * Get the SQL query to create a join table.
      *
-     * All the normal tables must have been created before running the executing the result of
-     * this method, as it will create foreign keys pointing to their columns.
+     * <p>All the normal tables must have been created before running the executing the result of
+     * this method, as it will create foreign keys pointing to their columns.</p>
      *
      * @return SQL query
      */
@@ -186,9 +178,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Get the columns SQL statement to be inserted in the table creation query
+     * Get the columns SQL statement to be inserted in the table creation query.
      *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getColumnsSql() {
@@ -208,7 +200,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
 
     /**
-     * Get the foreign keys SQL constraints to be inserted in the create table query
+     * Get the foreign keys SQL constraints to be inserted in the create table query.
      *
      * @return SQL statement
      */

@@ -38,12 +38,13 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
+import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 
 public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
     /**
-     * Get element utils
+     * Get element utils.
      *
      * @return  element utils
      */
@@ -53,7 +54,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Get type utils
+     * Get type utils.
      *
      * @return  type utils
      */
@@ -63,7 +64,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Get filer
+     * Get filer.
      *
      * @return  filer
      */
@@ -73,7 +74,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Log error message
+     * Log error message.
      *
      * @param   message     message
      */
@@ -83,7 +84,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Log error message
+     * Log error message.
      *
      * @param   message     message
      * @param   element     the element to use as a position hint
@@ -94,7 +95,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Log warning message
+     * Log warning message.
      *
      * @param   message     message
      */
@@ -104,7 +105,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Log warning message
+     * Log warning message.
      *
      * @param   message     message
      * @param   element     the element to use as a position hint
@@ -115,7 +116,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Get an element given its type
+     * Get an element given its type.
      *
      * @param typeMirror    element type
      * @return element
@@ -126,7 +127,7 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
-     * Get the data type of a field that implements the {@link Collection} interface
+     * Get the data type of a field that implements the {@link Collection} interface.
      *
      * @param field     field implementing the Collection interface
      *
@@ -219,13 +220,12 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
     /**
      * Check if a field is eligible for lazy loading.
-     * A field is considered eligible for lazy loading only if it is declared as a
-     * {@link Collection}, a {@link List} or a {@link Set}.
+     * <p>A field is considered eligible for lazy loading only if it is declared as a
+     * {@link Collection}, a {@link List} or a {@link Set}.</p>
      *
      * @param field     field implementing the Collection interface
      * @return true if the field is eligible for lazy loading; false otherwise
      * @throws ProcessorException if the given element is not a field
-     *
      */
     protected final boolean isLazyLoadingAllowed(Element field) throws ProcessorException {
         if (field.getKind() != ElementKind.FIELD) {
@@ -258,11 +258,15 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     /**
      * Get the class linked to a relationship
      *
+     * <p>
      * Examples:
-     *  -   @ManyToOne
-     *      Person person -> linked class = Person
-     *  -   @ManyToMany
-     *      Collection<Ticket> tickets -> linked class = Ticket
+     * <ul>
+     *     <li>{@link ManyToOne}<br>
+     *     Person person -> linked class = Person</li>
+     *     <li>{@link ManyToMany}<br>
+     *     Collection<Ticket> tickets -> linked class = Ticket</li>
+     * </ul>
+     * </p>
      *
      * @param field     field corresponding to the relationship
      * @return linked class element

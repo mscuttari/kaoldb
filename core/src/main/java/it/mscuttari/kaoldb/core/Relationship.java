@@ -36,15 +36,17 @@ import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.*;
 
 /**
  * Maps a relationship.
- * The possible combinations of column and relationship annotation specified on {@link #field} are
+ * <p>The possible combinations of column and relationship annotation specified on {@link #field} are
  * the following ones:
+ * <pre>
  *                          | Column | JoinColumn | JoinColumns | JoinTable
  * OneToOne (mapping)       |   No   |    Yes     |     Yes     |    Yes
  * OneToOne (non-mapping)   |   No   |    No      |     No      |    No
  * OneToMany                |   No   |    No      |     No      |    No
  * ManyToOne                |   No   |    Yes     |     Yes     |    Yes
  * ManyToMany (mapping)     |   No   |    No      |     No      |    Yes
- * ManyToMany (non-mapping) |   No   |    No      |     No      |    No
+ * ManyToMany (non-mapping) |   No   |    No      |     No      |    No</pre>
+ * </p>
  */
 class Relationship {
 
@@ -75,7 +77,7 @@ class Relationship {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db        database
      * @param field     field declaring the relationship
@@ -126,7 +128,7 @@ class Relationship {
 
 
     /**
-     * Get the data type of a field that implements the {@link Collection} interface
+     * Get the data type of a field that implements the {@link Collection} interface.
      *
      * @param field     field implementing the Collection interface
      * @return data type (class specified in the diamond operator of the Collection)
@@ -222,7 +224,7 @@ class Relationship {
 
 
     /**
-     * Get the raw class (thus without any diamond operator) of a Type
+     * Get the raw class (thus without any diamond operator) of a Type.
      *
      * @param type  Type representing the class
      * @return class erasure
@@ -237,7 +239,7 @@ class Relationship {
 
 
     /**
-     * Get the class that owns the relationship
+     * Get the class that owns the relationship.
      *
      * @return  owning class
      */
@@ -247,7 +249,7 @@ class Relationship {
 
 
     /**
-     * Get the class that doesn't own the relationship
+     * Get the class that doesn't own the relationship.
      *
      * @return non owning class
      */
@@ -257,11 +259,12 @@ class Relationship {
 
 
     /**
-     * Determine whether the lazy initialization can be done, according to declared field class.
+     * Determine whether the lazy initialization can be done, according to declared field class.<br>
      * In fact, if the field isn't declared as a Collection, List or Set, the lazy initialization
      * wrapper can not be assigned to the field.
      *
      * @return true if the lazy initialization is allowed; false otherwise
+     * @see LazyCollection
      */
     public boolean isLazilyInitializable() {
         Class<?> fieldClass = field.getType();

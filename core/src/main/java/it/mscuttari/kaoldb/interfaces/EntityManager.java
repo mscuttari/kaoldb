@@ -26,15 +26,15 @@ import androidx.annotation.NonNull;
 public interface EntityManager {
 
     /**
-     * Delete database
+     * Delete the database.
      *
-     * @return true if everything went fine; false otherwise
+     * @return <code>true</code> if everything went fine; <code>false</code> otherwise
      */
     boolean deleteDatabase();
 
 
     /**
-     * Get query builder
+     * Get a query builder.
      *
      * @param resultClass   result objects class
      * @param <T>           result objects class
@@ -45,7 +45,7 @@ public interface EntityManager {
 
 
     /**
-     * Get all the entity elements
+     * Get all the entity elements.
      *
      * @param entityClass   entity class
      * @param <T>           entity class
@@ -56,7 +56,7 @@ public interface EntityManager {
 
 
     /**
-     * Persist the object in the database
+     * Persist an object in the database.
      *
      * @param obj   object to be persisted
      */
@@ -64,7 +64,7 @@ public interface EntityManager {
 
 
     /**
-     * Persist the object in the database while listening to the pre-persist and post-persist events
+     * Persist an object in the database while listening to the pre-persist and post-persist events.
      *
      * @param obj           object to be persisted
      * @param prePersist    pre-persist listener
@@ -75,7 +75,7 @@ public interface EntityManager {
 
 
     /**
-     * Update an object in the database
+     * Update an object in the database.
      *
      * @param obj   object to be updated
      */
@@ -83,7 +83,7 @@ public interface EntityManager {
 
 
     /**
-     * Persist the object in the database while listening to the pre-update and post-update events
+     * Persist an object in the database while listening to the pre-update and post-update events.
      *
      * @param obj           object to be updated
      * @param preUpdate     pre-update listener
@@ -94,7 +94,7 @@ public interface EntityManager {
 
 
     /**
-     * Remove an object from the database
+     * Remove an object from the database.
      *
      * @param obj   object to be removed
      */
@@ -102,7 +102,7 @@ public interface EntityManager {
 
 
     /**
-     * Remove and object from the database while listening to the pre-update and post-update events
+     * Remove an object from the database while listening to the pre-update and post-update events.
      *
      * @param obj           object to be removed
      * @param preRemove     pre-remove listener

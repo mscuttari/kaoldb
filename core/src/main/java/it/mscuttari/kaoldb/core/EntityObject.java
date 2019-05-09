@@ -17,7 +17,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -74,7 +73,7 @@ class EntityObject<T> {
 
     /**
      * Inheritance type.
-     * Null if the entity has no children.
+     * <p><code>Null</code> if the entity has no children.</p>
      *
      * @see #loadInheritanceType()
      */
@@ -84,7 +83,7 @@ class EntityObject<T> {
 
     /**
      * Parent entity.
-     * Null if the entity has no parent.
+     * <p><code>Null</code> if the entity has no parent.</p>
      *
      * @see #loadParent()
      */
@@ -93,7 +92,7 @@ class EntityObject<T> {
 
     /**
      * Discriminator value.
-     * Null if the entity has no parent.
+     * <p><code>Null</code> if the entity has no parent.</p>
      *
      * @see #loadDiscriminatorValue()
      */
@@ -102,8 +101,8 @@ class EntityObject<T> {
 
     /**
      * Children entities.
-     * The children entities are determined during the parent determination process. Every time
-     * an entity find its parent entity, it is also added to the children list of the latter.
+     * <p>The children entities are determined during the parent determination process. Every time
+     * an entity find its parent entity, it is also added to the children list of the latter.</p>
      *
      * @see #loadParent()
      */
@@ -111,7 +110,7 @@ class EntityObject<T> {
     public Collection<EntityObject<? extends T>> children = new HashSet<>();
 
     /**
-     * Whether the entity has a real table or not
+     * Whether the entity has a real table or not.
      *
      * @see #loadTableExistence()
      */
@@ -119,7 +118,7 @@ class EntityObject<T> {
 
     /**
      * Table name.
-     * Null if the entity doesn't require a real table.
+     * <p><code>Null</code> if the entity doesn't require a real table.</p>
      *
      * @see #loadTableName()
      */
@@ -128,31 +127,34 @@ class EntityObject<T> {
 
     /**
      * Columns of the table.
-     * Populated during the 2nd phase of the mapping process.
+     *
+     * <p>Populated during the 2nd phase of the mapping process.<br>
      * At the end of the mapping process, it contains all and only the columns that build
      * the real table in the database. Therefore, it contains also the inherited primary key
-     * columns in case of a JOINED inheritance strategy or the children columns in case of a
-     * SINGLE_TABLE inheritance strategy.
+     * columns in case of a <code>JOINED</code> inheritance strategy or the children columns
+     * in case of a <code>SINGLE_TABLE</code> inheritance strategy.</p>
      *
      * @see #loadColumns()
+     * @see DatabaseObject#mapEntities()
      */
     public Columns columns = new Columns(this);
 
     /**
      * Discriminator column.
-     * Determined during the 2nd phase of the mapping process.
+     * <p>Determined during the 2nd phase of the mapping process.</p>
      *
      * @see #loadColumns()
+     * @see DatabaseObject#mapEntities()
      */
     @Nullable
     public BaseColumnObject discriminatorColumn;
 
     /**
-     * Relationships
+     * Relationships.
      *
-     * The collection contains the fields declared in {@link #clazz} (superclasses are
+     * <p>The collection contains the fields declared in {@link #clazz} (superclasses are
      * excluded) that are annotated with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne}
-     * or {@link ManyToMany}.
+     * or {@link ManyToMany}.</p>
      *
      * @see #loadRelationships()
      */
@@ -160,9 +162,9 @@ class EntityObject<T> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param db        database the entity belongs to
+     * @param db        database
      * @param clazz     entity class
      */
     private EntityObject(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
@@ -172,9 +174,9 @@ class EntityObject<T> {
 
 
     /**
-     * Create the entity object linked to an entity class and start the mapping process.
+     * Create the {@link EntityObject} linked to an entity class and start the mapping process.
      *
-     * @param db        database the entity belongs to
+     * @param db        database
      * @param clazz     entity class
      * @param <T>       entity class
      *
@@ -225,7 +227,7 @@ class EntityObject<T> {
 
 
     /**
-     * Get the simple name of the class associated to this entity
+     * Get the simple name of the class associated to this entity.
      *
      * @return class name
      */
@@ -235,7 +237,7 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the inheritance type
+     * Determine the inheritance type.
      */
     private void loadInheritanceType() {
         Inheritance annotation = clazz.getAnnotation(Inheritance.class);
@@ -246,7 +248,7 @@ class EntityObject<T> {
 
     /**
      * Determine if the class is linked to a real table.
-     * Must be called after {@link #loadParent()}.
+     * <p>Must be called after {@link #loadParent()}.</p>
      */
     private void loadTableExistence() {
         boolean result;
@@ -264,17 +266,18 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the table name
+     * Determine the table name.
      *
-     * If the table is not specified, the following policy is applied:
-     * Uppercase characters are replaces with underscore followed by the same character converted
+     * <p>If the table is not specified, the following policy is applied:</p>
+     * <p>Uppercase characters are replaces with underscore followed by the same character converted
      * to lowercase. Only the first class name character, if uppercase, is converted to lowercase
-     * while avoiding the underscore.
-     * Example: EntityClassName => entity_class_name
+     * while avoiding the underscore.</p>
+     * <p>Example: EntityClassName => entity_class_name</p>
      *
      * @throws InvalidConfigException if the class doesn't have the @Table annotation and doesn't
-     *                                expect a real table (possible only in case of TABLE_PER_CLASS
-     *                                inheritance strategy, which is anyway not supported)
+     *                                expect a real table (possible only in case of
+     *                                <code>TABLE_PER_CLASS</code> inheritance strategy, which is
+     *                                anyway not supported)
      */
     private void loadTableName() {
         String result;
@@ -310,7 +313,7 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the parent entity and eventually add this entity to its children
+     * Determine the parent entity and eventually add this entity to its children.
      */
     private void loadParent() {
         EntityObject<? super T> parent = null;
@@ -341,7 +344,7 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the discriminator value
+     * Determine the discriminator value.
      */
     private void loadDiscriminatorValue() {
         DiscriminatorValue annotation = clazz.getAnnotation(DiscriminatorValue.class);
@@ -351,7 +354,7 @@ class EntityObject<T> {
 
 
     /**
-     * Get the child with a specific {@link #discriminatorValue}
+     * Get the child with a specific {@link #discriminatorValue}.
      *
      * @param discriminator     discriminator value of the child entity
      * @return child entity
@@ -374,7 +377,7 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the relationships fields
+     * Determine the relationships fields.
      *
      * A field is considered a relationship one if it is annotated with {@link OneToOne},
      * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
@@ -396,7 +399,7 @@ class EntityObject<T> {
 
 
     /**
-     * Get the unique columns sets (both the unique columns specified in the @Table annotation)
+     * Get the unique columns sets (both the unique columns specified in the {@link Table} annotation).
      *
      * @return list of unique columns sets
      * @throws InvalidConfigException if a column with the specified name doesn't exist
@@ -440,13 +443,14 @@ class EntityObject<T> {
 
 
     /**
-     * Load entity columns
+     * Load entity columns.
      *
-     * By normal columns are intended the one originated from a {@link Column} annotated field.
-     *
-     * The join columns are derived from:
-     *  -   Fields annotated with {@link OneToOne} that are owning side
-     *  -   Fields annotated with {@link ManyToOne}
+     * <p>By normal columns are intended the one originated from a {@link Column} annotated field.</p>
+     * <p>The join columns are derived from:
+     * <ul>
+     *      <li>Fields annotated with {@link OneToOne} that are the owning side</li>
+     *      <li>Fields annotated with {@link ManyToOne}</li>
+     * </ul></p>
      *
      * @throws InvalidConfigException in case of multiple column declaration
      */
@@ -477,7 +481,6 @@ class EntityObject<T> {
         waitWhile(columns, () -> columns.mappingStatus.get() != 0);
         LogUtils.i("[Entity \"" + getName() + "\"] own columns mapped");
 
-
         // Parent inherited primary keys (in case of JOINED inheritance strategy)
         if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
             waitWhile(parent.columns, () -> !parent.columns.joinedColumnsInherited.get());
@@ -486,7 +489,6 @@ class EntityObject<T> {
 
         doAndNotifyAll(columns, () -> columns.joinedColumnsInherited.set(true));
         LogUtils.i("[Entity \"" + getName() + "\"] JOINED inherited columns added");
-
 
         // Children columns (in case of SINGLE_TABLE inheritance strategy)
         if (inheritanceType == InheritanceType.SINGLE_TABLE) {
@@ -498,7 +500,6 @@ class EntityObject<T> {
 
         doAndNotifyAll(columns, () -> columns.singleTableColumnsInherited.set(true));
         LogUtils.i("[Entity \"" + getName() + "\"] SINGLE_TABLE inherited columns added");
-
 
         // Discriminator column
         if (children.size() != 0) {
@@ -548,11 +549,10 @@ class EntityObject<T> {
 
     /**
      * Get field of a class given its name.
-     * The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.
+     * <p>The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.</p>
      *
      * @param fieldName     field name
      * @return accessible field
-     * @throws MappingException if there is no field in {@link #clazz} with the specified name
      */
     public Field getField(String fieldName) {
         return getField(clazz, fieldName);
@@ -560,15 +560,15 @@ class EntityObject<T> {
 
 
     /**
-     * Get field of a class given its name.
-     * The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.
+     * Get the field of a class given the field name.
+     * <p>The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.</p>
      *
      * @param clazz         class the field belongs to
      * @param fieldName     field name
      *
      * @return accessible field
      *
-     * @throws MappingException if there is no field in the class with the specified name
+     * @throws IllegalArgumentException if there is no field in the class with the specified name
      */
     public static Field getField(Class<?> clazz, String fieldName) {
         try {
@@ -577,13 +577,13 @@ class EntityObject<T> {
             return field;
 
         } catch (NoSuchFieldException e) {
-            throw new MappingException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
+            throw new IllegalArgumentException("Field \"" + fieldName + "\" not found in class \"" + clazz.getSimpleName() + "\"", e);
         }
     }
 
 
     /**
-     * Create an instance of the entity class
+     * Create an instance of the entity class.
      *
      * @return object having a class equal to {@link #clazz}
      * @throws PojoException if the object instance can't be created
@@ -601,13 +601,13 @@ class EntityObject<T> {
 
 
     /**
-     * Convert cursor to POJO
+     * Convert cursor to POJO.
      *
-     * The conversion automatically search for the child class according to the discriminator value.
+     * <p>The conversion automatically search for the child class according to the discriminator value.<br>
      * In fact, the method starts with a first part with the aim of going down through the hierarchy
-     * tree in order to retrieve the leaf class representing the real object class.
+     * tree in order to retrieve the leaf class representing the real object class.<br>
      * Then, the second part creates an instance of that class and populates its basic fields with
-     * the data contained in the cursor.
+     * the data contained in the cursor.</p>
      *
      * @param c             cursor
      * @param alias         result class alias
@@ -675,21 +675,21 @@ class EntityObject<T> {
 
 
     /**
-     * Prepare the data to be saved in a particular entity table
+     * Prepare the data to be saved in a particular entity table.
      *
-     * {@link ContentValues#size()} must be checked before saving the data in the database.
+     * <p>{@link ContentValues#size()} must be checked before saving the data in the database.
      * If zero, no data needs to be saved and, if not skipped, the
-     * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.
+     * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.</p>
      *
      * @param entityManager     entity manager
-     * @param childEntity       child entity (can be null if this entity has no children)
+     * @param childEntity       immediate child entity (can be <code>null</code> if this entity has no children)
      * @param obj               object to be converted
      *
      * @return data ready to be saved in the database
      *
      * @throws PojoException if the discriminator value has been manually set but is not
      *                       compatible with the child entity class
-     * @throws QueryException  if the field associated with the discriminator value can't be accessed
+     * @throws PojoException if the field associated with the discriminator value can't be accessed
      */
     @NonNull
     public ContentValues toContentValues(Object obj, EntityObject childEntity, EntityManager entityManager) {
@@ -717,7 +717,7 @@ class EntityObject<T> {
 
                 if (discriminatorColumn.field.isAnnotationPresent(Column.class)) {
                     // The discriminator column is linked to a field annotated with @Column
-                    insertDataIntoContentValues(cv, discriminatorColumn.name, childEntity.discriminatorValue);
+                    discriminatorColumn.addToContentValues(cv, childEntity.discriminatorValue);
 
                 } else if (discriminatorColumn.field.isAnnotationPresent(JoinColumn.class)) {
                     // The discriminator column is linked to a field annotated with @JoinColumn
@@ -738,13 +738,13 @@ class EntityObject<T> {
                         discriminatorColumn.setValue(obj, discriminator);
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
                     }
 
                     discriminatorColumn.addToContentValues(cv, obj);
@@ -773,13 +773,13 @@ class EntityObject<T> {
                         }
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
                     }
 
                     discriminatorColumn.addToContentValues(cv, obj);
@@ -809,13 +809,13 @@ class EntityObject<T> {
                         }
 
                     } catch (InstantiationException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (IllegalAccessException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
 
                     } catch (NoSuchFieldException e) {
-                        throw new QueryException(e);
+                        throw new PojoException(e);
                     }
 
                     discriminatorColumn.addToContentValues(cv, obj);
@@ -838,18 +838,20 @@ class EntityObject<T> {
 
 
     /**
-     * Check if an object already exists in the database
+     * Check if an object already exists in the database.
      *
-     * @param obj               {@link Object} to be searched. In case of basic object type (Integer,
+     * @param obj               object to be searched. In case of basic object type (Integer,
      *                          String, etc.) the check will be successful; in case of complex type
      *                          (custom classes), a query searching for the object is run
      * @param db                {@link DatabaseObject} of the database the entity belongs to
      * @param entityManager     entity manager
      *
-     * @return true if the data already exits in the database; false otherwise
+     * @return <code>true</code> if the data already exits in the database; <code>false</code> otherwise
      *
      * @throws InvalidConfigException  if the entity has a primary key not linked to a class field
      *                                 (not normally reachable situation)
+     *
+     * @see #isPrimitiveType(Class)
      */
     @SuppressWarnings("unchecked")
     private static boolean checkDataExistence(Object obj, DatabaseObject db, EntityManager entityManager) {
@@ -894,94 +896,37 @@ class EntityObject<T> {
 
 
     /**
-     * Insert value into {@link ContentValues}
-     *
-     * The conversion of the object value to column value follows these rules:
-     *  -   If the column name is already in use, its value is replaced with the newer one.
-     *  -   Passing a null value will result in a NULL table column.
-     *  -   An empty string ("") will not generate a NULL column but a string with a length of
-     *      zero (empty string).
-     *  -   Boolean values are stored either as 1 (true) or 0 (false).
-     *  -   {@link Date} and {@link Calendar} objects are stored by saving their time in milliseconds.
-     *
-     * @param cv            content values
-     * @param columnName    column name
-     * @param value         value
-     */
-    public static void insertDataIntoContentValues(ContentValues cv, String columnName, Object value) {
-        if (value == null) {
-            cv.putNull(columnName);
-
-        } else {
-            if (value instanceof Enum) {
-                cv.put(columnName, ((Enum) value).name());
-
-            } else if (value instanceof Integer || value.getClass().equals(int.class)) {
-                cv.put(columnName, (int) value);
-
-            } else if (value instanceof Long || value.getClass().equals(long.class)) {
-                cv.put(columnName, (long) value);
-
-            } else if (value instanceof Float || value.getClass().equals(float.class)) {
-                cv.put(columnName, (float) value);
-
-            } else if (value instanceof Double || value.getClass().equals(double.class)) {
-                cv.put(columnName, (double) value);
-
-            } else if (value instanceof String) {
-                cv.put(columnName, (String) value);
-
-            } else if (value instanceof Boolean || value.getClass().equals(boolean.class)) {
-                cv.put(columnName, ((boolean) value) ? 1 : 0);
-
-            } else if (value instanceof Date) {
-                cv.put(columnName, ((Date) value).getTime());
-
-            } else if (value instanceof Calendar) {
-                cv.put(columnName, ((Calendar) value).getTimeInMillis());
-            }
-        }
-    }
-
-
-    /**
      * Check if the data class is a primitive one (int, float, etc.) or if is one of the following:
      * {@link Integer}, {@link Long}, {@link Float}, {@link Double}, {@link String},
-     * {@link Boolean}. {@link Date}, {@link Calendar}.
+     * {@link Boolean}, {@link Date}, {@link Calendar}.
      *
      * @param clazz     data class
-     * @return true if one the specified classes is found
+     * @return <code>true</code> if one the specified classes is found; <code>false</code> otherwise
      */
     private static boolean isPrimitiveType(Class<?> clazz) {
-        Class<?>[] primitiveTypes = {
-                Enum.class,
-                Integer.class, int.class,
-                Long.class, long.class,
-                Float.class, float.class,
-                Double.class, double.class,
-                String.class,
-                Boolean.class, boolean.class,
-                Date.class,
-                Calendar.class
-        };
-
-        for (Class<?> primitiveType : primitiveTypes) {
-            if (primitiveType.isAssignableFrom(clazz))
-                return true;
-        }
-
-        return false;
+        return Enum.class.isAssignableFrom(clazz) ||
+                Integer.class.isAssignableFrom(clazz) ||
+                int.class.isAssignableFrom(clazz) ||
+                Long.class.isAssignableFrom(clazz) ||
+                long.class.isAssignableFrom(clazz) ||
+                Double.class.isAssignableFrom(clazz) ||
+                double.class.isAssignableFrom(clazz) ||
+                String.class.isAssignableFrom(clazz) ||
+                Boolean.class.isAssignableFrom(clazz) ||
+                boolean.class.isAssignableFrom(clazz) ||
+                Date.class.isAssignableFrom(clazz) ||
+                Calendar.class.isAssignableFrom(clazz);
     }
 
 
     /**
-     * Get the SQL query to create the entity table
+     * Get the SQL query to create the entity table.
      *
-     * The result can be used to create just the table directly linked to the provided entity.
+     * <p>The result can be used to create just the table directly linked to the provided entity.<br>
      * Optional join tables that are related to eventual internal fields must be managed
-     * separately and in a second moment (after the creation of all the normal tables).
+     * separately and in a second moment (after the creation of all the normal tables).</p>
      *
-     * @return SQL query (null if no table should be created)
+     * @return SQL query (<code>null</code> if no table should be created)
      */
     @Nullable
     public String getSQL() {
@@ -1030,16 +975,12 @@ class EntityObject<T> {
 
 
     /**
-     * Get primary keys SQL statement to be inserted in the create table query
+     * Get primary keys SQL statement to be inserted in the create table query.
      *
-     * This method is used to create the primary keys of a table directly associated to an entity.
-     * There is no counterpart for the join tables because that can be directly managed by this
-     * method.
-     *
-     * Example: PRIMARY KEY(column_1, column_2, column_3)
+     * <p>Example: <code>PRIMARY KEY(column_1, column_2, column_3)</code></p>
      *
      * @param primaryKeys       collection of primary keys
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     public static String getTablePrimaryKeysSql(Collection<BaseColumnObject> primaryKeys) {
@@ -1060,20 +1001,15 @@ class EntityObject<T> {
 
 
     /**
-     * Get unique columns SQL statement to be inserted in the create table query
+     * Get unique columns SQL statement to be inserted in the create table query.
      *
-     * This method is used to create the unique constraints defined using the
-     * {@link UniqueConstraint} annotation.
-     * There is no counterpart for join tables because the unique constraints of a join table
-     * are given just by the primary keys.
-     *
-     * The parameter uniqueColumns is a collection of collections because each unique constraint
+     * <p>The parameter uniqueColumns is a collection of collections because each unique constraint
      * can be made of multiple columns. For example, a collection such as
-     * [[column_1, column_2], [column_2, column_3, column_4]] would generate the statement
-     * UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)
+     * <code>[[column_1, column_2], [column_2, column_3, column_4]]</code> would generate the
+     * statement <code>UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)</code></p>
      *
      * @param uniqueColumns     unique columns groups
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private static String getTableUniquesSql(Collection<Collection<BaseColumnObject>> uniqueColumns) {
@@ -1098,14 +1034,15 @@ class EntityObject<T> {
 
     /**
      * Get the foreign keys SQL constraints to be inserted in the create table query.
-     * This method is used to create the foreign keys of a table directly associated to an entity.
      *
-     * Example:
-     * FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2),
-     * FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4),
-     * FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6)
+     * <p>Example:
+     * <code>
+     *     FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+     *     FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+     *     FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * </code></p>
      *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableForeignKeysSql() {
@@ -1132,13 +1069,16 @@ class EntityObject<T> {
 
 
     /**
-     * Get the inheritance SQL constraint to be inserted in the create table query
+     * Get the inheritance SQL constraint to be inserted in the create table query.
      *
-     * Example: FOREIGN KEY (primary_key_1, primary_key_2)
-     *          REFERENCES parent_table(primary_key_1, primary_key_2)
-     *          ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * <p>Example:
+     * <code>
+     *     FOREIGN KEY (primary_key_1, primary_key_2)
+     *     REFERENCES parent_table(primary_key_1, primary_key_2)
+     *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * </code></p>
      *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableInheritanceConstraints() {
@@ -1168,18 +1108,20 @@ class EntityObject<T> {
 
     /**
      * Get the relationships SQL constraints to be inserted in the create table query.
-     * In other words, it creates the foreign keys for a table directly associated to this entity.
      *
-     * Example:
-     *  FOREIGN KEY (column_1, column_2)
-     *  REFERENCES referenced_table_1(referenced_column_1, referenced_column_2)
-     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * <p>Example:
+     * <code>
+     *     FOREIGN KEY (column_1, column_2)
+     *     REFERENCES referenced_table_1(referenced_column_1, referenced_column_2)
+     *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * </code><br>
+     * <code>
+     *     FOREIGN KEY (column_3, column_4)
+     *     REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
+     *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     * </code></p>
      *
-     *  FOREIGN KEY (column_3, column_4)
-     *  REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
-     *  ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
-     *
-     * @return SQL statement (null if the SQL statement is not needed in the main query)
+     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private String getTableRelationshipsConstraints() {

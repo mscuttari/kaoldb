@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package it.mscuttari.kaoldb.annotations;
+package it.mscuttari.kaoldb.exceptions;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public class ConcurrenceException extends KaolDBException {
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+    public ConcurrenceException() {
 
-/**
- * Specifies that the class is an entity
- */
-@Target({TYPE})
-@Retention(RUNTIME)
-public @interface Entity {
+    }
 
-    /**
-     * Unique table columns constraints
-     */
-    UniqueConstraint[] uniqueConstraints() default {};
+    public ConcurrenceException(String message) {
+        super(message);
+    }
+
+    public ConcurrenceException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public ConcurrenceException(Throwable cause) {
+        super(cause);
+    }
 
 }

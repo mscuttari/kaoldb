@@ -19,12 +19,21 @@ package it.mscuttari.kaoldb.annotations;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Target({METHOD, FIELD})
+/**
+ * Specifies the value of the discriminator column for entities of the given type.
+ *
+ * <p>The {@link DiscriminatorValue} annotation can only be specified on a concrete entity class.</p>
+ */
+@Target({TYPE})
 @Retention(RUNTIME)
-public @interface ManyToOne {
+public @interface DiscriminatorValue {
+
+    /**
+     * The value that indicates that the row is an entity of the annotated entity type.
+     */
+    String value();
 
 }

@@ -33,7 +33,7 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Maps the fields of an entity
+ * Maps the fields of an entity.
  *
  * @param <M>   entity class
  * @param <T>   data type

@@ -23,7 +23,7 @@ import it.mscuttari.kaoldb.interfaces.Root;
 interface RootInt<X> extends Root<X> {
 
     /**
-     * Get the entity class the root is linked to
+     * Get the entity class the root is linked to.
      *
      * @return entity class
      */
@@ -31,7 +31,7 @@ interface RootInt<X> extends Root<X> {
 
 
     /**
-     * Get the alias used in the query for the current root
+     * Get the alias used in the query for the current root.
      *
      * @return alias
      */
@@ -39,7 +39,7 @@ interface RootInt<X> extends Root<X> {
 
 
     /**
-     * Get a map between the aliases and the roots
+     * Get a map between the aliases and the roots.
      *
      * @return map
      */

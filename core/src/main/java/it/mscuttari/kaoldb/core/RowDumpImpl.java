@@ -34,7 +34,7 @@ class RowDumpImpl implements RowDump {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param c     cursor positioned to the row to be dumped
      */

@@ -30,7 +30,7 @@ import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Inheritance;
 
 /**
- * Checks that the {@link Inheritance} annotation is applied on a concrete entity class
+ * Checks that the {@link Inheritance} annotation is applied on a concrete entity class.
  */
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Inheritance")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)

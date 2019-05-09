@@ -27,7 +27,7 @@ public enum DiscriminatorType {
 
 
     /**
-     * Get corresponding discriminator column class
+     * Get corresponding discriminator column class.
      *
      * @return column class
      */

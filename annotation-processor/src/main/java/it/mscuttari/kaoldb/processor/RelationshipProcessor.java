@@ -41,10 +41,12 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
  * Analyze all the fields with {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} or
  * {@link ManyToMany} annotations and check if the constraints are respected.
  *
- * {@link OneToOne} constraints: see {@link #checkOneToOneRelationship(Element)}
- * {@link OneToMany} constraints: see {@link #checkOneToManyRelationship(Element)}
- * {@link ManyToOne} constraints: see {@link #checkManyToOneRelationship(Element)}
+ * <p>
+ * {@link OneToOne} constraints: see {@link #checkOneToOneRelationship(Element)}<br>
+ * {@link OneToMany} constraints: see {@link #checkOneToManyRelationship(Element)}<br>
+ * {@link ManyToOne} constraints: see {@link #checkManyToOneRelationship(Element)}<br>
  * {@link ManyToMany} constraints: see {@link #checkManyToManyRelationship(Element)}
+ * </p>
  */
 @SupportedAnnotationTypes({
         "it.mscuttari.kaoldb.annotations.OneToOne",
@@ -97,15 +99,19 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link OneToOne},
-     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   In case of owning side, the field is also annotated with {@link JoinColumn},
-     *      {@link JoinColumns} or {@link JoinTable}.
-     *  -   In case of non-owning side, the field is not annotated with {@link JoinColumn},
-     *      {@link JoinColumns} or {@link JoinTable}.
-     *  -   If specified, the {@link OneToOne#mappedBy()} field exists, is of correct type, is
-     *      annotated {@link OneToOne} and its {@link OneToOne#mappedBy()} field is empty.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link OneToOne},
+     *     {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}</li>
+     *     <li>In case of owning side, the field is also annotated with {@link JoinColumn},
+     *     {@link JoinColumns} or {@link JoinTable}</li>
+     *     <li>In case of non-owning side, the field is not annotated with {@link JoinColumn},
+     *     {@link JoinColumns} or {@link JoinTable}</li>
+     *     <li>If specified, the {@link OneToOne#mappedBy()} field exists, is of correct type, is
+     *     annotated {@link OneToOne} and its {@link OneToOne#mappedBy()} field is empty</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -158,18 +164,22 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link OneToMany} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link OneToOne},
-     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   The field doesn't have {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
-     *      {@link JoinTable} annotations.
-     *  -   The field class implements the {@link Collection} interface.
-     *  -   The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
-     *      with {@link ManyToOne}.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link OneToOne},
+     *     {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}</li>
+     *     <li>The field doesn't have {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
+     *     {@link JoinTable} annotations</li>
+     *     <li>The field class implements the {@link Collection} interface</li>
+     *     <li>The {@link OneToMany#mappedBy()} field exists, is of correct type and is annotated
+     *     with {@link ManyToOne}</li>
+     * </ul>
      *
      * If the field class implements the {@link Collection} interface but is not declared as a
      * {@link Collection}, {@link List} or {@link Set}, a warning specifying lazy loading
      * disabling is raised.
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -216,10 +226,14 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link ManyToOne} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link OneToOne},
-     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link OneToOne},
+     *     {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}</li>
+     *     <li>The field is annotated with {@link JoinColumn}, {@link JoinColumns} or {@link JoinTable}</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -241,19 +255,23 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link ManyToMany} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link OneToOne},
-     *      {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     *  -   In case of owning side, the field is annotated with {@link JoinTable}.
-     *  -   The field class implements the {@link Collection} interface.
-     *  -   The {@link OneToMany#mappedBy()} field, if specified, exists, is a {@link Collection}
-     *      of compatible type and is annotated with a {@link ManyToMany} annotation denoted by
-     *      having an empty {@link OneToMany#mappedBy()} (in order to have an owning side of the
-     *      relationship).
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link OneToOne},
+     *     {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}</li>
+     *     <li>In case of owning side, the field is annotated with {@link JoinTable}</li>
+     *     <li>The field class implements the {@link Collection} interface</li>
+     *     <li>The {@link OneToMany#mappedBy()} field, if specified, exists, is a
+     *     {@link Collection} of compatible type and is annotated with a {@link ManyToMany}
+     *     annotation denoted by having an empty {@link OneToMany#mappedBy()} (in order to
+     *     have an owning side of the relationship)</li>
+     * </ul>
      *
      * If the field class implements the {@link Collection} interface but is not declared as a
      * {@link Collection}, {@link List} or {@link Set}, a warning specifying lazy loading
      * disabling is raised.
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraint are not respected
@@ -332,7 +350,7 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
 
     /**
-     * Get a class field given its name
+     * Get a class field given its name.
      *
      * @param clazz     class within to search for the field
      * @param fieldName field name

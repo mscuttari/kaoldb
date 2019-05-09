@@ -23,7 +23,7 @@ import it.mscuttari.kaoldb.exceptions.DumpException;
 public interface DatabaseDump {
 
     /**
-     * Get all table dumps
+     * Get all table dumps.
      *
      * @return table dumps
      */
@@ -31,7 +31,7 @@ public interface DatabaseDump {
 
 
     /**
-     * Get specific table dump
+     * Get specific table dump.
      *
      * @param tableName     table name
      * @return table dump

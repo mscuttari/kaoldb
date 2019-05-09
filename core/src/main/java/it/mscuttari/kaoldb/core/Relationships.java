@@ -45,11 +45,12 @@ class Relationships extends HashSet<Relationship> {
 
 
     /**
-     * Check if a field leads to a relationship
+     * Check if a field leads to a relationship.
      *
      * @param fieldName     field name
-     * @return true if the field is annotated with {@link OneToOne}, {@link OneToMany},
-     *         {@link ManyToOne} or {@link ManyToMany}
+     * @return <code>true</code> if the field is annotated with {@link OneToOne},
+     *         {@link OneToMany}, {@link ManyToOne} or {@link ManyToMany}; <code>false</code>
+     *         otherwise
      */
     public boolean contains(String fieldName) {
         return mapByFieldName.containsKey(fieldName);
@@ -57,7 +58,7 @@ class Relationships extends HashSet<Relationship> {
 
 
     /**
-     * Get a relationship given the name of the field generating it
+     * Get a relationship given the name of the field generating it.
      *
      * @param fieldName     field name
      * @return relationship

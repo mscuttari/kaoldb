@@ -1,22 +1,32 @@
+/*
+ * Copyright 2018 Scuttari Michele
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package it.mscuttari.kaoldb.core;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.Map;
-
 import it.mscuttari.examples.database.GenericDbMigrator;
 import it.mscuttari.examples.generic.EntityA;
 import it.mscuttari.examples.generic.EntityB;
 import it.mscuttari.examples.generic.NotAnEntity;
-import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class DatabaseObjectTest extends AbstractTest {
@@ -29,19 +39,19 @@ public class DatabaseObjectTest extends AbstractTest {
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalStateException.class)
     public void getNameNotSet() {
         db.getName();
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setNullName() {
         db.setName(null);
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setEmptyName() {
         db.setName("");
     }
@@ -54,19 +64,19 @@ public class DatabaseObjectTest extends AbstractTest {
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalStateException.class)
     public void getVersionNotSet() {
         db.getVersion();
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setNullVersion() {
         db.setVersion(null);
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setVersionLessThanZero() {
         db.setVersion(-1);
     }
@@ -79,19 +89,19 @@ public class DatabaseObjectTest extends AbstractTest {
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalStateException.class)
     public void getSchemaMigratorNotSet() {
         db.getSchemaMigrator();
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setNullSchemaMigrator() {
         db.setSchemaMigrator(null);
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void setAbstractSchemaMigrator() {
         db.setSchemaMigrator(SchemaMigratorAbstractStub.class);
     }
@@ -104,7 +114,7 @@ public class DatabaseObjectTest extends AbstractTest {
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void addNonEntityClass() {
         db.addEntityClass(NotAnEntity.class);
     }
@@ -123,7 +133,7 @@ public class DatabaseObjectTest extends AbstractTest {
     }
 
 
-    @Test(expected = InvalidConfigException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void getNonExistingEntity() {
         db.getEntity(EntityA.class);
     }

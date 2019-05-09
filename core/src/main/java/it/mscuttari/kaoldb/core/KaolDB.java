@@ -42,7 +42,7 @@ public final class KaolDB {
 
 
     /**
-     * Private constructor for singleton
+     * Private constructor for singleton.
      */
     private KaolDB() {
 
@@ -50,7 +50,7 @@ public final class KaolDB {
 
 
     /**
-     * Get instance
+     * Get instance.
      *
      * @return singleton instance
      */
@@ -63,7 +63,7 @@ public final class KaolDB {
 
 
     /**
-     * Set the framework in debug mode or not (default = false)
+     * Set the framework in debug mode or not (default = <code>false</code>).
      *
      * @param enabled   whether to enable or not debug logs
      */
@@ -73,7 +73,7 @@ public final class KaolDB {
 
 
     /**
-     * Set configuration
+     * Set configuration.
      *
      * @param resId     resource ID of the XML configuration file
      * @throws KaolDBException in case of problems (configuration file not readable, invalid format, invalid mapping, etc.)
@@ -116,9 +116,9 @@ public final class KaolDB {
 
 
     /**
-     * Get entity manager for a specific database
+     * Get entity manager for a specific database.
      *
-     * @param context           context
+     * @param context           application context
      * @param databaseName      database name
      *
      * @return entity manager

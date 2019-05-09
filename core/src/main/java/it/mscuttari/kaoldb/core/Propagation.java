@@ -19,11 +19,12 @@ package it.mscuttari.kaoldb.core;
 import androidx.annotation.NonNull;
 
 /**
- * Describes the actions to be taken when a foreign key constraint changes
+ * Describes the actions to be taken when a foreign key constraint changes.
  */
 class Propagation {
 
     public enum Action {
+
         NO_ACTION("NO ACTION"),
         RESTRICT("RESTRICT"),
         SET_NULL("SET NULL"),
@@ -41,6 +42,7 @@ class Propagation {
         public String toString() {
             return action;
         }
+
     }
 
 
@@ -49,7 +51,7 @@ class Propagation {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param onUpdate      on update action
      * @param onDelete      on delete action

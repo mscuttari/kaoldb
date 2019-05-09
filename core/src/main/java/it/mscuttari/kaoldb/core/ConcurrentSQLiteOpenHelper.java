@@ -31,7 +31,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param dbHelper      database helper that needs thread safety
      */
@@ -41,7 +41,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Open the database
+     * Open the database.
      */
     public synchronized void open() {
         if (db == null || !db.isOpen()) {
@@ -53,7 +53,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Close the database
+     * Close the database.
      */
     public synchronized void close() {
         if (--dbConnections == 0) {
@@ -64,7 +64,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Close the database independently from its current usage
+     * Close the database independently from its current usage.
      */
     public synchronized void forceClose() {
         if (db != null) {
@@ -82,7 +82,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Begin transaction
+     * Begin transaction.
      *
      * @throws DatabaseManagementException if the database has not been opened yet
      * @throws DatabaseManagementException if a transaction is already running
@@ -99,7 +99,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Set the current transaction as successful
+     * Set the current transaction as successful.
      *
      * @throws DatabaseManagementException if the database has not been opened yet
      * @throws DatabaseManagementException if there is no transaction running
@@ -116,7 +116,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * End the current transaction
+     * End the current transaction.
      *
      * @throws DatabaseManagementException if the database has not been opened yet
      * @throws DatabaseManagementException if there is no transaction running
@@ -133,7 +133,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Perform a SELECT query
+     * Perform a SELECT query.
      *
      * @param sql               query
      * @param selectionArgs     selection args
@@ -149,7 +149,7 @@ final class ConcurrentSQLiteOpenHelper {
 
 
     /**
-     * Perform an insertion into the database
+     * Perform an insertion into the database.
      *
      * @param table             table name
      * @param nullColumnHack    see {@link SQLiteDatabase#insert(String, String, ContentValues)}
@@ -159,18 +159,21 @@ final class ConcurrentSQLiteOpenHelper {
      */
     public synchronized long insert(String table, String nullColumnHack, ContentValues values) {
         boolean shortRun = db == null;
-        if (shortRun) open();
+
+        if (shortRun)
+            open();
 
         try {
             return db.insert(table, nullColumnHack, values);
         } finally {
-            if (shortRun) close();
+            if (shortRun)
+                close();
         }
     }
 
 
     /**
-     * Perform an update of some already existing data
+     * Perform an update on the existing data matching the selection clause.
      *
      * @param table         table name
      * @param values        new data
@@ -181,18 +184,21 @@ final class ConcurrentSQLiteOpenHelper {
      */
     public synchronized int update(String table, ContentValues values, String whereClause, String[] whereArgs) {
         boolean shortRun = db == null;
-        if (shortRun) open();
+
+        if (shortRun)
+            open();
 
         try {
             return db.update(table, values, whereClause, whereArgs);
         } finally {
-            if (shortRun) close();
+            if (shortRun)
+                close();
         }
     }
 
 
     /**
-     * Delete some entries
+     * Delete the entries matching the selection clause.
      *
      * @param table         table name
      * @param whereClause   selection clause
@@ -202,12 +208,15 @@ final class ConcurrentSQLiteOpenHelper {
      */
     public synchronized int delete(String table, String whereClause, String[] whereArgs) {
         boolean shortRun = db == null;
-        if (shortRun) open();
+
+        if (shortRun)
+            open();
 
         try {
             return db.delete(table, whereClause, whereArgs);
         } finally {
-            if (shortRun) close();
+            if (shortRun)
+                close();
         }
     }
 

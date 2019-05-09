@@ -25,8 +25,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Defines a single-valued association to another entity that has one-to-one multiplicity.
- * If the relationship is bidirectional, the non-owning side must use the {@link OneToOne#mappedBy()}
- * element to specify the relationship field or property of the owning side.
+ * <p>If the relationship is bidirectional, the non-owning side must use the {@link OneToOne#mappedBy()}
+ * element to specify the relationship field of the owning side.</p>
  */
 @Target({METHOD, FIELD})
 @Retention(RUNTIME)

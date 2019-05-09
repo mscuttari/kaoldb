@@ -20,8 +20,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.Build;
-import android.util.ArrayMap;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -33,7 +31,6 @@ import java.util.Map;
 import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
-import it.mscuttari.kaoldb.exceptions.KaolDBException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
@@ -45,25 +42,28 @@ import it.mscuttari.kaoldb.interfaces.Root;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Entity manager implementation
+ * Entity manager implementation.
  *
  * @see EntityManager
  */
 class EntityManagerImpl implements EntityManager {
 
-    private static Map<DatabaseObject, EntityManagerImpl> entityManagers =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
+    /** Unique entity manager for each database */
+    private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new HashMap<>();
 
+    /** Android application context */
     private final WeakReference<Context> context;
+
+    /** The database managed by this entity manager */
     @NonNull private final DatabaseObject database;
     public final ConcurrentSQLiteOpenHelper dbHelper;
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param context       context
-     * @param database      database mapping object
+     * @param context       application context
+     * @param database      database
      */
     private EntityManagerImpl(@NonNull Context context, @NonNull DatabaseObject database) {
         this.context = new WeakReference<>(checkNotNull(context));
@@ -172,8 +172,11 @@ class EntityManagerImpl implements EntityManager {
 
     /**
      * Get singleton instance.
-     * This is done to ensure that there is at most one database connection opened towards
-     * each database.
+     *
+     * <p>
+     * The decision to use a singleton has been taken to ensure that there is at most one
+     * database connection opened towards each database.
+     * </p>
      *
      * @param context       context
      * @param database      database object
@@ -406,15 +409,18 @@ class EntityManagerImpl implements EntityManager {
 
 
     /**
-     * Get {@link Context}
+     * Get the application context
      *
      * @return context
+     * @throws IllegalStateException if the context is <code>null</code> (normally not happening
+     *                               when dealing with the application context)
      */
     private Context getContext() {
         Context context = this.context.get();
 
-        if (context == null)
-            throw new KaolDBException("Context is null");
+        if (context == null) {
+            throw new IllegalStateException("Context is null");
+        }
 
         return context;
     }

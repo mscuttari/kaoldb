@@ -40,10 +40,12 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
  * Analyze all the fields with {@link Column}, {@link JoinColumn}, {@link JoinColumns} or
  * {@link JoinTable} annotations and check if the constraints are respected.
  *
- * {@link Column} constraints: see {@link #checkColumn(Element)}
- * {@link JoinColumn} constraints: see {@link #checkJoinColumn(Element)}
- * {@link JoinColumns} constraints: see {@link #checkJoinColumns(Element)}
+ * <p>
+ * {@link Column} constraints: see {@link #checkColumn(Element)}<br>
+ * {@link JoinColumn} constraints: see {@link #checkJoinColumn(Element)}<br>
+ * {@link JoinColumns} constraints: see {@link #checkJoinColumns(Element)}<br>
  * {@link JoinTable} constraints: see {@link #checkJoinTable(Element)}
+ * </p>
  */
 @SupportedAnnotationTypes({
         "it.mscuttari.kaoldb.annotations.Column",
@@ -96,11 +98,15 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link Column} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link Column},
-     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
-     *  -   The field doesn't have {@link OneToOne}, {@link ManyToOne} or {@link ManyToMany}
-     *      annotations.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link Column},
+     *     {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}</li>
+     *     <li>The field doesn't have {@link OneToOne}, {@link ManyToOne} or {@link ManyToMany}
+     *     annotations</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -126,12 +132,16 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link JoinColumn} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link Column},
-     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
-     *  -   The field is annotated with {@link OneToOne}, or {@link ManyToOne} annotations.
-     *  -   The field is not annotated with {@link ManyToMany} annotation.
-     *  -   The {@link JoinColumn#referencedColumnName()} column exists.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link Column},
+     *     {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}</li>
+     *     <li>The field is annotated with {@link OneToOne}, or {@link ManyToOne} annotations</li>
+     *     <li>The field is not annotated with {@link ManyToMany} annotation</li>
+     *     <li>The {@link JoinColumn#referencedColumnName()} column exists</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -167,13 +177,17 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link JoinColumns} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link Column},
-     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
-     *  -   The field is annotated with {@link OneToOne} or {@link ManyToOne} annotations.
-     *  -   The field is not annotated with {@link ManyToMany} annotation.
-     *  -   The {@link JoinColumn#referencedColumnName()} of the join columns contained in
-     *      {@link JoinColumns#value()} exist.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link Column},
+     *     {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}</li>
+     *     <li>The field is annotated with {@link OneToOne} or {@link ManyToOne} annotations</li>
+     *     <li>The field is not annotated with {@link ManyToMany} annotation</li>
+     *     <li>The {@link JoinColumn#referencedColumnName()} of the join columns contained in
+     *     {@link JoinColumns#value()} exist</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
@@ -211,16 +225,21 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link JoinTable} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field doesn't have more than one annotation between {@link Column},
-     *      {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
-     *  -   The field is annotated with {@link OneToOne}, {@link ManyToOne} or {@link ManyToMany}
-     *      annotations.
-     *  -   The {@link JoinTable#joinClass()} is the same of the declaring class.
-     *  -   The {@link JoinTable#inverseJoinClass()} is the same of the field type (in case of
-     *      {@link OneToOne} and {@link ManyToOne}) or the same of Collection elements type (in
-     *      case of {@link OneToMany} and {@link ManyToMany}).
-     *  -   The {@link JoinColumn#referencedColumnName()} of the direct and inverse join column exist.
+     * <ul>
+     *     <li>The field doesn't have more than one annotation between {@link Column},
+     *     {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}</li>
+     *     <li>The field is annotated with {@link OneToOne}, {@link ManyToOne} or
+     *     {@link ManyToMany} annotations</li>
+     *     <li>The {@link JoinTable#joinClass()} is the same of the declaring class</li>
+     *     <li>The {@link JoinTable#inverseJoinClass()} is the same of the field type (in case of
+     *     {@link OneToOne} and {@link ManyToOne}) or the same of Collection elements type (in
+     *     case of {@link OneToMany} and {@link ManyToMany})</li>
+     *     <li>The {@link JoinColumn#referencedColumnName()} of the direct and inverse join
+     *     column exist</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected

@@ -23,17 +23,15 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Specifies the value of the discriminator column for entities of the given type.
- *
- * The {@link DiscriminatorValue} annotation can only be specified on a concrete entity class.
+ * Specifies that the class is an entity.
  */
 @Target({TYPE})
 @Retention(RUNTIME)
-public @interface DiscriminatorValue {
+public @interface Entity {
 
     /**
-     * The value that indicates that the row is an entity of the annotated entity type
+     * Unique table columns constraints.
      */
-    String value();
+    UniqueConstraint[] uniqueConstraints() default {};
 
 }

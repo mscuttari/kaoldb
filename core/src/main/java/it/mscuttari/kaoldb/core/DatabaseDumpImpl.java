@@ -18,8 +18,6 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
-import android.util.ArrayMap;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+
 import it.mscuttari.kaoldb.exceptions.DumpException;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
@@ -38,16 +37,14 @@ class DatabaseDumpImpl implements DatabaseDump {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db    readable database
      */
     public DatabaseDumpImpl(SQLiteDatabase db) {
         // Get all the table names
         Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-        Map<String, TableDump> tables = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ?
-                new ArrayMap<>(c.getCount()) :
-                new HashMap<>(c.getCount(), 1);
+        Map<String, TableDump> tables = new HashMap<>(c.getCount(), 1);
 
         for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
             // Dump each table

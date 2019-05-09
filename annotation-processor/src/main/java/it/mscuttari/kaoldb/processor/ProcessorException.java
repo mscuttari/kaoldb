@@ -25,7 +25,7 @@ public class ProcessorException extends Exception {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param   message     error message
      * @param   element     element causing the error

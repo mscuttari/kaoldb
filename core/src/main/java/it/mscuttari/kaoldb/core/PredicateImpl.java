@@ -77,10 +77,10 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param operation     operation
-     * @param db            database object
+     * @param db            database
      * @param root          root the predicate is generated from
      * @param x             first variable
      * @param y             second variable
@@ -102,7 +102,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "IS NULL" predicate
+     * Create <code>"IS NULL"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -116,7 +116,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "EQUALS" predicate
+     * Create <code>"EQUALS"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -131,7 +131,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "GREATER THAN" predicate
+     * Create <code>"GREATER THAN"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -146,7 +146,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "GREATER OR EQUALS THAN" predicate
+     * Create <code>"GREATER OR EQUALS THAN"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -161,7 +161,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "LESS THAN" predicate
+     * Create <code>"LESS THAN"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -176,7 +176,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create "less or equals than" predicate
+     * Create <code>"LESS OR EQUAL THAN"</code> predicate.
      *
      * @param db    database object
      * @param root  root the predicate is generated from
@@ -191,13 +191,17 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Get the string representation to be used in SQL query
+     * Get the string representation to be used in SQL query.
      *
+     * <p>
      * Some examples:
-     *  -   a1.column IS NULL
-     *  -   a1.column = value
-     *  -   a1.column = a2.column
-     *  -   a1.column > value
+     * <ul>
+     *     <li>a1.column IS NULL</li>
+     *     <li>a1.column = value</li>
+     *     <li>a1.column = a2.column</li>
+     *     <li>a1.column > value</li>
+     * </ul>
+     * </p>
      *
      * @return string representation of the predicate
      *
@@ -305,7 +309,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Get string representation of an unary predicate
+     * Get string representation of an unary predicate.
      *
      * @return string representation to be used in query
      */
@@ -329,7 +333,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Get string representation of an binary predicate
+     * Get string representation of an binary predicate.
      *
      * @return string representation to be used in query
      */
@@ -363,19 +367,27 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Get the columns linked to a property
+     * Get the columns linked to a property.
      *
-     * In case of {@link Column} or {@link JoinColumn} annotated field:
-     *  -   The result list will contain just one column.
+     * <p>
+     *     In case of {@link Column} or {@link JoinColumn} annotated field:
+     *     <ul>
+     *         <li>The result list will contain just one column</li>
+     *     </ul>
      *
-     * In case of {@link JoinColumns} annotated field:
-     *  -   The result list will contain all the join columns.
+     *     In case of {@link JoinColumns} annotated field:
+     *     <ul>
+     *         <li>The result list will contain all the join columns</li>
+     *     </ul>
      *
-     * In case of {@link JoinTable} annotated field:
-     *  -   The result list will contain the direct join columns. The inverse join columns are
-     *      are not included because they are linked to the other join side table.
+     *     In case of {@link JoinTable} annotated field:
+     *     <ul>
+     *         <li>The result list will contain the direct join columns. The inverse join columns
+     *         are not included because they are linked to the other join side table.</li>
+     *     </ul>
+     * </p>
      *
-     * Every column is in the format "tableAlias.columnName".
+     * <p>Every column is in the format <code>"tableAlias.columnName"</code>.</p>
      *
      * @param property      property
      * @param alias         table alias
@@ -431,7 +443,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create property-property associations for the query
+     * Create property-property associations for the query.
      *
      * @param xProperty     first property
      * @param xAlias        first table alias
@@ -523,12 +535,10 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Create property-value associations for the query
+     * Create property-value associations for the query.
      *
      * @param obj           object value
-     *
      * @return list of column-value pairs
-     *
      * @throws QueryException if the requested configuration is invalid
      */
     private List<Pair<String, String>> bindPropertyObject(Property<?, T> property, T obj) {
@@ -577,7 +587,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Convert object to string in order to be placed in the query
+     * Convert object to string in order to be placed in the query.
      *
      * @param obj       object
      * @return string
@@ -592,7 +602,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Check if {@link #x} derives from {@link #root}
+     * Check if {@link #x} derives from {@link #root}.
      *
      * @return true
      */
@@ -609,14 +619,14 @@ final class PredicateImpl<T> implements ExpressionInt {
 
 
     /**
-     * Fake iterator to be used to iterate on a single predicate
+     * Fake iterator to be used to iterate on a single predicate.
      */
     private static class SinglePredicateIterator implements Iterator<PredicateImpl> {
 
         private PredicateImpl predicate;
 
         /**
-         * Constructor
+         * Constructor.
          *
          * @param predicate     predicate to be returned during iteration
          */

@@ -33,7 +33,7 @@ import it.mscuttari.kaoldb.interfaces.Root;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * QueryBuilder implementation
+ * QueryBuilder implementation.
  *
  * @see QueryBuilder
  * @param <T>   result objects class
@@ -53,7 +53,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db                database
      * @param resultClass       class of the query result object
@@ -132,12 +132,12 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     /**
-     * Create the joins according to the predicates.
+     * Create the joins according to the predicates.<br>
      * If for example, an equality predicate is referred to another entity, a join with that
      * entity table is needed.
      *
      * @param root      original root
-     * @param where     "WHERE" clause
+     * @param where     <code>WHERE</code> clause
      *
      * @return root extended with the required joins
      */
@@ -181,10 +181,10 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
 
     /**
-     * Get the "SELECT" clause to be used in the query
+     * Get the <code>SELECT</code> clause to be used in the query.
      *
      * @param root      root
-     * @return "SELECT" clause
+     * @return <code>SELECT</code> clause
      */
     private String getSelectClause(RootInt<T> root) {
         List<String> columns = new ArrayList<>();

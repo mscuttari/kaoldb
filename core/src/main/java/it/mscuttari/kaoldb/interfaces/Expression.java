@@ -24,10 +24,10 @@ import androidx.annotation.NonNull;
 public interface Expression {
 
     /**
-     * Create "NOT" expression
+     * Create <code>NOT</code> expression
      *
      * In case of double negation, the internal one is deleted and the retrieved expression
-     * is the originally non negated one: NOT(NOT(expression)) = expression
+     * is the originally non negated one: <code>NOT(NOT(expression)) = expression</code>
      *
      * @return negated expression
      */
@@ -35,54 +35,54 @@ public interface Expression {
 
 
     /**
-     * Create "AND" expression
+     * Create <code>AND</code> expression
      *
-     * @param expressions   expressions to be bound with "AND" operator
+     * @param expressions   expressions to be bound with the <code>AND</code> operator
      * @return expression
      */
     Expression and(@NonNull Expression... expressions);
 
 
     /**
-     * Create "OR" expression
+     * Create <code>OR</code> expression
      *
-     * @param expressions   expressions to be bound with "OR" operator
+     * @param expressions   expressions to be bound with the <code>OR</code> operator
      * @return expression
      */
     Expression or(@NonNull Expression... expressions);
 
 
     /**
-     * Create "XOR" expression
+     * Create <code>XOR</code> expression
      *
-     * @param expressions   expressions to be bound with "XOR" operator
+     * @param expressions   expressions to be bound with the <code>XOR</code> operator
      * @return expression
      */
     Expression xor(@NonNull Expression... expressions);
 
 
     /**
-     * Create "NAND" expression
+     * Create <code>NAND</code> expression
      *
-     * @param expressions   expressions to be bound with "NAND" operator
+     * @param expressions   expressions to be bound with the <code>NAND</code> operator
      * @return expression
      */
     Expression nand(@NonNull Expression... expressions);
 
 
     /**
-     * Create "NOR" expression
+     * Create <code>NOR</code> expression
      *
-     * @param expressions   expressions to be bound with "NOR" operator
+     * @param expressions   expressions to be bound with the <code>NOR</code> operator
      * @return expression
      */
     Expression nor(@NonNull Expression... expressions);
 
 
     /**
-     * Create "XNOR" expression
+     * Create <code>XNOR</code> expression
      *
-     * @param expressions   expressions to be bound with "XNOR" operator
+     * @param expressions   expressions to be bound with <code>XNOR</code> operator
      * @return expression
      */
     Expression xnor(@NonNull Expression... expressions);

@@ -30,14 +30,14 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 
 /**
- * This class allows to map a column acting as a basic entity attribute
+ * This class allows to map a column acting as a basic entity attribute.
  *
  * @see Column
  */
 final class SimpleColumnObject extends BaseColumnObject {
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db        database
      * @param entity    entity the column belongs to
@@ -52,7 +52,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Create the SimpleColumnObject linked to a field annotated with {@link Column}
+     * Create the {@link SimpleColumnObject} linked to a field annotated with {@link Column}
      * and start the mapping process.
      *
      * @param db        database
@@ -86,7 +86,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the column name
+     * Determine the column name.
      */
     private void loadName() {
         Column annotation = field.getAnnotation(Column.class);
@@ -96,7 +96,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the custom column definition
+     * Determine the custom column definition.
      */
     private void loadCustomColumnDefinition() {
         Column annotation = field.getAnnotation(Column.class);
@@ -106,7 +106,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the column type
+     * Determine the column type.
      */
     private void loadType() {
         Class<?> result = field.getType();
@@ -115,7 +115,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column is nullable or not
+     * Determine whether the column is nullable or not.
      */
     private void loadNullableProperty() {
         Column annotation = field.getAnnotation(Column.class);
@@ -125,7 +125,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column is a primary key or not
+     * Determine whether the column is a primary key or not.
      */
     private void loadPrimaryKeyProperty() {
         boolean result = field.isAnnotationPresent(Id.class);
@@ -134,7 +134,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine whether the column value should be unique or not
+     * Determine whether the column value should be unique or not.
      */
     private void loadUniqueProperty() {
         Column annotation = field.getAnnotation(Column.class);
@@ -144,8 +144,7 @@ final class SimpleColumnObject extends BaseColumnObject {
 
 
     /**
-     * Determine the default value
-     *
+     * Determine the default value.<br>
      * The value is stored as a string in order to be ready for SQL statement generation.
      */
     private void loadDefaultValue() {

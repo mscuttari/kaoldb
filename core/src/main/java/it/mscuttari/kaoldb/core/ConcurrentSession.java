@@ -30,24 +30,37 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import it.mscuttari.kaoldb.exceptions.ConcurrenceException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
 
 /**
  * A concurrent session must be intended as a set of concurrently executing tasks that must all
- * terminate successfully. If any of them fails, all the others are cancelled.
+ * terminate successfully. If any of them fails, all the others are cancelled.<br>
+ * The submitted tasks are submitted to a thread pool that is common to all the concurrent sessions,
+ * in order to allow the reuse of the old threads. The tasks sets are anyway independent and a task
+ * failure stops only the tasks of its set.<br>
+ * The thread pool is guaranteed to have a number of threads at least equal to the number of
+ * available cores and can increase to an ideally infinite number.
  *
  * @param <T>   type of the tasks results
  */
 class ConcurrentSession<T> implements Iterable<T> {
 
+    /** Global thread pool */
     private static ExecutorService executorService;
+
+    /** Current session tasks */
     private final List<Future<T>> tasks = new ArrayList<>();
+
+    /** Current session results */
     private final List<T> results = new ArrayList<>();
+
+    /** Whether the current tasks set computation has finished */
     private final AtomicBoolean finished = new AtomicBoolean(true);
 
 
     /**
-     * Constructor
+     * Constructor.
      */
     public ConcurrentSession() {
         if (executorService == null) {
@@ -66,7 +79,7 @@ class ConcurrentSession<T> implements Iterable<T> {
 
     /**
      * Submits a {@link Runnable} task for execution and returns a {@link Future}
-     * representing that task
+     * representing that task.
      *
      * @param task  task to be executed
      */
@@ -80,7 +93,7 @@ class ConcurrentSession<T> implements Iterable<T> {
 
     /**
      * Submits a value-returning task for execution and returns a {@link Future}
-     * representing the pending results of the task
+     * representing the pending results of the task.
      *
      * @param task  task to be executed
      */
@@ -92,7 +105,8 @@ class ConcurrentSession<T> implements Iterable<T> {
 
 
     /**
-     * Wait for all the task to be completed
+     * Wait for all the tasks to be completed (or for one to fail).
+     * If any of the tasks fails, all the others are cancelled.
      */
     public synchronized void waitForAll() throws ExecutionException, InterruptedException {
         for (Future<T> task : tasks) {
@@ -111,6 +125,9 @@ class ConcurrentSession<T> implements Iterable<T> {
     }
 
 
+    /**
+     * {@link #waitForAll()} must be called before trying to iterate on the results.
+     */
     @NonNull
     @Override
     public Iterator<T> iterator() {
@@ -120,12 +137,12 @@ class ConcurrentSession<T> implements Iterable<T> {
 
 
     /**
-     * Wait until a condition is satisfied
+     * Wait until a condition is satisfied.
      *
      * @param lock          object to be locked
      * @param condition     condition to be checked
      *
-     * @throws KaolDBException in case of thread interruption
+     * @throws ConcurrenceException in case of thread interruption
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void waitWhile(Object lock, SynchCondition condition) throws KaolDBException {
@@ -134,7 +151,7 @@ class ConcurrentSession<T> implements Iterable<T> {
                 try {
                     lock.wait();
                 } catch (InterruptedException e) {
-                    throw new KaolDBException(e);
+                    throw new ConcurrenceException(e);
                 }
             }
         }
@@ -142,12 +159,10 @@ class ConcurrentSession<T> implements Iterable<T> {
 
 
     /**
-     * Execute an action and notify all the threads waiting on the lock
+     * Execute an action and notify all the threads waiting on the lock.
      *
      * @param lock          object to be locked
      * @param action        action to be executed
-     *
-     * @throws KaolDBException in case of thread interruption
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void doAndNotifyAll(Object lock, Runnable action) {

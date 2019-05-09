@@ -30,13 +30,12 @@ import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.PojoException;
-import it.mscuttari.kaoldb.exceptions.QueryException;
 
 /**
- * Representation of the basic properties of a column
+ * Representation of the basic properties of a column.
  *
- * @see SimpleColumnObject for the implementation of a column representing a basic entity attribute
- * @see JoinColumnObject for the implementation of a column acting as foreign key
+ * @see SimpleColumnObject
+ * @see JoinColumnObject
  */
 abstract class BaseColumnObject implements ColumnsContainer {
 
@@ -77,7 +76,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db                database
      * @param entity            entity the column belongs to
@@ -90,6 +89,8 @@ abstract class BaseColumnObject implements ColumnsContainer {
         this.db = db;
         this.entity = entity;
         this.field = field;
+
+        // Tell the entity that a new column is being mapped
         entity.columns.mappingStatus.incrementAndGet();
     }
 
@@ -125,13 +126,14 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Get the default name for a column
+     * Get the default name for a column.
      *
+     * <p>
      * Uppercase characters are replaced with underscore followed by the same character converted
      * to lowercase. Only the first character, if uppercase, is converted to lowercase avoiding
-     * the underscore.
-     *
-     * Example: columnFieldName => column_field_name
+     * the underscore.<br>
+     * Example: <code>columnFieldName</code> => <code>column_field_name</code>
+     * </p>
      *
      * @param field     field the column is generated from
      * @return column name
@@ -146,7 +148,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Get field value
+     * Get field value.
      *
      * @param obj       object to get the value from
      * @return field value
@@ -168,12 +170,12 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Set field value
+     * Set field value.
      *
      * @param obj       object containing the field to be set
      * @param value     value to be set
      *
-     * @throws QueryException if the field can't be accessed
+     * @throws PojoException if the field can't be accessed
      */
     public final void setValue(Object obj, Object value) {
         field.setAccessible(true);
@@ -181,30 +183,30 @@ abstract class BaseColumnObject implements ColumnsContainer {
         try {
             field.set(obj, value);
         } catch (IllegalAccessException e) {
-            throw new QueryException(e);
+            throw new PojoException(e);
         }
     }
 
 
     /**
-     * Check if the field leads to a relationship with another entity.
+     * Check if the field leads to a relationship with another entity.<br>
      * This is the same of checking if the field is annotated with {@link JoinColumn},
      * {@link JoinColumns} or {@link JoinTable}.
      *
-     * @return true if the field leads to a relationship; false otherwise
+     * @return <code>true</code> if the field leads to a relationship; <code>false</code> otherwise
      */
     public abstract boolean hasRelationship();
 
 
     /**
-     * Extract the column value from a {@link Cursor}
+     * Extract the column value from a {@link Cursor}.
      *
      * @param c             cursor
      * @param alias         alias of the table
      *
      * @return column value
      *
-     * @throws PojoException if the data type is not compatible with the one found in the database
+     * @throws PojoException if the data type is not compatible with the one found in the cursor
      */
     @SuppressWarnings("unchecked")
     public Object parseCursor(Cursor c, String alias) {
@@ -265,19 +267,26 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Insert value into {@link ContentValues}
+     * Insert a value into {@link ContentValues}.
      *
-     * The conversion of the object value to column value follows these rules:
-     *  -   If the column name is already in use, its value is replaced with the newer one.
-     *  -   Passing a null value will result in a NULL table column.
-     *  -   An empty string ("") will not generate a NULL column but a string with a length of
-     *      zero (empty string).
-     *  -   Boolean values are stored either as 1 (true) or 0 (false).
-     *  -   {@link Date} and {@link Calendar} objects are stored by saving their time in milliseconds.
+     * <p>
+     * The conversion of the <code>value</code> follows these rules:
+     * <ul>
+     *      <li>If the column name is already in use, its value is replaced with the newer one</li>
+     *      <li>Passing a <code>null</code> value will result in a <code>NULL</code> table column</li>
+     *      <li>An empty string (<code>""</code>) will not generate a <code>NULL</code> column but
+     *      a string with a length of zero (empty string)</li>
+     *      <li>Boolean values are stored either as <code>1</code> (<code>true</code>) or
+     *      <code>0</code> (<code>false</code>)</li>
+     *      <li>{@link Date} and {@link Calendar} objects are stored by saving their time in
+     *      milliseconds, which is got by respectively calling {@link Date#getTime()} and
+     *      {@link Calendar#getTimeInMillis()}</li>
+     * </ul>
+     * </p>
      *
-     * @param cv            content values
-     * @param column        column name
-     * @param value         value
+     * @param cv        content values
+     * @param column    column name
+     * @param value     value
      */
     protected static void insertIntoContentValues(ContentValues cv, String column, Object value) {
         if (value == null) {
@@ -316,26 +325,32 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Get columns SQL statement to be inserted in the create table query
+     * Get columns SQL statement to be inserted in the create table query.
      *
+     * <p>
      * The columns definition takes into consideration the following parameters:
-     *  -   Name.
-     *  -   Column definition: if specified, the following parameters are skipped.
-     *  -   Type: the column type determination is based on the field type and with respect of
+     * <ul>
+     *      <li><b>Name</b></li>
+     *      <li><b>Column definition</b>: if specified, the following parameters are skipped</li>
+     *      <li><b>Type</b>: the column type determination is based on the field type and with respect of
      *            the following associations:
-     *                  int || Integer      =>  INTEGER
-     *                  long || Long        =>  INTEGER
-     *                  float || Float      =>  REAL
-     *                  double || Double    =>  REAL
-     *                  String              =>  TEXT
-     *                  Date || Calendar    =>  INTEGER (date is stored as milliseconds from epoch)
-     *                  Enum                =>  TEXT (enum constant name)
-     *                  anything else       =>  BLOB
-     *  -   Nullability.
-     *  -   Uniqueness.
-     *  -   Default value.
-     *
-     * Example: (column 1 INTEGER UNIQUE, column 2 REAL NOT NULL)
+     *            <ul>
+     *                  <li>int, Integer   => INTEGER</li>
+     *                  <li>long, Long     => INTEGER</li>
+     *                  <li>float, Float   => REAL</li>
+     *                  <li>double, Double => REAL</li>
+     *                  <li>String         => TEXT</li>
+     *                  <li>Date, Calendar => INTEGER (date is stored as milliseconds from epoch)</li>
+     *                  <li>Enum           => TEXT (enum constant name)</li>
+     *                  <li>Anything else  => BLOB</li>
+     *           </ul>
+     *      </li>
+     *      <li><b>Nullability</b></li>
+     *      <li><b>Uniqueness</b></li>
+     *      <li><b>Default value</b></li>
+     * </ul>
+     * Example: <code>(column 1 INTEGER UNIQUE, column 2 REAL NOT NULL)</code>
+     * </p>
      *
      * @return SQL query
      */
@@ -391,14 +406,14 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Fake iterator to be used to iterate on a single column
+     * Fake iterator to be used to iterate on a single column.
      */
     private static class SingleColumnIterator implements Iterator<BaseColumnObject> {
 
         private BaseColumnObject column;
 
         /**
-         * Constructor
+         * Constructor.
          *
          * @param column    column to be returned during iteration
          */

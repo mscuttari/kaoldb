@@ -22,9 +22,8 @@ import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 
 /**
- * The classes implementing this interface can be considered as containers of columns.
- * Also simple columns can be considered as containers of themselves.
- *
+ * The classes implementing this interface can be considered as containers of columns.<br>
+ * Also simple columns can be considered as containers of themselves.<br>
  * The columns containers do not directly appear during the iteration and therefore all the
  * columns seem to be part of a single collection.
  *
@@ -37,12 +36,12 @@ import it.mscuttari.kaoldb.exceptions.PojoException;
 interface ColumnsContainer extends Iterable<BaseColumnObject> {
 
     /**
-     * Add the columns to a {@link ContentValues} data set
+     * Add the columns to a {@link ContentValues} data set.
      *
      * @param cv    data set to be populated
-     * @param obj   object containing the data to be extracted
+     * @param obj   data to be added / object containing the data to be extracted
      *
-     * @throws PojoException if the obj doesn't contain the columns
+     * @throws PojoException if <code>obj</code> doesn't contain the columns
      * @throws PojoException if the column value can't be retrieved
      */
     void addToContentValues(@NonNull ContentValues cv, Object obj);

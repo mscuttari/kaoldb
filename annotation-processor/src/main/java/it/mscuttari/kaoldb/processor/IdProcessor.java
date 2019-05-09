@@ -32,7 +32,7 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 
 /**
- * Checks that the {@link Id} annotation is applied only on fields that directly represent columns
+ * Checks that the {@link Id} annotation is applied only on fields that directly represent columns.
  */
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Id")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
@@ -55,10 +55,14 @@ public final class IdProcessor extends AbstractAnnotationProcessor {
     /**
      * Check field annotated with {@link Id} annotation.
      *
+     * <p>
      * It ensures the following constraints are respected:
-     *  -   The field is not annotated with {@link JoinTable}.
-     *  -   The field is annotated with {@link Column}, {@link JoinColumn} or {@link JoinColumns}
-     *      annotations.
+     * <ul>
+     *     <li>The field is not annotated with {@link JoinTable}</li>
+     *     <li>The field is annotated with {@link Column}, {@link JoinColumn} or
+     *     {@link JoinColumns} annotations</li>
+     * </ul>
+     * </p>
      *
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected

@@ -51,9 +51,9 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param db                database object
+     * @param db                database
      * @param entityManager     entity manager
      * @param resultClass       result objects type
      * @param alias             alias towards the query is built
@@ -74,7 +74,7 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Get SQL query
+     * Get SQL query.
      *
      * @return SQL query
      */
@@ -199,7 +199,7 @@ class QueryImpl<M> implements Query<M> {
 
 
     /**
-     * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields
+     * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields.
      *
      * @param object    object got from the query
      * @throws QueryException if the lazy field can't be accessed

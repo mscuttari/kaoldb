@@ -17,8 +17,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.res.XmlResourceParser;
-import android.os.Build;
-import android.util.ArrayMap;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -36,16 +34,14 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 class Config {
 
     /** Maps each database name to its {@link DatabaseObject} */
-    private final Map<String, DatabaseObject> mapping =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new ArrayMap<>() : new HashMap<>();
-
+    private final Map<String, DatabaseObject> mapping = new HashMap<>();
 
     /** Whether the debug messages should be enabled or not */
     private boolean debug = BuildConfig.DEBUG;
 
 
     /**
-     * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}
+     * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}.
      *
      * @return database map
      */
@@ -55,7 +51,7 @@ class Config {
 
 
     /**
-     * Get an unmodifiable {@link Collection} of database names
+     * Get an unmodifiable {@link Collection} of database names.
      *
      * @return database names
      */
@@ -65,7 +61,7 @@ class Config {
 
 
     /**
-     * Check if debug mode is enabled
+     * Check if debug mode is enabled.
      *
      * @return true if enabled; false otherwise
      */
@@ -75,7 +71,7 @@ class Config {
 
 
     /**
-     * Set whether the debug mode should be enabled or not
+     * Set whether the debug mode should be enabled or not.
      *
      * @param enabled       whether to enable or not the debug mode
      */
@@ -91,9 +87,9 @@ class Config {
 
 
     /**
-     * Parse the XML configuration file
+     * Parse the XML configuration file.
      *
-     * @param xml       the XmlResourceParser instance used to read the configuration file
+     * @param xml       the {@link XmlResourceParser} instance used to read the configuration file
      *
      * @throws XmlPullParserException in case of parsing error
      * @throws IOException in case of general i/o error
@@ -112,9 +108,9 @@ class Config {
 
 
     /**
-     * Iterate through databases list
+     * Iterate through databases list.
      *
-     * @param xml       the XmlResourceParser instance used to read the configuration file
+     * @param xml       the {@link XmlResourceParser} instance used to read the configuration file
      *
      * @throws XmlPullParserException in case of parsing error
      * @throws IOException in case of general i/o error
@@ -133,19 +129,28 @@ class Config {
 
 
     /**
-     * Parse single database section
+     * Parse a single database section and add the database to the databases list.
      *
-     * @param xml   the XmlResourceParser instance used to read the configuration file
+     * @param xml   the {@link XmlResourceParser} instance used to read the configuration file
      *
      * @throws XmlPullParserException in case of parsing error
      * @throws IOException in case of general i/o error
+     * @throws InvalidConfigException if the database name is not set
+     * @throws InvalidConfigException if the database version is not set
+     * @throws InvalidConfigException if the database schema migrator is not set
+     * @throws InvalidConfigException if a class of the database can't be found
      */
     private void parseDatabaseSection(XmlResourceParser xml) throws XmlPullParserException, IOException {
         LogUtils.v("Parsing database section");
         DatabaseObject database = new DatabaseObject();
 
         // Name
-        database.setName(xml.getAttributeValue(null, "name"));
+        String name = xml.getAttributeValue(null, "name");
+
+        if (name == null || name.isEmpty())
+            throw new InvalidConfigException("Database name not set");
+
+        database.setName(name);
 
         // Version
         String version = xml.getAttributeValue(null, "version");
@@ -176,13 +181,11 @@ class Config {
             }
         }
 
-
         LogUtils.i("Database found: [" +
                 "name = " + database.getName() + ", " +
                 "version = " + database.getVersion() + ", " +
                 "migrator = " + database.getSchemaMigrator().getSimpleName() + "]"
         );
-
 
         // Classes
         int eventType = xml.getEventType();

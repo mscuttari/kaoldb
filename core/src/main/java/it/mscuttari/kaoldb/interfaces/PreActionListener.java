@@ -22,7 +22,7 @@ package it.mscuttari.kaoldb.interfaces;
 public interface PreActionListener<M> {
 
     /**
-     * Method called by the entity manager before the action is performed
+     * Method called by the entity manager before the action is performed.
      *
      * @param obj   object of interest for the action
      */

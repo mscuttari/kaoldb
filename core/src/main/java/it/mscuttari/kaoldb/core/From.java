@@ -45,9 +45,9 @@ final class From<X> implements RootInt<X> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param db            database object
+     * @param db            database
      * @param queryBuilder  query builder
      * @param entityClass   entity class
      * @param alias         table alias
@@ -65,9 +65,9 @@ final class From<X> implements RootInt<X> {
 
 
     /**
-     * Get string representation to be used in query
+     * Get string representation to be used in query.
      *
-     * @return "FROM" clause
+     * @return <code>FROM</code> clause
      */
     @Override
     public String toString() {
@@ -179,22 +179,22 @@ final class From<X> implements RootInt<X> {
 
 
     @Override
-    public <T> Expression isNull(@NonNull SingleProperty<X, T> field) {
-        Variable<T> a = new Variable<>(alias, field);
+    public <T> Expression isNull(@NonNull SingleProperty<X, T> property) {
+        Variable<T> a = new Variable<>(alias, property);
 
         return PredicateImpl.isNull(db, this, a);
     }
 
 
     @Override
-    public <T> Expression eq(@NonNull SingleProperty<X, T> field, @Nullable T value) {
+    public <T> Expression eq(@NonNull SingleProperty<X, T> property, @Nullable T value) {
         // Just in case the user wants to check for a null property but wrongly calls this
         // method instead of isNull
         if (value == null) {
-            return isNull(field);
+            return isNull(property);
         }
 
-        Variable<T> a = new Variable<>(alias, field);
+        Variable<T> a = new Variable<>(alias, property);
         Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.eq(db, this, a, b);
@@ -211,17 +211,8 @@ final class From<X> implements RootInt<X> {
 
 
     @Override
-    public <Y, T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        Variable<T> a = new Variable<>(alias, x);
-        Variable<T> b = new Variable<>(yAlias, y);
-
-        return PredicateImpl.eq(db, this, a, b);
-    }
-
-
-    @Override
-    public <T> Expression gt(@NonNull SingleProperty<X, T> field, @NonNull T value) {
-        Variable<T> a = new Variable<>(alias, field);
+    public <T> Expression gt(@NonNull SingleProperty<X, T> property, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, property);
         Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.gt(db, this, a, b);
@@ -238,17 +229,8 @@ final class From<X> implements RootInt<X> {
 
 
     @Override
-    public <Y, T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        Variable<T> a = new Variable<>(alias, x);
-        Variable<T> b = new Variable<>(yAlias, y);
-
-        return PredicateImpl.gt(db, this, a, b);
-    }
-
-
-    @Override
-    public <T> Expression ge(@NonNull SingleProperty<X, T> field, @NonNull T value) {
-        Variable<T> a = new Variable<>(alias, field);
+    public <T> Expression ge(@NonNull SingleProperty<X, T> property, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, property);
         Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.ge(db, this, a, b);
@@ -265,17 +247,8 @@ final class From<X> implements RootInt<X> {
 
 
     @Override
-    public <Y, T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        Variable<T> a = new Variable<>(alias, x);
-        Variable<T> b = new Variable<>(yAlias, y);
-
-        return PredicateImpl.ge(db, this, a, b);
-    }
-
-
-    @Override
-    public <T> Expression lt(@NonNull SingleProperty<X, T> field, @NonNull T value) {
-        Variable<T> a = new Variable<>(alias, field);
+    public <T> Expression lt(@NonNull SingleProperty<X, T> property, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, property);
         Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.lt(db, this, a, b);
@@ -292,17 +265,8 @@ final class From<X> implements RootInt<X> {
 
 
     @Override
-    public <Y, T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        Variable<T> a = new Variable<>(alias, x);
-        Variable<T> b = new Variable<>(yAlias, y);
-
-        return PredicateImpl.lt(db, this, a, b);
-    }
-
-
-    @Override
-    public <T> Expression le(@NonNull SingleProperty<X, T> field, @NonNull T value) {
-        Variable<T> a = new Variable<>(alias, field);
+    public <T> Expression le(@NonNull SingleProperty<X, T> property, @NonNull T value) {
+        Variable<T> a = new Variable<>(alias, property);
         Variable<T> b = new Variable<>(value);
 
         return PredicateImpl.le(db, this, a, b);
@@ -313,15 +277,6 @@ final class From<X> implements RootInt<X> {
     public <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
-
-        return PredicateImpl.le(db, this, a, b);
-    }
-
-
-    @Override
-    public <Y, T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y) {
-        Variable<T> a = new Variable<>(alias, x);
-        Variable<T> b = new Variable<>(yAlias, y);
 
         return PredicateImpl.le(db, this, a, b);
     }

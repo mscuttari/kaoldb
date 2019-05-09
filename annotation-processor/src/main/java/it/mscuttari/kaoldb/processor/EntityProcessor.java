@@ -198,7 +198,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
 
     /**
-     * Check for default constructor existence
+     * Check for default constructor existence.
      *
      * @param   element     entity element
      * @throws  ProcessorException if the class doesn't have a default constructor

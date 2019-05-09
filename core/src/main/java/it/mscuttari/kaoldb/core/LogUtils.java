@@ -33,7 +33,7 @@ class LogUtils {
 
 
     /**
-     * Log verbose message
+     * Log verbose message.
      *
      * @param message   message
      */
@@ -49,7 +49,7 @@ class LogUtils {
 
 
     /**
-     * Log debug message
+     * Log debug message.
      *
      * @param message   message
      */
@@ -65,7 +65,7 @@ class LogUtils {
 
 
     /**
-     * Log information message
+     * Log information message.
      *
      * @param message   message
      */
@@ -81,7 +81,7 @@ class LogUtils {
 
 
     /**
-     * Log warning message
+     * Log warning message.
      *
      * @param message   message
      */
@@ -97,7 +97,7 @@ class LogUtils {
 
 
     /**
-     * Log error message
+     * Log error message.
      *
      * @param message   message
      */
@@ -113,7 +113,7 @@ class LogUtils {
 
 
     /**
-     * Log critical message
+     * Log critical message.
      *
      * @param message   message
      */

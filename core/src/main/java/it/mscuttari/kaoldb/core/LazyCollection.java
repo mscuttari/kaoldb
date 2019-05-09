@@ -48,9 +48,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
      */
     private final S data;
 
-    /**
-     * Query to be run to get the data from the database
-     */
+    /** Query to be run to get the data from the database */
     private final Query<T> query;
 
     /** Whether the query has been run or not */
@@ -58,10 +56,10 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param container     data container specified by the user
-     * @param query         query to be executed to load data
+     * @param query         {@link Query query} to be executed to load data
      */
     protected LazyCollection(@NonNull S container, @NonNull Query<T> query) {
         this.data  = checkNotNull(container);
@@ -70,9 +68,9 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Get data container
+     * Get data container.
      *
-     * @return data container (may not be initialized yet)
+     * @return data container (may be not initialized yet)
      */
     protected S getContainer() {
         return data;
@@ -90,7 +88,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
 
 
     /**
-     * Load the data by running the query
+     * Load the data by running the query.
      */
     private void initialize() {
         initialized = true;

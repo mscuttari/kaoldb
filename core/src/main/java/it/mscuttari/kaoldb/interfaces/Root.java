@@ -28,10 +28,10 @@ import it.mscuttari.kaoldb.exceptions.QueryException;
 public interface Root<X> {
 
     /**
-     * Get join root
+     * Get join root.
      *
      * @param root          root to be joined
-     * @param property      property upon with base the "ON" expression
+     * @param property      property upon with base the <code>ON</code> expression
      * @param <Y>           entity class to be joined (right side of join relationship)
      *
      * @return joined entity root
@@ -40,32 +40,31 @@ public interface Root<X> {
 
 
     /**
-     * Get "IS NULL" expression for a field
+     * Get <code>IS NULL</code> expression for a property
      *
-     * @param field     entity field
-     *
+     * @param property      entity property
      * @return expression
      */
-    <T> Expression isNull(@NonNull SingleProperty<X, T> field);
+    <T> Expression isNull(@NonNull SingleProperty<X, T> property);
 
 
     /**
-     * Get "EQUALS" expression between a field and a value
+     * Get <code>EQUALS</code> expression between a property and a value
      *
-     * @param field     entity field
+     * @param property  entity property
      * @param value     value
      * @param <T>       data type
      *
      * @return expression
      */
-    <T> Expression eq(@NonNull SingleProperty<X, T> field, @Nullable T value);
+    <T> Expression eq(@NonNull SingleProperty<X, T> property, @Nullable T value);
 
 
     /**
-     * Get "EQUALS" expression between two fields
+     * Get <code>EQUALS</code> expression between two properties
      *
-     * @param x     first field
-     * @param y     second field
+     * @param x     first property
+     * @param y     second property
      * @param <T>   data type
      *
      * @return expression
@@ -74,39 +73,22 @@ public interface Root<X> {
 
 
     /**
-     * Get "EQUALS" expression between two fields
+     * Get <code>GREATER THAN</code> expression between a property and a value
      *
-     * @param x         first field
-     * @param yClass    class of the second entity
-     * @param yAlias    alias of the second entity
-     * @param y         second field
-     * @param <Y>       second field belonging class
-     * @param <T>       second field data type
-     *
-     * @return expression
-     *
-     * @throws QueryException if yClass is not an entity
-     */
-    <Y, T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y);
-
-
-    /**
-     * Get "GREATER THAN" expression between a field and a value
-     *
-     * @param field     entity field
+     * @param property  entity property
      * @param value     value
      * @param <T>       data type
      *
      * @return expression
      */
-    <T> Expression gt(@NonNull SingleProperty<X, T> field, @NonNull T value);
+    <T> Expression gt(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
 
     /**
-     * Get "GREATER THAN" expression between two fields
+     * Get <code>GREATER THAN</code> expression between two properties
      *
-     * @param x     first field
-     * @param y     second field
+     * @param x     first property
+     * @param y     second property
      * @param <T>   data type
      *
      * @return expression
@@ -115,39 +97,22 @@ public interface Root<X> {
 
 
     /**
-     * Get "GREATER THAN" expression between two fields
+     * Get <code>GREATER OR EQUALS THAN</code> expression between a property and a value
      *
-     * @param x         first field
-     * @param yClass    class of the second entity
-     * @param yAlias    alias of the second entity
-     * @param y         second field
-     * @param <Y>       second field belonging class
-     * @param <T>       second field data type
-     *
-     * @return expression
-     *
-     * @throws QueryException if yClass is not an entity
-     */
-    <Y, T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y);
-
-
-    /**
-     * Get "GREATER OR EQUALS THAN" expression between a field and a value
-     *
-     * @param field     entity field
+     * @param property  entity property
      * @param value     value
      * @param <T>       data type
      *
      * @return expression
      */
-    <T> Expression ge(@NonNull SingleProperty<X, T> field, @NonNull T value);
+    <T> Expression ge(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
 
     /**
-     * Get "GREATER OR EQUALS THAN" expression between two fields
+     * Get <code>GREATER OR EQUALS THAN</code> expression between two properties
      *
-     * @param x     first field
-     * @param y     second field
+     * @param x     first property
+     * @param y     second property
      * @param <T>   data type
      *
      * @return expression
@@ -156,39 +121,22 @@ public interface Root<X> {
 
 
     /**
-     * Get "GREATER OR EQUALS THAN" expression between two fields
+     * Get <code>LESS THAN</code> expression between a property and a value
      *
-     * @param x         first field
-     * @param yClass    class of the second entity
-     * @param yAlias    alias of the second entity
-     * @param y         second field
-     * @param <Y>       second field belonging class
-     * @param <T>       second field data type
-     *
-     * @return expression
-     *
-     * @throws QueryException if yClass is not an entity
-     */
-    <Y, T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y);
-
-
-    /**
-     * Get "LESS THAN" expression between a field and a value
-     *
-     * @param field     entity field
+     * @param property  entity property
      * @param value     value
      * @param <T>       data type
      *
      * @return expression
      */
-    <T> Expression lt(@NonNull SingleProperty<X, T> field, @NonNull T value);
+    <T> Expression lt(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
 
     /**
-     * Get "LESS THAN" expression between two fields
+     * Get <code>LESS THAN</code> expression between two properties
      *
-     * @param x     first field
-     * @param y     second field
+     * @param x     first property
+     * @param y     second property
      * @param <T>   data type
      *
      * @return expression
@@ -197,60 +145,26 @@ public interface Root<X> {
 
 
     /**
-     * Get "LESS THAN" expression between two fields
+     * Get <code>LESS OR EQUALS THAN</code> expression between a property and a value
      *
-     * @param x         first field
-     * @param yClass    class of the second entity
-     * @param yAlias    alias of the second entity
-     * @param y         second field
-     * @param <Y>       second field belonging class
-     * @param <T>       second field data type
-     *
-     * @return expression
-     *
-     * @throws QueryException if yClass is not an entity
-     */
-    <Y, T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y);
-
-
-    /**
-     * Get "LESS OR EQUALS THAN" expression between a field and a value
-     *
-     * @param field     entity field
+     * @param property  entity property
      * @param value     value
      * @param <T>       data type
      *
      * @return expression
      */
-    <T> Expression le(@NonNull SingleProperty<X, T> field, @NonNull T value);
+    <T> Expression le(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
 
     /**
-     * Get "LESS OR EQUALS THAN" expression between two fields
+     * Get <code>LESS OR EQUALS THAN</code> expression between two properties
      *
-     * @param x     first field
-     * @param y     second field
+     * @param x     first property
+     * @param y     second property
      * @param <T>   data type
      *
      * @return expression
      */
     <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
-
-    /**
-     * Get "LESS OR EQUALS THAN" expression between two fields
-     *
-     * @param x         first field
-     * @param yClass    class of the second entity
-     * @param yAlias    alias of the second entity
-     * @param y         second field
-     * @param <Y>       second field belonging class
-     * @param <T>       second field data type
-     *
-     * @return expression
-     *
-     * @throws QueryException if yClass is not an entity
-     */
-    <Y, T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull Class<Y> yClass, @NonNull String yAlias, @NonNull SingleProperty<Y, T> y);
 
 }

@@ -62,7 +62,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param operation     operation
      * @param x             first expression
@@ -79,7 +79,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "NOT" expression
+     * Create <code>NOT</code> expression.
      *
      * @param x     expression to be negated
      * @return expression
@@ -90,7 +90,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "AND" expression
+     * Create <code>AND</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -103,7 +103,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "OR" expression
+     * Create <code>OR</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -116,7 +116,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "XOR" expression
+     * Create <code>XOR</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -129,7 +129,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "NAND" expression
+     * Create <code>NAND</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -142,7 +142,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "NOR" expression
+     * Create <code>NOR</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -155,7 +155,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Create "XNOR" expression
+     * Create <code>XNOR</code> expression.
      *
      * @param x     first expression
      * @param y     second expression
@@ -168,10 +168,10 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Get string representation to be used in SQL query
+     * Get string representation to be used in SQL query.
      *
      * @return string representation
-     * @throws IllegalStateException if {@link #operation} is unknown
+     * @throws IllegalStateException if the {@link #operation} is unknown
      */
     @NonNull
     @Override
@@ -279,7 +279,7 @@ final class ExpressionImpl implements ExpressionInt {
 
 
     /**
-     * Iterator to be used to get the leaves of the expressions binary tree
+     * Iterator to be used to get the leaves of the expressions binary tree.
      */
     private static class PredicatesIterator implements Iterator<PredicateImpl> {
 
@@ -287,7 +287,7 @@ final class ExpressionImpl implements ExpressionInt {
         private PredicateImpl next;
 
         /**
-         * Constructor
+         * Constructor.
          *
          * @param expression    tree root
          */
@@ -315,7 +315,7 @@ final class ExpressionImpl implements ExpressionInt {
         }
 
         /**
-         * Fetch next node
+         * Fetch next node.
          *
          * @return next node
          */

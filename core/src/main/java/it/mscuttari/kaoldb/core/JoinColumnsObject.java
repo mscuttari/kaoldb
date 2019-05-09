@@ -28,7 +28,7 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 
 /**
- * This class allows to group the join columns that are declared together
+ * This class allows to group the join columns that are declared together.
  *
  * @see JoinColumns
  */
@@ -42,7 +42,7 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param db        database
      * @param entity    entity the columns belong to
@@ -71,7 +71,7 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
 
 
     /**
-     * Create the JoinColumnsObject linked to a field annotated with {@link JoinColumns}
+     * Create the {@link JoinColumnsObject} linked to a field annotated with {@link JoinColumns}
      * and start the mapping process.
      *
      * @param db        database

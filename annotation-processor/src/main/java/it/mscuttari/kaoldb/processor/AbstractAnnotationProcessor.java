@@ -27,6 +27,7 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
@@ -123,6 +124,20 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      */
     protected final Element getElement(TypeMirror typeMirror) {
         return getTypeUtils().asElement(typeMirror);
+    }
+
+
+    /**
+     * Get the package within the element is declared
+     *
+     * @param element   element whose package has to be determined
+     * @return package
+     */
+    protected final PackageElement getPackage(Element element) {
+        while (element.getKind() != ElementKind.PACKAGE)
+            element = element.getEnclosingElement();
+
+        return (PackageElement) element;
     }
 
 

@@ -41,8 +41,11 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 
 import it.mscuttari.kaoldb.annotations.Column;
+import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
+import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
+import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -62,32 +65,35 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
         ClassName singlePropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "SingleProperty");
         ClassName collectionPropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "CollectionProperty");
 
-        for (Element classElement : roundEnv.getElementsAnnotatedWith(Entity.class)) {
+        for (Element entity : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             try {
-                if (classElement.getKind() != ElementKind.CLASS) {
-                    throw new ProcessorException("Element \"" + classElement.getSimpleName() + "\" should not have the @Entity annotation", classElement);
+                // A FIELD annotation can be applied also to interfaces and enums.
+                // Therefore it is needed to check that is applied on a class
+                if (entity.getKind() != ElementKind.CLASS) {
+                    throw new ProcessorException("Element \"" + entity.getSimpleName() + "\" should not have the @Entity annotation", entity);
                 }
 
-                // Check the existence of a default constructor
-                checkForDefaultConstructor((TypeElement) classElement);
+                // Check the existence of a default constructor.
+                // If missing, the queries would not be able to instantiate the result objects
+                checkForDefaultConstructor(entity);
+
+                // Check that the inheritance is correctly used
+                checkInheritance(entity);
+
+                // Check the existence of at least one primary key
+                checkPrimaryKeyExistence(entity);
 
                 // Get package name
-                Element enclosing = classElement;
-                while (enclosing.getKind() != ElementKind.PACKAGE)
-                    enclosing = enclosing.getEnclosingElement();
-
-                PackageElement packageElement = (PackageElement) enclosing;
+                PackageElement packageElement = getPackage(entity);
                 String packageName = packageElement.getQualifiedName().toString();
 
                 // Entity class
-                TypeName classType = ClassName.get(classElement.asType());
-                TypeSpec.Builder entityClass = TypeSpec.classBuilder(classElement.getSimpleName().toString() + ENTITY_SUFFIX);
-                entityClass.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+                TypeName entityClass = ClassName.get(entity.asType());
+                TypeSpec.Builder generatedEntityClass = TypeSpec.classBuilder(entity.getSimpleName().toString() + ENTITY_SUFFIX);
+                generatedEntityClass.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
                 // Get all parents fields
-                Element currentElement = classElement;
-
-                boolean primaryKeyFound = false;
+                Element currentElement = entity;
 
                 while (!ClassName.get(currentElement.asType()).equals(ClassName.OBJECT)) {
                     // Columns
@@ -95,10 +101,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
                     for (Element internalElement : internalElements) {
                         if (internalElement.getKind() != ElementKind.FIELD) continue;
-
-                        // Check if the field has the @Id annotation, in order to establish if
-                        // the entity has at least one primary key
-                        primaryKeyFound |= internalElement.getAnnotation(Id.class) != null;
 
                         // Skip the field if it's not annotated with @Column, @JoinColumn, @JoinColumns or @JoinTable
                         Column columnAnnotation = internalElement.getAnnotation(Column.class);
@@ -146,9 +148,9 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                         // Create the property
                         ParameterizedTypeName parameterizedField = ParameterizedTypeName.get(
                                 isCollectionProperty ? collectionPropertyClass : singlePropertyClass,
-                                classType, fieldType);
+                                entityClass, fieldType);
 
-                        entityClass.addField(
+                        generatedEntityClass.addField(
                                 FieldSpec.builder(parameterizedField, fieldName)
                                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                                         .initializer(
@@ -161,7 +163,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                                                         (propertyRelationshipAnnotation == null ? "$S" : "$T.class") +
                                                         ")",
                                                 isCollectionProperty ? collectionPropertyClass : singlePropertyClass,
-                                                classElement,
+                                                entity,
                                                 currentElement,
                                                 fieldType,
                                                 fieldName,
@@ -177,19 +179,14 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                     currentElement = getElement(superClassTypeMirror);
                 }
 
-                // The entity must have at least a primary key
-                if (!primaryKeyFound) {
-                    throw new ProcessorException("Entity \"" + classElement.getSimpleName() + "\" doesn't have a primary key", classElement);
-                }
-
                 // Create class file
-                JavaFile.builder(packageName, entityClass.build()).build().writeTo(getFiler());
+                JavaFile.builder(packageName, generatedEntityClass.build()).build().writeTo(getFiler());
 
             } catch (ProcessorException e) {
                 logError(e.getMessage(), e.getElement());
 
             } catch (IOException e) {
-                logError(e.getMessage(), classElement);
+                logError(e.getMessage(), entity);
             }
         }
 
@@ -200,22 +197,91 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
     /**
      * Check for default constructor existence.
      *
-     * @param   element     entity element
-     * @throws  ProcessorException if the class doesn't have a default constructor
+     * @param entity    entity element
+     * @throws ProcessorException if the entity doesn't have a default constructor
      */
-    private static void checkForDefaultConstructor(TypeElement element) throws ProcessorException {
+    private void checkForDefaultConstructor(Element entity) throws ProcessorException {
         // No need for a default constructor for abstract classes
-        if (element.getModifiers().contains(Modifier.ABSTRACT))
+        if (entity.getModifiers().contains(Modifier.ABSTRACT))
             return;
 
         // Iterate through constructors to search for one with no arguments
-        for (ExecutableElement cons : ElementFilter.constructorsIn(element.getEnclosedElements())) {
+        for (ExecutableElement cons : ElementFilter.constructorsIn(entity.getEnclosedElements())) {
             if (cons.getParameters().isEmpty())
                 return;
         }
 
         // Couldn't find any default constructor here
-        throw new ProcessorException("Entity \"" + element.getSimpleName() + "\" doesn't have a default constructor", element);
+        throw new ProcessorException("Entity \"" + entity.getSimpleName() + "\" doesn't have a default constructor", entity);
+    }
+
+
+    /**
+     * If the specified <code>entity</code> extends another entity, check that the child
+     * entity is annotated with {@link DiscriminatorValue} and the parent one with
+     * {@link DiscriminatorColumn} and {@link Inheritance}.
+     *
+     * @param entity     entity element
+     * @throws ProcessorException if {@link DiscriminatorValue} or {@link DiscriminatorColumn}
+     *                            are missing respectively in the child and the parent classes
+     */
+    private void checkInheritance(Element entity) throws ProcessorException {
+        boolean hasParent = false;
+        Element parent = entity;
+
+        while (!hasParent && !ClassName.get(parent.asType()).equals(ClassName.OBJECT)) {
+            TypeMirror superClassTypeMirror = ((TypeElement) parent).getSuperclass();
+            parent = getElement(superClassTypeMirror);
+            Entity entityAnnotation = parent.getAnnotation(Entity.class);
+            hasParent = entityAnnotation != null;
+        }
+
+        if (hasParent) {
+            if (entity.getAnnotation(DiscriminatorValue.class) == null) {
+                throw new ProcessorException("Child entity \"" + entity.getSimpleName() + "\" doesn't have the @DiscriminatorValue annotation", entity);
+            }
+
+            if (parent.getAnnotation(DiscriminatorColumn.class) == null) {
+                throw new ProcessorException("Parent entity \"" + parent.getSimpleName() + "\" doesn't have the @DiscriminatorColumn annotation", parent);
+            }
+
+            if (parent.getAnnotation(Inheritance.class) == null) {
+                throw new ProcessorException("Parent entity \"" + parent.getSimpleName() + "\" doesn't have the @Inheritance annotation", parent);
+            }
+        }
+    }
+
+
+    /**
+     * Check if an entity has at least one primary key.
+     *
+     * @param entity    entity element
+     * @throws ProcessorException if the entity or its parent entities doesn't have any field
+     *                            annotated with {@link Id}
+     */
+    private void checkPrimaryKeyExistence(Element entity) throws ProcessorException {
+        boolean hasPrimaryKey = false;
+        Element parent = entity;
+
+        while (!hasPrimaryKey && !ClassName.get(parent.asType()).equals(ClassName.OBJECT)) {
+            if (parent.getAnnotation(Entity.class) != null) {
+                List<? extends Element> internalElements = parent.getEnclosedElements();
+
+                for (Element field : internalElements) {
+                    if (field.getKind() != ElementKind.FIELD)
+                        continue;
+
+                    hasPrimaryKey |= field.getAnnotation(Id.class) != null;
+                }
+            }
+
+            TypeMirror superClassTypeMirror = ((TypeElement) parent).getSuperclass();
+            parent = getElement(superClassTypeMirror);
+        }
+
+        if (!hasPrimaryKey) {
+            throw new ProcessorException("Entity \"" + entity.getSimpleName() + "\" doesn't have a primary key", entity);
+        }
     }
 
 }

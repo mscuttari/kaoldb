@@ -16,32 +16,24 @@
 
 package it.mscuttari.kaoldb.annotations;
 
+/**
+ * Defines supported types of the discriminator column.
+ */
 public enum DiscriminatorType {
-    STRING,
-    CHAR,
-    INTEGER;
-
-    DiscriminatorType() {
-
-    }
-
 
     /**
-     * Get corresponding discriminator column class.
-     *
-     * @return column class
+     * String as the discriminator type.
      */
-    public Class<?> getDiscriminatorClass() {
-        switch (this) {
-            case STRING:
-                return String.class;
+    STRING,
 
-            case INTEGER:
-                return Integer.class;
+    /**
+     * Single character as the discriminator type.
+     */
+    CHAR,
 
-            default:
-                return String.class;
-        }
-    }
+    /**
+     * Integer as the discriminator type.
+     */
+    INTEGER;
 
 }

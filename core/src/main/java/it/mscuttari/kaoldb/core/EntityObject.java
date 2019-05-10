@@ -532,6 +532,10 @@ class EntityObject<T> {
                     assert child.discriminatorValue != null;
 
                     switch (discriminatorColumnAnnotation.discriminatorType()) {
+                        case CHAR:
+                            child.discriminatorValue = ((String) child.discriminatorValue).charAt(0);
+                            break;
+
                         case INTEGER:
                             child.discriminatorValue = Integer.valueOf((String) child.discriminatorValue);
                             break;

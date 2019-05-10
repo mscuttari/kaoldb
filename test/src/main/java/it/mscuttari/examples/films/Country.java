@@ -40,14 +40,6 @@ public class Country {
 
 
     /**
-     * Default constructor
-     */
-    public Country() {
-        this(null);
-    }
-
-
-    /**
      * Constructor
      *
      * @param   name    name

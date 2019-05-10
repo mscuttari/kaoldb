@@ -31,6 +31,11 @@ import java.util.NoSuchElementException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
+import org.objenesis.instantiator.ObjectInstantiator;
+
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
@@ -70,6 +75,9 @@ class EntityObject<T> {
 
     /** Entity class */
     public final Class<T> clazz;
+
+    /** Entity class instantiator */
+    private final ObjectInstantiator<T> instantiator;
 
     /**
      * Inheritance type.
@@ -170,6 +178,9 @@ class EntityObject<T> {
     private EntityObject(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
         this.db = db;
         this.clazz = checkNotNull(clazz);
+
+        Objenesis objenesis = new ObjenesisStd();
+        this.instantiator = objenesis.getInstantiatorOf(clazz);
     }
 
 
@@ -590,17 +601,9 @@ class EntityObject<T> {
      * Create an instance of the entity class.
      *
      * @return object having a class equal to {@link #clazz}
-     * @throws PojoException if the object instance can't be created
      */
     public T newInstance() {
-        try {
-            return clazz.newInstance();
-
-        } catch (IllegalAccessException e) {
-            throw new PojoException(e);
-        } catch (InstantiationException e) {
-            throw new PojoException(e);
-        }
+        return instantiator.newInstance();
     }
 
 
@@ -727,12 +730,11 @@ class EntityObject<T> {
                     // The discriminator column is linked to a field annotated with @JoinColumn
                     JoinColumn joinColumnAnnotation = discriminatorColumn.field.getAnnotation(JoinColumn.class);
                     Class<?> discriminatorType = discriminatorColumn.field.getType();
-                    Object discriminator;
+
+                    // Create the discriminator object containing the discriminator column
+                    Object discriminator = discriminatorColumn.newInstance();
 
                     try {
-                        // Create the discriminator object containing the discriminator column
-                        discriminator = discriminatorType.newInstance();
-
                         // Set the child discriminator value
                         Field discriminatorField = discriminatorType.getField(joinColumnAnnotation.referencedColumnName());
                         discriminatorField.setAccessible(true);
@@ -740,9 +742,6 @@ class EntityObject<T> {
 
                         // Assign the discriminator value to the object to be persisted
                         discriminatorColumn.setValue(obj, discriminator);
-
-                    } catch (InstantiationException e) {
-                        throw new PojoException(e);
 
                     } catch (IllegalAccessException e) {
                         throw new PojoException(e);
@@ -757,12 +756,11 @@ class EntityObject<T> {
                     // The discriminator column is linked to a field annotated with @JoinColumns
                     JoinColumns joinColumnsAnnotation = discriminatorColumn.field.getAnnotation(JoinColumns.class);
                     Class<?> discriminatorType = discriminatorColumn.field.getType();
-                    Object discriminator;
+
+                    // Create the discriminator object containing the discriminator column
+                    Object discriminator = discriminatorColumn.newInstance();
 
                     try {
-                        // Create the discriminator object containing the discriminator column
-                        discriminator = discriminatorType.newInstance();
-
                         for (JoinColumn joinColumn : joinColumnsAnnotation.value()) {
                             if (joinColumn.name().equals(discriminatorColumn.name)) {
                                 // Set the child discriminator value
@@ -776,9 +774,6 @@ class EntityObject<T> {
                             }
                         }
 
-                    } catch (InstantiationException e) {
-                        throw new PojoException(e);
-
                     } catch (IllegalAccessException e) {
                         throw new PojoException(e);
 
@@ -791,12 +786,11 @@ class EntityObject<T> {
                 } else if (discriminatorColumn.field.isAnnotationPresent(JoinTable.class)) {
                     // The discriminator column is linked to a field annotated with @JoinTable
                     Class<?> discriminatorType = discriminatorColumn.field.getType();
-                    Object discriminator;
+
+                    // Create the discriminator object containing the discriminator column
+                    Object discriminator = discriminatorColumn.newInstance();
 
                     try {
-                        // Create the discriminator object containing the discriminator column
-                        discriminator = discriminatorType.newInstance();
-
                         JoinTable discriminatorColumnAnnotation = discriminatorColumn.field.getAnnotation(JoinTable.class);
 
                         for (JoinColumn joinColumn : (discriminatorColumnAnnotation).joinColumns()) {
@@ -811,9 +805,6 @@ class EntityObject<T> {
                                 break;
                             }
                         }
-
-                    } catch (InstantiationException e) {
-                        throw new PojoException(e);
 
                     } catch (IllegalAccessException e) {
                         throw new PojoException(e);
@@ -900,24 +891,31 @@ class EntityObject<T> {
 
 
     /**
-     * Check if the data class is a primitive one (int, float, etc.) or if is one of the following:
-     * {@link Integer}, {@link Long}, {@link Float}, {@link Double}, {@link String},
-     * {@link Boolean}, {@link Date}, {@link Calendar}.
+     * Check if the data class can be stored in the database as if it is a primitive type.
      *
      * @param clazz     data class
-     * @return <code>true</code> if one the specified classes is found; <code>false</code> otherwise
+     * @return <code>true</code> if a "primitive-compatible class" is found;
+     *         <code>false</code> otherwise
      */
     private static boolean isPrimitiveType(Class<?> clazz) {
         return Enum.class.isAssignableFrom(clazz) ||
-                Integer.class.isAssignableFrom(clazz) ||
-                int.class.isAssignableFrom(clazz) ||
-                Long.class.isAssignableFrom(clazz) ||
-                long.class.isAssignableFrom(clazz) ||
-                Double.class.isAssignableFrom(clazz) ||
-                double.class.isAssignableFrom(clazz) ||
-                String.class.isAssignableFrom(clazz) ||
-                Boolean.class.isAssignableFrom(clazz) ||
                 boolean.class.isAssignableFrom(clazz) ||
+                Boolean.class.isAssignableFrom(clazz) ||
+                byte.class.isAssignableFrom(clazz) ||
+                Byte.class.isAssignableFrom(clazz) ||
+                char.class.isAssignableFrom(clazz) ||
+                Character.class.isAssignableFrom(clazz) ||
+                short.class.isAssignableFrom(clazz) ||
+                Short.class.isAssignableFrom(clazz) ||
+                int.class.isAssignableFrom(clazz) ||
+                Integer.class.isAssignableFrom(clazz) ||
+                long.class.isAssignableFrom(clazz) ||
+                Long.class.isAssignableFrom(clazz) ||
+                float.class.isAssignableFrom(clazz) ||
+                Float.class.isAssignableFrom(clazz) ||
+                double.class.isAssignableFrom(clazz) ||
+                Double.class.isAssignableFrom(clazz) ||
+                String.class.isAssignableFrom(clazz) ||
                 Date.class.isAssignableFrom(clazz) ||
                 Calendar.class.isAssignableFrom(clazz);
     }

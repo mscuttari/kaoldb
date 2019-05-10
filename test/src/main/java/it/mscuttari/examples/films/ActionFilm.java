@@ -26,14 +26,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 public final class ActionFilm extends Film {
 
     /**
-     * Default constructor
-     */
-    public ActionFilm() {
-        this(null, null, null, null, FilmRestriction.NONE);
-    }
-
-
-    /**
      * Constructor
      *
      * @param   title           title

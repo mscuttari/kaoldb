@@ -26,14 +26,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 public final class ThrillerFilm extends Film {
 
     /**
-     * Default constructor
-     */
-    public ThrillerFilm() {
-        this(null, null, null, null, FilmRestriction.MIN14);
-    }
-
-
-    /**
      * Constructor
      *
      * @param   title           title

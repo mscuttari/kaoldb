@@ -55,13 +55,6 @@ public class Person {
     @ManyToMany(mappedBy = "actors")
     public Collection<Film> acting = new ArrayList<>();
 
-    /**
-     * Default constructor
-     */
-    public Person() {
-        this(null, null, null, null);
-    }
-
 
     /**
      * Constructor

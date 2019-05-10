@@ -26,6 +26,11 @@ import java.util.Iterator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
+import org.objenesis.instantiator.ObjectInstantiator;
+
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -50,6 +55,9 @@ abstract class BaseColumnObject implements ColumnsContainer {
     /** Field the column is generated from */
     @NonNull
     public final Field field;
+
+    /** Field class instantiator */
+    private final ObjectInstantiator<?> instantiator;
 
     /** Column name */
     public String name;
@@ -89,6 +97,29 @@ abstract class BaseColumnObject implements ColumnsContainer {
         this.db = db;
         this.entity = entity;
         this.field = field;
+
+        Objenesis objenesis = new ObjenesisStd();
+        Class<?> fieldClass = field.getType();
+
+        if (fieldClass == boolean.class) {
+            fieldClass = Boolean.class;
+        } else if (fieldClass == byte.class) {
+            fieldClass = Byte.class;
+        } else if (fieldClass == char.class) {
+            fieldClass = Character.class;
+        } else if (fieldClass == short.class) {
+            fieldClass = Short.class;
+        } else if (fieldClass == int.class) {
+            fieldClass = Integer.class;
+        } else if (fieldClass == long.class) {
+            fieldClass = Long.class;
+        } else if (fieldClass == float.class) {
+            fieldClass = Float.class;
+        } else if (fieldClass == double.class) {
+            fieldClass = Double.class;
+        }
+
+        this.instantiator = objenesis.getInstantiatorOf(fieldClass);
 
         // Tell the entity that a new column is being mapped
         entity.columns.mappingStatus.incrementAndGet();
@@ -196,6 +227,16 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @return <code>true</code> if the field leads to a relationship; <code>false</code> otherwise
      */
     public abstract boolean hasRelationship();
+
+
+    /**
+     * Create an instance of the field class.
+     *
+     * @return object having a class equal to the one of {@link #field}
+     */
+    public Object newInstance() {
+        return instantiator.newInstance();
+    }
 
 
     /**

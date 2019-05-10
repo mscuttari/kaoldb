@@ -26,14 +26,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 public final class FantasyFilm extends Film {
 
     /**
-     * Default constructor
-     */
-    public FantasyFilm() {
-        this(null, null, null, null, FilmRestriction.NONE);
-    }
-
-
-    /**
      * Constructor
      *
      * @param   title           title

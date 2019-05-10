@@ -59,6 +59,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation group: 'com.google.guava', name: 'guava', version: '27.1-android'
 
+    // https://mvnrepository.com/artifact/org.objenesis/objenesis
+    implementation group: 'org.objenesis', name: 'objenesis', version: '3.0.1'
+
 }
 
 apply from: rootProject.file('release-bintray.gradle')

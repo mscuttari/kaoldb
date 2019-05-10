@@ -38,14 +38,6 @@ public class Genre {
 
 
     /**
-     * Default constructor
-     */
-    public Genre() {
-        this(null);
-    }
-
-
-    /**
      * Constructor
      *
      * @param   name    name

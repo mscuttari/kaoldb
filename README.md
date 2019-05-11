@@ -7,8 +7,8 @@ It is sufficient to add the two following Gradle dependencies to the application
 
 ```gradle
 dependencies {
-    implementation 'it.mscuttari.kaoldb:core:+'
-    annotationProcessor 'it.mscuttari.kaoldb:annotation-processor:+'
+    implementation 'it.mscuttari.kaoldb:core:1.0.0-beta.1'
+    annotationProcessor 'it.mscuttari.kaoldb:annotation-processor:1.0.0-beta.1'
 }
 ```
 
@@ -19,7 +19,8 @@ See the [Wiki](https://github.com/mscuttari/KaolDB/wiki) for a detailed usage de
 Pull requests are welcome and encouraged. The only requirement is to comment the code as clearly as possible and describe the changes in the pull request by providing a concise title and a detailed body message.
 
 ## Credits
-* The core module uses [JavaPoet](https://github.com/square/javapoet) to create the classes to be used during the queries.
+* The core module uses [JavaPoet](https://github.com/square/javapoet) to create the properties to be used during the queries.
+* The core module uses [Objenesis](https://github.com/easymock/objenesis) to instantiate the query result entities.
 * The test module uses [Robolectric](https://github.com/robolectric/robolectric) to run the tests in a virtual Android environment.
 
 ## License

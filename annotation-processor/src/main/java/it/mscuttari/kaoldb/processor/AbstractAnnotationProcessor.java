@@ -30,6 +30,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -123,6 +124,10 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
      * @return element
      */
     protected final Element getElement(TypeMirror typeMirror) {
+        if (typeMirror.getKind().isPrimitive()) {
+            return getTypeUtils().boxedClass((PrimitiveType) typeMirror);
+        }
+
         return getTypeUtils().asElement(typeMirror);
     }
 

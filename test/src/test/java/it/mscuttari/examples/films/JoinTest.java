@@ -78,12 +78,12 @@ public class JoinTest extends AbstractFilmTest {
 
         // USA
         qb.where(countryRoot.eq(Country_.name, usa.name));
-        Collection<Person> peopleFromUSA = qb.build(personRoot).getResultList();
+        Collection<Person> peopleFromUSA = qb.build(personRoot).getResults();
         assertEquals(peopleFromUSA, Arrays.asList(person1, person3));
 
         // Italy
         qb.where(countryRoot.eq(Country_.name, italy.name));
-        Collection<Person> peopleFromItaly = qb.build(personRoot).getResultList();
+        Collection<Person> peopleFromItaly = qb.build(personRoot).getResults();
         assertEquals(peopleFromItaly, Collections.singletonList(person2));
     }
 
@@ -144,7 +144,7 @@ public class JoinTest extends AbstractFilmTest {
                         .and(personRoot.eq(Person_.lastName, director.lastName))
         );
 
-        Collection<Film> films = qb.build(filmRoot).getResultList();
+        Collection<Film> films = qb.build(filmRoot).getResults();
         assertEquals(films, Arrays.asList(film1, film2, film3));
     }
 
@@ -200,12 +200,12 @@ public class JoinTest extends AbstractFilmTest {
 
         // Without join
         qb.from(filmRoot).where(filmRoot.eq(Film_.genre, new Genre("Thriller")));
-        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
 
         // With join
         Root<Film> joinRoot = filmRoot.join(genreRoot, Film_.genre);
         qb.from(joinRoot).where(genreRoot.eq(Genre_.name, "Thriller"));
-        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
     }
 
 
@@ -265,7 +265,7 @@ public class JoinTest extends AbstractFilmTest {
                 .and(filmRoot.eq(Film_.director, director))
         );
 
-        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
 
         // With join
         Root<Film> joinRoot = filmRoot.join(genreRoot, Film_.genre).join(personRoot, Film_.director);
@@ -276,7 +276,7 @@ public class JoinTest extends AbstractFilmTest {
                 .and(personRoot.eq(Person_.lastName, director.lastName))
         );
 
-        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2));
+        assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
     }
 
 
@@ -375,7 +375,7 @@ public class JoinTest extends AbstractFilmTest {
 
         qb.from(filmRoot.join(personRoot.join(countryRoot, Person_.country), Film_.director))
                 .where(countryRoot.eq(Country_.name, usa.name));
-        assertEquals(qb.build(filmRoot).getResultList(), Arrays.asList(film1, film2, film3, film5));
+        assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2, film3, film5));
     }
 
 }

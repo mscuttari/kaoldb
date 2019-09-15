@@ -25,10 +25,14 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
@@ -58,6 +62,9 @@ class EntityManagerImpl implements EntityManager {
     /** The database managed by this entity manager */
     @NonNull private final DatabaseObject database;
     public final ConcurrentSQLiteOpenHelper dbHelper;
+
+    /** Map between the observed entities and the queries to be executed when they are modified */
+    private final Map<EntityObject<?>, Collection<WeakReference<LiveQuery<?>>>> observers = new HashMap<>();
 
 
     /**
@@ -235,9 +242,18 @@ class EntityManagerImpl implements EntityManager {
         Root<T> root = qb.getRoot(entityClass);
         qb.from(root);
 
-        return qb.build(root).getResultList();
+        return qb.build(root).getResults();
     }
 
+
+    @Override
+    public <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass) {
+        QueryBuilder<T> qb = getQueryBuilder(entityClass);
+        Root<T> root = qb.getRoot(entityClass);
+        qb.from(root);
+
+        return qb.build(root).getLiveResults();
+    }
 
     @Override
     public synchronized void persist(Object obj) {
@@ -248,8 +264,12 @@ class EntityManagerImpl implements EntityManager {
     @Override
     public synchronized <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist) {
         // Pre persist actions
-        if (prePersist != null)
+        if (prePersist != null) {
             prePersist.run(obj);
+        }
+
+        // Keep track of observers that should be notified
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
 
         // Current working entity and the previous child entity
         EntityObject currentEntity = database.getEntity(obj.getClass());
@@ -261,6 +281,13 @@ class EntityManagerImpl implements EntityManager {
 
         try {
             while (currentEntity != null) {
+                // Save the observers for this entity
+                Collection<WeakReference<LiveQuery<?>>> obs = observers.get(currentEntity);
+
+                if (obs != null) {
+                    touchedObservers.addAll(obs);
+                }
+
                 // Extract the current entity data from the object to be persisted
                 ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
 
@@ -286,8 +313,18 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Post persist actions
-        if (postPersist != null)
+        if (postPersist != null) {
             postPersist.run(obj);
+        }
+
+        // Notify the observers
+        for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
+            LiveQuery query = observer.get();
+
+            if (query != null) {
+                query.refresh();
+            }
+        }
     }
 
 
@@ -300,8 +337,12 @@ class EntityManagerImpl implements EntityManager {
     @Override
     public <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate) {
         // Pre update actions
-        if (preUpdate != null)
+        if (preUpdate != null) {
             preUpdate.run(obj);
+        }
+
+        // Keep track of observers that should be notified
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
 
         // Current working entity and the previous child entity
         EntityObject currentEntity = database.getEntity(obj.getClass());
@@ -313,6 +354,13 @@ class EntityManagerImpl implements EntityManager {
 
         try {
             while (currentEntity != null) {
+                // Save the observers for this entity
+                Collection<WeakReference<LiveQuery<?>>> obs = observers.get(currentEntity);
+
+                if (obs != null) {
+                    touchedObservers.addAll(obs);
+                }
+
                 // Extract the current entity data from the object to be persisted
                 ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
 
@@ -356,8 +404,18 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Post persist actions
-        if (postUpdate != null)
+        if (postUpdate != null) {
             postUpdate.run(obj);
+        }
+
+        // Notify the observers
+        for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
+            LiveQuery query = observer.get();
+
+            if (query != null) {
+                query.refresh();
+            }
+        }
     }
 
 
@@ -370,8 +428,12 @@ class EntityManagerImpl implements EntityManager {
     @Override
     public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postRemove) {
         // Pre remove actions
-        if (preRemove != null)
+        if (preRemove != null) {
             preRemove.run(obj);
+        }
+
+        // Keep track of observers that should be notified
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
 
         // Current working entity and the previous child entity
         EntityObject currentEntity = database.getEntity(obj.getClass());
@@ -382,6 +444,13 @@ class EntityManagerImpl implements EntityManager {
 
         try {
             while (currentEntity != null) {
+                // Save the observers for this entity
+                Collection<WeakReference<LiveQuery<?>>> obs = observers.get(currentEntity);
+
+                if (obs != null) {
+                    touchedObservers.addAll(obs);
+                }
+
                 // Remove
                 StringBuilder where = new StringBuilder();
                 Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
@@ -416,8 +485,18 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Post remove actions
-        if (postRemove != null)
+        if (postRemove != null) {
             postRemove.run(obj);
+        }
+
+        // Notify the observers
+        for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
+            LiveQuery query = observer.get();
+
+            if (query != null) {
+                query.refresh();
+            }
+        }
     }
 
 
@@ -436,6 +515,40 @@ class EntityManagerImpl implements EntityManager {
         }
 
         return context;
+    }
+
+
+    /**
+     * Register a live query as an observer for the entities it covers.
+     * If any of the observed entities receives an update, the query is re-executed.
+     *
+     * @param query             live query
+     */
+    public void registerLiveQuery(LiveQuery<?> query) {
+        // Weak references are used in order to avoid query execution when their result
+        // would not be used by anyone (for example if the activity died).
+
+        WeakReference<LiveQuery<?>> weakReference = new WeakReference<>(query);
+
+        for (EntityObject<?> entity : query.getObservedEntities()) {
+            Collection<WeakReference<LiveQuery<?>>> observers = this.observers.get(entity);
+
+            if (observers == null) {
+                observers = new HashSet<>();
+                this.observers.put(entity, observers);
+            }
+
+            // Add the new observer
+            observers.add(weakReference);
+
+            // Remove expired observers
+            Iterator<WeakReference<LiveQuery<?>>> iterator = observers.iterator();
+
+            while (iterator.hasNext()) {
+                if (iterator.next().get() == null)
+                    iterator.remove();
+            }
+        }
     }
 
 }

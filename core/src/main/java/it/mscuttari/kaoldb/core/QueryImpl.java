@@ -22,10 +22,15 @@ import android.util.Pair;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
@@ -86,7 +91,7 @@ class QueryImpl<M> implements Query<M> {
 
 
     @Override
-    public synchronized List<M> getResultList() {
+    public synchronized List<M> getResults() {
         LogUtils.d("[Database \"" + db.getName() + "\"] " + sql);
 
         entityManager.dbHelper.open();
@@ -132,8 +137,57 @@ class QueryImpl<M> implements Query<M> {
 
     @Override
     public M getSingleResult() {
-        List<M> resultList = getResultList();
+        List<M> resultList = getResults();
         return resultList == null || resultList.isEmpty() ? null : resultList.get(0);
+    }
+
+
+    @Override
+    public LiveData<List<M>> getLiveResults() {
+        Collection<EntityObject<?>> observed = new HashSet<>();
+
+        EntityObject<?> entity = db.getEntity(resultClass);
+
+        // Add the current entity, the children entities and the entities linked by relationships
+        Stack<EntityObject<?>> stack = new Stack<>();
+        stack.push(entity);
+
+        while (!stack.empty()) {
+            EntityObject<?> childEntity = stack.pop();
+
+            observed.add(childEntity);
+
+            for (Relationship relationship : childEntity.relationships) {
+                EntityObject<?> linked = db.getEntity(relationship.linked);
+
+                if (!observed.contains(linked)) {
+                    stack.push(linked);
+                    observed.add(linked);
+                }
+            }
+
+            for (EntityObject<?> child : childEntity.children) {
+                stack.push(child);
+            }
+        }
+
+        // Add the entities linked to parent entities by relationships
+        entity = entity.parent;
+
+        while (entity != null) {
+            for (Relationship relationship : entity.relationships) {
+                EntityObject<?> linked = db.getEntity(relationship.linked);
+                observed.add(linked);
+            }
+
+            entity = entity.parent;
+        }
+
+        LiveQuery<M> liveQuery = new LiveQuery<>(this, observed);
+        entityManager.registerLiveQuery(liveQuery);
+        liveQuery.setValue(getResults());
+
+        return liveQuery;
     }
 
 
@@ -285,7 +339,7 @@ class QueryImpl<M> implements Query<M> {
                     if (fieldValue == null)
                         throw new QueryException("Field \"" + relationship.field.getName() + "\" uninitialized");
 
-                    ((Collection) fieldValue).addAll(query.getResultList());
+                    ((Collection) fieldValue).addAll(query.getResults());
                 }
             }
 

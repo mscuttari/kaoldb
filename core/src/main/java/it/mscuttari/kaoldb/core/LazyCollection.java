@@ -95,7 +95,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         data.clear();
 
         if (query != null)
-            data.addAll(query.getResultList());
+            data.addAll(query.getResults());
     }
 
 

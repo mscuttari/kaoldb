@@ -16,6 +16,8 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.lifecycle.LiveData;
+
 import java.util.List;
 
 /**
@@ -26,9 +28,23 @@ public interface Query<M> {
     /**
      * Run the query and get the results list.
      *
-     * @return results list
+     * The list will not change in case of database changes.
+     * For a database observing list see {@link #getLiveResults()}.
+     *
+     * @return static data
      */
-    List<M> getResultList();
+    List<M> getResults();
+
+
+    /**
+     * Run the query and get the results list.
+     *
+     * The returned data will reflect future database changes, both in term of list results and
+     * internal values of each element.
+     *
+     * @return live data
+     */
+    LiveData<List<M>> getLiveResults();
 
 
     /**

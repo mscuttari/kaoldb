@@ -305,7 +305,7 @@ class Columns implements ColumnsContainer {
 
     /**
      * Get the columns SQL statement to be inserted in the table creation query.
-     * <p>Example: <code>column 1 INTEGER UNIQUE, column 2 TEXT, column 3 REAL NOT NULL</code></p>
+     * <p>Example: <code>"column 1" INTEGER UNIQUE, "column 2" TEXT, "column 3" REAL NOT NULL</code></p>
      *
      * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */

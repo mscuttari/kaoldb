@@ -16,13 +16,87 @@
 
 package it.mscuttari.kaoldb.core;
 
-import java.util.Collection;
-
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 class StringUtils {
 
     private StringUtils() {
+
+    }
+
+
+    /**
+     * Escape the string representation of an object
+     *
+     * @param obj   object whose string representation should be escaped
+     * @return escaped string (<code>null</code> if <code>obj</code> is <code>null</code>)
+     */
+    public static String escape(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof EscapedString) {
+            return obj.toString();
+        }
+
+        return escape(String.valueOf(obj));
+    }
+
+
+    /**
+     * Escape a string.
+     * Every " character is replaced with "" and the whole string is wrapped in double quotes.
+     *
+     * @param str   string to be escaped
+     * @return escaped string (<code>null</code> if <code>str</code> is <code>null</code>)
+     */
+    public static String escape(String str) {
+        if (str == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append('"');
+
+        int length = str.length();
+        for (int i = 0; i < length; i++) {
+            char c = str.charAt(i);
+
+            if (c == '"') {
+                sb.append('"');
+            }
+
+            sb.append(c);
+        }
+
+        sb.append('"');
+
+        return sb.toString();
+    }
+
+
+    /**
+     * String wrapper class used to indicate that the contained string is already escaped.
+     *
+     * <p>Used in the Variable class instantiation in order to avoid further
+     * quotation marks in the resulting query.</p>
+     */
+    public static class EscapedString {
+
+        private String value;
+
+        EscapedString(String value) {
+            this.value = value;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return value;
+        }
 
     }
 
@@ -41,11 +115,11 @@ class StringUtils {
      *
      * @return string representation
      */
-    public static <T> String implode(Collection<T> objs,
+    public static <T> String implode(Iterable<T> objs,
                                      @Nullable StringConverter<T> converter,
                                      @Nullable String separator) {
 
-        if (objs == null || objs.size() == 0)
+        if (objs == null)
             return "";
 
         if (converter == null)

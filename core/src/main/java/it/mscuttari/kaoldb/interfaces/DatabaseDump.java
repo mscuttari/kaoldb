@@ -22,6 +22,15 @@ import it.mscuttari.kaoldb.exceptions.DumpException;
 
 public interface DatabaseDump {
 
+
+    /**
+     * Get database version.
+     *
+     * @return database version at the moment of the dump
+     */
+    int getVersion();
+
+
     /**
      * Get all table dumps.
      *
@@ -35,8 +44,8 @@ public interface DatabaseDump {
      *
      * @param tableName     table name
      * @return table dump
-     * @throws DumpException if the table doesn't exist in the database
+     * @throws IllegalArgumentException if the table doesn't exist
      */
-    TableDump getTable(String tableName) throws DumpException;
+    TableDump getTable(String tableName);
 
 }

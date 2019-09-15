@@ -23,11 +23,44 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class StringUtilsTest extends AbstractTest {
 
     @Test
-    public void implode_regular() {
+    public void escape_string() {
+        assertEquals("\"Test\"", StringUtils.escape("Test"));
+        assertEquals("\"\"\"Test\"", StringUtils.escape("\"Test"));
+    }
+
+
+    @Test
+    public void escape_nullString() {
+        assertNull(StringUtils.escape(null));
+    }
+
+
+    @Test
+    public void escape_bypass() {
+        StringUtils.EscapedString escapedString = new StringUtils.EscapedString("\"Test\"");
+        assertEquals("\"Test\"", StringUtils.escape(escapedString));
+    }
+
+
+    @Test
+    public void escape_object() {
+        assertEquals("\"1\"", StringUtils.escape(1));
+    }
+
+
+    @Test
+    public void escape_nullObject() {
+        assertNull(StringUtils.escape((Object) null));
+    }
+
+
+    @Test
+    public void implode() {
         Collection<Integer> data = new ArrayList<>();
         data.add(1);
         data.add(2);

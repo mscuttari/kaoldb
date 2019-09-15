@@ -64,6 +64,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -940,7 +941,7 @@ class EntityObject<T> {
 
         // Table name
         result.append("CREATE TABLE IF NOT EXISTS ")
-                .append(tableName)
+                .append(escape(tableName))
                 .append(" (");
 
         // Columns
@@ -979,26 +980,20 @@ class EntityObject<T> {
     /**
      * Get primary keys SQL statement to be inserted in the create table query.
      *
-     * <p>Example: <code>PRIMARY KEY(column_1, column_2, column_3)</code></p>
+     * <p>Example: <code>PRIMARY KEY("column_1", "column_2", "column_3")</code></p>
      *
      * @param primaryKeys       collection of primary keys
      * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     public static String getTablePrimaryKeysSql(Collection<BaseColumnObject> primaryKeys) {
-        if (primaryKeys == null || primaryKeys.size() == 0)
+        if (primaryKeys == null || primaryKeys.size() == 0) {
             return null;
-
-        StringBuilder result = new StringBuilder();
-        String prefix = "PRIMARY KEY (";
-
-        for (BaseColumnObject column : primaryKeys) {
-            result.append(prefix).append(column.name);
-            prefix = ", ";
         }
 
-        result.append(")");
-        return result.toString();
+        return "PRIMARY KEY (" +
+                StringUtils.implode(primaryKeys, column -> escape(column.name), ", ") +
+                ")";
     }
 
 
@@ -1008,15 +1003,16 @@ class EntityObject<T> {
      * <p>The parameter uniqueColumns is a collection of collections because each unique constraint
      * can be made of multiple columns. For example, a collection such as
      * <code>[[column_1, column_2], [column_2, column_3, column_4]]</code> would generate the
-     * statement <code>UNIQUE(column_1, column_2), UNIQUE(column_2, column_3, column_4)</code></p>
+     * statement <code>UNIQUE("column_1", "column_2"), UNIQUE("column_2", "column_3", "column_4")</code></p>
      *
      * @param uniqueColumns     unique columns groups
      * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
     private static String getTableUniquesSql(Collection<Collection<BaseColumnObject>> uniqueColumns) {
-        if (uniqueColumns == null || uniqueColumns.size() == 0)
+        if (uniqueColumns == null || uniqueColumns.size() == 0) {
             return null;
+        }
 
         Collection<String> uniqueSets = new ArrayList<>(uniqueColumns.size());
 
@@ -1024,11 +1020,16 @@ class EntityObject<T> {
             if (uniqueSet == null || uniqueSet.size() == 0)
                 continue;
 
-            uniqueSets.add("UNIQUE (" + StringUtils.implode(uniqueSet, obj -> obj.name, ", ") +")");
+            uniqueSets.add(
+                    "UNIQUE (" +
+                    StringUtils.implode(uniqueSet, column -> escape(column.name), ", ") +
+                    ")"
+            );
         }
 
-        if (uniqueSets.size() == 0)
+        if (uniqueSets.size() == 0) {
             return null;
+        }
 
         return StringUtils.implode(uniqueSets, obj -> obj, ", ");
     }
@@ -1039,9 +1040,9 @@ class EntityObject<T> {
      *
      * <p>Example:
      * <code>
-     *     FOREIGN KEY (column_1, column_2) REFERENCES referenced_table_1(referenced_column_1, referenced_column_2) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-     *     FOREIGN KEY (column_3, column_4) REFERENCES referenced_table_2(referenced_column_3, referenced_column_4) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-     *     FOREIGN KEY (column_5, column_6) REFERENCES referenced_table_3(referenced_column_5, referenced_column_6) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+     *     FOREIGN KEY ("column_1", "column_2") REFERENCES "referenced_table_1" ("referenced_column_1", "referenced_column_2") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+     *     FOREIGN KEY ("column_3", "column_4") REFERENCES "referenced_table_2" ("referenced_column_3", "referenced_column_4") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+     *     FOREIGN KEY ("column_5", "column_6") REFERENCES "referenced_table_3" ("referenced_column_5", "referenced_column_6") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code></p>
      *
      * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
@@ -1053,18 +1054,21 @@ class EntityObject<T> {
         // Inheritance
         String inheritanceSql = getTableInheritanceConstraints();
 
-        if (inheritanceSql != null && !inheritanceSql.isEmpty())
+        if (inheritanceSql != null && !inheritanceSql.isEmpty()) {
             constraints.add(inheritanceSql);
+        }
 
         // Relationships
         String relationshipsSql = getTableRelationshipsConstraints();
 
-        if (relationshipsSql != null && !relationshipsSql.isEmpty())
+        if (relationshipsSql != null && !relationshipsSql.isEmpty()) {
             constraints.add(relationshipsSql);
+        }
 
         // Create SQL statement
-        if (constraints.size() == 0)
+        if (constraints.size() == 0) {
             return null;
+        }
 
         return StringUtils.implode(constraints, obj -> obj, ", ");
     }
@@ -1075,8 +1079,8 @@ class EntityObject<T> {
      *
      * <p>Example:
      * <code>
-     *     FOREIGN KEY (primary_key_1, primary_key_2)
-     *     REFERENCES parent_table(primary_key_1, primary_key_2)
+     *     FOREIGN KEY ("primary_key_1", "primary_key_2")
+     *     REFERENCES "parent_table" ("primary_key_1", "primary_key_2")
      *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code></p>
      *
@@ -1084,26 +1088,29 @@ class EntityObject<T> {
      */
     @Nullable
     private String getTableInheritanceConstraints() {
-        if (parent == null)
+        if (parent == null) {
             return null;
+        }
 
         EntityObject parent = this.parent;
 
         // Go up in hierarchy until there is a real table
-        while (parent != null && !parent.realTable)
+        while (parent != null && !parent.realTable) {
             parent = parent.parent;
+        }
 
         // Check if there's a real parent table (TABLE_PER_CLASS strategy would make this unknown)
-        if (parent == null)
+        if (parent == null) {
             return null;
+        }
 
         // Create associations
         Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
-        String columns = StringUtils.implode(parentPrimaryKeys, obj -> obj.name, ", ");
+        String columns = StringUtils.implode(parentPrimaryKeys, primaryKey -> escape(primaryKey.name), ", ");
         Propagation propagation = new Propagation(CASCADE, CASCADE);
 
         return "FOREIGN KEY (" + columns + ") " +
-                "REFERENCES " + parent.tableName + " (" + columns + ") " +
+                "REFERENCES " + escape(parent.tableName) + " (" + columns + ") " +
                 propagation;
     }
 
@@ -1113,13 +1120,13 @@ class EntityObject<T> {
      *
      * <p>Example:
      * <code>
-     *     FOREIGN KEY (column_1, column_2)
-     *     REFERENCES referenced_table_1(referenced_column_1, referenced_column_2)
+     *     FOREIGN KEY ("column_1", "column_2")
+     *     REFERENCES "referenced_table_1" ("referenced_column_1", "referenced_column_2")
      *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code><br>
      * <code>
      *     FOREIGN KEY (column_3, column_4)
-     *     REFERENCES referenced_table_2(referenced_column_3, referenced_column_4)
+     *     REFERENCES "referenced_table_2" (referenced_column_3, referenced_column_4)
      *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code></p>
      *
@@ -1137,8 +1144,8 @@ class EntityObject<T> {
                 EntityObject<?> linkedEntity = db.getEntity(joinColumn.field.getType());
 
                 constraints.add(
-                        "FOREIGN KEY (" + joinColumn.name + ") " +
-                        "REFERENCES " + linkedEntity.tableName + " (" + annotation.referencedColumnName() + ") " +
+                        "FOREIGN KEY (" + escape(joinColumn.name) + ") " +
+                        "REFERENCES " + escape(linkedEntity.tableName) + " (" + escape(annotation.referencedColumnName()) + ") " +
                         joinColumn.propagation
                 );
 
@@ -1157,9 +1164,9 @@ class EntityObject<T> {
                 }
 
                 constraints.add(
-                        "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                        "REFERENCES " + linkedEntity.tableName + " (" +
-                        StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                        "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                        "REFERENCES " + escape(linkedEntity.tableName) + " (" +
+                        StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
                         joinColumns.propagation
                 );
             }

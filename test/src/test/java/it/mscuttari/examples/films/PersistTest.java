@@ -64,7 +64,8 @@ public class PersistTest extends AbstractFilmTest {
                         .and(personRoot.eq(Person_.lastName, person.lastName))
         );
 
-        assertEquals(person, qb.build(personRoot).getSingleResult());
+        Person result = qb.build(personRoot).getSingleResult();
+        assertEquals(person, result);
     }
 
 

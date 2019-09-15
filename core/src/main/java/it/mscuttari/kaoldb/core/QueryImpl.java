@@ -186,7 +186,8 @@ class QueryImpl<M> implements Query<M> {
                     }
 
                     // Build the query
-                    return new Pair<>(relationship.field, qb.from(join).where(where).build(rightRoot));
+                    Query<?> query = qb.from(join).where(where).build(rightRoot);
+                    return new Pair<>(relationship.field, query);
                 });
             }
 

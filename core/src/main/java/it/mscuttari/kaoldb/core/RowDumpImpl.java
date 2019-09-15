@@ -21,6 +21,8 @@ import android.database.Cursor;
 import androidx.annotation.NonNull;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -34,7 +36,7 @@ class RowDumpImpl implements RowDump {
 
 
     /**
-     * Constructor.
+     * Dump a row of a table.
      *
      * @param c     cursor positioned to the row to be dumped
      */
@@ -78,6 +80,12 @@ class RowDumpImpl implements RowDump {
                         ", "
                 ) +
                 "}";
+    }
+
+
+    @Override
+    public Collection<String> getColumns() {
+        return Collections.unmodifiableCollection(values.keySet());
     }
 
 

@@ -33,6 +33,9 @@ class TableDumpImpl implements TableDump {
     /** Table name */
     private final String name;
 
+    /** Query to recreate the table */
+    private String sql;
+
     /** Column names */
     private final List<String> columns;
 
@@ -41,7 +44,7 @@ class TableDumpImpl implements TableDump {
 
 
     /**
-     * Constructor.
+     * Dump the content of a table.
      *
      * @param db        readable database
      * @param tableName name of the table to be dumped
@@ -49,28 +52,23 @@ class TableDumpImpl implements TableDump {
     public TableDumpImpl(SQLiteDatabase db, String tableName) {
         this.name = tableName;
 
-        // Get columns
-        Cursor cColumns = db.rawQuery("PRAGMA table_info(" + tableName + ")", null);
-        List<String> columns = new ArrayList<>(cColumns.getCount());
-
-        int columnNameIndex = cColumns.getColumnIndex("name");
-        for (cColumns.moveToFirst(); !cColumns.isAfterLast(); cColumns.moveToNext()) {
-            columns.add(cColumns.getString(columnNameIndex));
+        // Get create SQL
+        try (Cursor cSql = db.query("sqlite_master", new String[] {"sql"}, "name = ?", new String[] {tableName}, null, null, null)) {
+            cSql.moveToFirst();
+            sql = cSql.getString(0);
         }
 
-        cColumns.close();
-        this.columns = Collections.unmodifiableList(columns);
+        // Get columns
+        columns = SQLiteUtils.getTableColumns(db, tableName);
 
         // Dump the rows
-        Cursor cRows = new CachedCursor(db.rawQuery("SELECT * FROM " + tableName, null));
-        List<RowDump> rows = new ArrayList<>(cRows.getCount());
+        try (Cursor cRows = new CachedCursor(db.rawQuery("SELECT * FROM " + tableName, null))) {
+            rows = new ArrayList<>(cRows.getCount());
 
-        for (cRows.moveToFirst(); !cRows.isAfterLast(); cRows.moveToNext()) {
-            rows.add(new RowDumpImpl(cRows));
+            for (cRows.moveToFirst(); !cRows.isAfterLast(); cRows.moveToNext()) {
+                rows.add(new RowDumpImpl(cRows));
+            }
         }
-
-        cRows.close();
-        this.rows = Collections.unmodifiableList(rows);
     }
 
 
@@ -88,14 +86,20 @@ class TableDumpImpl implements TableDump {
 
 
     @Override
+    public String getSql() {
+        return sql;
+    }
+
+
+    @Override
     public List<String> getColumns() {
-        return columns;
+        return Collections.unmodifiableList(columns);
     }
 
 
     @Override
     public List<RowDump> getRows() {
-        return rows;
+        return Collections.unmodifiableList(rows);
     }
 
 }

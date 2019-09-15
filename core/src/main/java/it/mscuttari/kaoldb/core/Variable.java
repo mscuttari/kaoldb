@@ -102,33 +102,10 @@ class Variable<T> {
      * Get the raw data.
      * Returns <code>null</code> if {@link #hasProperty()} is <code>true</code>.
      *
-     * @return raw data (<code>Null</code> if the variable has a {@link Property property} instead of raw data)
+     * @return raw data (<code>null</code> if the variable has a {@link Property property} instead of raw data)
      */
     public T getRawData() {
         return value;
-    }
-
-
-    /**
-     * String wrapper class.
-     *
-     * <p>Used in the Variable class instantiation in order to avoid the
-     * quotation marks in the resulting query.</p>
-     */
-    public static class StringWrapper {
-
-        private String value;
-
-        StringWrapper(String value) {
-            this.value = value;
-        }
-
-        @NonNull
-        @Override
-        public String toString() {
-            return value;
-        }
-
     }
 
 }

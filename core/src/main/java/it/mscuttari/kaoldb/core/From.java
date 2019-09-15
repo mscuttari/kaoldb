@@ -29,6 +29,7 @@ import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * @param   <X>     entity root
@@ -150,7 +151,7 @@ final class From<X> implements RootInt<X> {
             }
 
             // Tree exploration not needed
-            return entity.tableName + " AS " + getAlias();
+            return escape(entity.tableName) + " AS " + escape(getAlias());
 
         } finally {
             // Reset the status ot allow a second query build

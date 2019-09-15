@@ -30,6 +30,7 @@ import it.mscuttari.kaoldb.annotations.JoinTable;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * This class allows to group the columns belonging to the same join table.
@@ -154,7 +155,7 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
         // Table name
         result.append("CREATE TABLE IF NOT EXISTS ")
-                .append(annotation.name())
+                .append(escape(annotation.name()))
                 .append(" (");
 
         // Columns
@@ -223,9 +224,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                "REFERENCES " + directJoinEntity.tableName + " (" +
-                StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                "REFERENCES " + escape(directJoinEntity.tableName) + " (" +
+                StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
                 propagation
         );
 
@@ -242,9 +243,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY (" + StringUtils.implode(local, obj -> obj, ", ") + ") " +
-                "REFERENCES " + inverseJoinEntity.tableName + " (" +
-                StringUtils.implode(referenced, obj -> obj, ", ") + ") " +
+                "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                "REFERENCES " + escape(inverseJoinEntity.tableName) + " (" +
+                StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
                 propagation
         );
 

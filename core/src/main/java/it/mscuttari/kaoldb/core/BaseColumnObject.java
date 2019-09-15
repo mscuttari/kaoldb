@@ -36,6 +36,8 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
+
 /**
  * Representation of the basic properties of a column.
  *
@@ -329,7 +331,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @param column    column name
      * @param value     value
      */
-    protected static void insertIntoContentValues(ContentValues cv, String column, Object value) {
+    static void insertIntoContentValues(ContentValues cv, String column, Object value) {
         if (value == null) {
             cv.putNull(column);
 
@@ -366,7 +368,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Get columns SQL statement to be inserted in the create table query.
+     * Get the column SQL statement to be used in the create table query.
      *
      * <p>
      * The columns definition takes into consideration the following parameters:
@@ -390,17 +392,16 @@ abstract class BaseColumnObject implements ColumnsContainer {
      *      <li><b>Uniqueness</b></li>
      *      <li><b>Default value</b></li>
      * </ul>
-     * Example: <code>(column 1 INTEGER UNIQUE, column 2 REAL NOT NULL)</code>
+     * Example: <code>"column 1" REAL NOT NULL</code>
      * </p>
      *
-     * @return SQL query
+     * @return SQL statement
      */
     public final String getSQL() {
         StringBuilder result = new StringBuilder();
-        String prefix = "";
 
         // Column name
-        result.append(prefix).append(name);
+        result.append(escape(name));
 
         // Custom column definition
         if (customColumnDefinition != null && !customColumnDefinition.isEmpty()) {
@@ -409,23 +410,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
         }
 
         // Column type
-        if (type.equals(int.class) || type.equals(Integer.class)) {
-            result.append(" INTEGER");
-        } else if (type.equals(long.class) || type.equals(Long.class)) {
-            result.append(" INTEGER");
-        } else if (type.equals(float.class) || type.equals(Float.class)) {
-            result.append(" REAL");
-        } else if (type.equals(double.class) || type.equals(Double.class)) {
-            result.append(" REAL");
-        } else if (type.equals(String.class)) {
-            result.append(" TEXT");
-        } else if (type.equals(Date.class) || type.equals(Calendar.class)) {
-            result.append(" INTEGER");
-        } else if (type.isEnum()) {
-            result.append(" TEXT");
-        } else {
-            result.append(" BLOB");
-        }
+        result.append(" ").append(classToDbType(type));
 
         // Nullable
         if (!nullable) {
@@ -439,10 +424,37 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
         // Default value
         if (defaultValue != null && !defaultValue.isEmpty()) {
-            result.append(" DEFAULT ").append(defaultValue);
+            result.append(" DEFAULT '").append(escape(defaultValue)).append("'");
         }
 
         return result.toString();
+    }
+
+
+    /**
+     * Get the database column type corresponding to a given Java class
+     *
+     * @param clazz     Java class
+     * @return column type
+     */
+    public static String classToDbType(Class<?> clazz) {
+        if (clazz.equals(int.class) || clazz.equals(Integer.class)) {
+            return "INTEGER";
+        } else if (clazz.equals(long.class) || clazz.equals(Long.class)) {
+            return "INTEGER";
+        } else if (clazz.equals(float.class) || clazz.equals(Float.class)) {
+            return "REAL";
+        } else if (clazz.equals(double.class) || clazz.equals(Double.class)) {
+            return "REAL";
+        } else if (clazz.equals(String.class)) {
+            return "TEXT";
+        } else if (clazz.equals(Date.class) || clazz.equals(Calendar.class)) {
+            return "INTEGER";
+        } else if (clazz.isEnum()) {
+            return  "TEXT";
+        } else {
+            return "BLOB";
+        }
     }
 
 

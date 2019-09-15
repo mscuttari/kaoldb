@@ -28,7 +28,6 @@ import androidx.annotation.Nullable;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.core.Variable.StringWrapper;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
@@ -37,6 +36,7 @@ import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.MANY_TO_MAN
 import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.MANY_TO_ONE;
 import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.ONE_TO_MANY;
 import static it.mscuttari.kaoldb.core.Relationship.RelationshipType.ONE_TO_ONE;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * @param <L>   left side entity of the join
@@ -534,8 +534,8 @@ final class Join<L, R> implements RootInt<L> {
         return getColumnsEqualityExpression(
                 db,
                 owning,
-                owning.getAlias()     + "." + annotation.name(),
-                referenced.getAlias() + "." + annotation.referencedColumnName()
+                escape(owning.getAlias())     + "." + escape(annotation.name()),
+                escape(referenced.getAlias()) + "." + escape(annotation.referencedColumnName())
         );
     }
 
@@ -580,8 +580,8 @@ final class Join<L, R> implements RootInt<L> {
             Expression expression = getColumnsEqualityExpression(
                     db,
                     direct,
-                    direct.getAlias() + "." + joinColumn.referencedColumnName(),
-                    joinTableAlias + "." + joinColumn.name()
+                    escape(direct.getAlias()) + "." + escape(joinColumn.referencedColumnName()),
+                    escape(joinTableAlias) + "." + escape(joinColumn.name())
             );
 
             result = result == null ? expression : result.and(expression);
@@ -609,8 +609,8 @@ final class Join<L, R> implements RootInt<L> {
             Expression expression = getColumnsEqualityExpression(
                     db,
                     inverse,
-                    inverse.getAlias() + "." + joinColumn.referencedColumnName(),
-                    joinTableAlias + "." + joinColumn.name()
+                    escape(inverse.getAlias()) + "." + escape(joinColumn.referencedColumnName()),
+                    escape(joinTableAlias) + "." + escape(joinColumn.name())
             );
 
             result = result == null ? expression : result.and(expression);
@@ -630,8 +630,8 @@ final class Join<L, R> implements RootInt<L> {
      * @return equality expression
      */
     private static Expression getColumnsEqualityExpression(DatabaseObject db, RootInt<?> root, String firstColumn, String secondColumn) {
-        Variable<StringWrapper> a = new Variable<>(new StringWrapper(firstColumn));
-        Variable<StringWrapper> b = new Variable<>(new StringWrapper(secondColumn));
+        Variable<StringUtils.EscapedString> a = new Variable<>(new StringUtils.EscapedString(firstColumn));
+        Variable<StringUtils.EscapedString> b = new Variable<>(new StringUtils.EscapedString(secondColumn));
 
         return PredicateImpl.eq(db, root, a, b);
     }

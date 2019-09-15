@@ -38,6 +38,7 @@ import it.mscuttari.kaoldb.interfaces.PostActionListener;
 import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -120,7 +121,13 @@ class EntityManagerImpl implements EntityManager {
 
                     // Apply changes one version by one
                     for (int i = oldVersion; i < newVersion; i++) {
-                        migrator.onUpgrade(i, i + 1, database.getDump(db));
+                        List<SchemaAction> actions = migrator.onUpgrade(i, i + 1, database.getDump(db));
+
+                        if (actions != null) {
+                            for (SchemaAction action : actions) {
+                                ((SchemaBaseAction) action).run(db);
+                            }
+                        }
                     }
 
                     // Commit the changes
@@ -148,7 +155,13 @@ class EntityManagerImpl implements EntityManager {
                     DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
 
                     for (int i = oldVersion; i > newVersion; i--) {
-                        migrator.onDowngrade(i, i - 1, database.getDump(db));
+                        List<SchemaAction> actions = migrator.onDowngrade(i, i - 1, database.getDump(db));
+
+                        if (actions != null) {
+                            for (SchemaAction action : actions) {
+                                ((SchemaBaseAction) action).run(db);
+                            }
+                        }
                     }
 
                     // Commit the changes

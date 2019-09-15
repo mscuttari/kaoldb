@@ -16,6 +16,8 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import java.util.List;
+
 /**
  * Database schema migrator to be used in case of database version change.
  */
@@ -42,8 +44,10 @@ public interface DatabaseSchemaMigrator {
      * @param oldVersion    old version
      * @param newVersion    new version
      * @param dump          database dump at version <code>oldVersion</code>
+     *
+     * @return list of actions to be executed on the schema
      */
-    void onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
+    List<SchemaAction> onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
 
 
     /**
@@ -65,8 +69,10 @@ public interface DatabaseSchemaMigrator {
      *
      * @param oldVersion    old version
      * @param newVersion    new version
-     * @param dump          database dump at version oldVersion
+     * @param dump          database dump at version <code>oldVersion</code>
+     *
+     * @return list of actions to be executed on the schema
      */
-    void onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
+    List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
 
 }

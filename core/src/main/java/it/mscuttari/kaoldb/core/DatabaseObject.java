@@ -16,20 +16,25 @@
 
 package it.mscuttari.kaoldb.core;
 
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
+import it.mscuttari.kaoldb.interfaces.TableDump;
 
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
@@ -285,10 +290,67 @@ class DatabaseObject {
     /**
      * Get database dump.
      *
+     * @param db    readable database
      * @return database dump
      */
     public DatabaseDump getDump(SQLiteDatabase db) {
         return new DatabaseDumpImpl(db);
+    }
+
+
+    /**
+     * Restore database dump.
+     *
+     * @param db    writable database
+     * @param dump  database dump
+     *
+     * @throws DatabaseManagementException if the database is read-only
+     */
+    public void restore(SQLiteDatabase db, DatabaseDump dump) {
+        if (db.isReadOnly()) {
+            throw new DatabaseManagementException("Database not writable");
+        }
+
+        dropAllTables(db);
+
+        for (TableDump table : dump.getTables()) {
+            //db.rawQuery(table.get)
+        }
+    }
+
+
+    /**
+     * Drop all the database tables.
+     *
+     * @param db    writable database
+     * @throws DatabaseManagementException if the database is read-only
+     */
+    private void dropAllTables(SQLiteDatabase db) {
+        if (db.isReadOnly()) {
+            throw new DatabaseManagementException("Database not writable");
+        }
+
+        Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+
+        try {
+            List<String> tables = new ArrayList<>(cursor.getCount());
+
+            while (cursor.moveToNext()) {
+                tables.add(cursor.getString(0));
+            }
+
+            for (String table : tables) {
+                if (table.startsWith("sqlite_")) {
+                    continue;
+                }
+
+                db.execSQL("DROP TABLE IF EXISTS " + table);
+                LogUtils.i("[Table \"" + table + "\"] dropped");
+            }
+
+        } finally {
+            cursor.close();
+        }
     }
 
 }

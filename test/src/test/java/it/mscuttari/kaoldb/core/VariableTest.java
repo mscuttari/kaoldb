@@ -22,7 +22,6 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Table;
-import it.mscuttari.kaoldb.core.Variable.StringWrapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -88,13 +87,6 @@ public class VariableTest extends AbstractTest {
     public void withRawData_checkRawData() {
         Variable<Integer> variable = new Variable<>(0);
         assertEquals((Integer) 0, variable.getRawData());
-    }
-
-
-    @Test
-    public void stringWrapper() {
-        StringWrapper wrapper = new StringWrapper("test");
-        assertEquals("test", wrapper.toString());
     }
 
 

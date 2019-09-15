@@ -16,9 +16,20 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import java.util.Collection;
+
 import it.mscuttari.kaoldb.exceptions.DumpException;
 
 public interface RowDump {
+
+    /**
+     * Get columns.
+     *
+     * @return names of the columns
+     */
+    Collection<String> getColumns();
+
+
 
     /**
      * Get the value of a column at this row.

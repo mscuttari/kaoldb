@@ -35,6 +35,7 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ExpressionImpl.ExpressionType.AND;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * Predicate implementation
@@ -323,7 +324,7 @@ final class PredicateImpl<T> implements ExpressionInt {
                 );
 
             } else {
-                return objectToString(x.getRawData()) + " " + operation;
+                return escape(String.valueOf(x.getRawData())) + " " + operation;
             }
         }
 
@@ -361,7 +362,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         } else {
             // Two values
-            return objectToString(x.getRawData()) + operation + objectToString(y.getRawData());
+            return escape(x.getRawData()) + operation + escape(y.getRawData());
         }
     }
 
@@ -405,14 +406,14 @@ final class PredicateImpl<T> implements ExpressionInt {
         // @Column
         if (field.isAnnotationPresent(Column.class)) {
             Column annotation = field.getAnnotation(Column.class);
-            result.add(alias + "." + annotation.name());
+            result.add(escape(alias) + "." + escape(annotation.name()));
             return result;
         }
 
         // @JoinColumn
         if (field.isAnnotationPresent(JoinColumn.class)) {
             JoinColumn annotation = field.getAnnotation(JoinColumn.class);
-            result.add(alias + "." + annotation.name());
+            result.add(escape(alias) + "." + escape(annotation.name()));
             return result;
         }
 
@@ -421,7 +422,7 @@ final class PredicateImpl<T> implements ExpressionInt {
             JoinColumns annotation = field.getAnnotation(JoinColumns.class);
 
             for (JoinColumn joinColumn : annotation.value()) {
-                result.add(alias + "." + joinColumn.name());
+                result.add(escape(alias) + "." + escape(joinColumn.name()));
             }
 
             return result;
@@ -432,7 +433,7 @@ final class PredicateImpl<T> implements ExpressionInt {
             JoinTable annotation = field.getAnnotation(JoinTable.class);
 
             for (JoinColumn joinColumn : annotation.joinColumns()) {
-                result.add(alias + "." + joinColumn.referencedColumnName());
+                result.add(escape(alias) + "." + escape(joinColumn.referencedColumnName()));
             }
 
             return result;
@@ -469,8 +470,8 @@ final class PredicateImpl<T> implements ExpressionInt {
             Column xAnnotation = xField.getAnnotation(Column.class);
             Column yAnnotation = yField.getAnnotation(Column.class);
 
-            String xColumn = xAlias + "." + xAnnotation.name();
-            String yColumn = yAlias + "." + yAnnotation.name();
+            String xColumn = escape(xAlias) + "." + escape(xAnnotation.name());
+            String yColumn = escape(yAlias) + "." + escape(yAnnotation.name());
 
             result.add(new Pair<>(xColumn, yColumn));
             return result;
@@ -481,8 +482,8 @@ final class PredicateImpl<T> implements ExpressionInt {
             JoinColumn xAnnotation = xField.getAnnotation(JoinColumn.class);
             JoinColumn yAnnotation = yField.getAnnotation(JoinColumn.class);
 
-            String xColumn = xAlias + "." + xAnnotation.name();
-            String yColumn = yAlias + "." + yAnnotation.name();
+            String xColumn = escape(xAlias) + "." + escape(xAnnotation.name());
+            String yColumn = escape(yAlias) + "." + escape(yAnnotation.name());
 
             result.add(new Pair<>(xColumn, yColumn));
             return result;
@@ -497,8 +498,8 @@ final class PredicateImpl<T> implements ExpressionInt {
             for (JoinColumn xJoinColumn : xAnnotation.value()) {
                 for (JoinColumn yJoinColumn : yAnnotation.value()) {
                     if (xJoinColumn.referencedColumnName().equals(yJoinColumn.referencedColumnName())) {
-                        String xColumn = xAlias + "." + xJoinColumn.name();
-                        String yColumn = yAlias + "." + yJoinColumn.name();
+                        String xColumn = escape(xAlias) + "." + escape(xJoinColumn.name());
+                        String yColumn = escape(yAlias) + "." + escape(yJoinColumn.name());
 
                         result.add(new Pair<>(xColumn, yColumn));
                         continue outer;
@@ -518,8 +519,8 @@ final class PredicateImpl<T> implements ExpressionInt {
             for (JoinColumn xJoinColumn : xAnnotation.joinColumns()) {
                 for (JoinColumn yJoinColumn : yAnnotation.joinColumns()) {
                     if (xJoinColumn.name().equals(yJoinColumn.name())) {
-                        String xColumn = xAlias + "." + xJoinColumn.referencedColumnName();
-                        String yColumn = yAlias + "." + yJoinColumn.referencedColumnName();
+                        String xColumn = escape(xAlias) + "." + escape(xJoinColumn.referencedColumnName());
+                        String yColumn = escape(yAlias) + "." + escape(yJoinColumn.referencedColumnName());
 
                         result.add(new Pair<>(xColumn, yColumn));
                         continue outer;
@@ -555,8 +556,8 @@ final class PredicateImpl<T> implements ExpressionInt {
         // @Column
         if (property.columnAnnotation == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
-            String column = root.getAlias() + "." + annotation.name();
-            result.add(new Pair<>(column, objectToString(obj)));
+            String column = escape(root.getAlias()) + "." + escape(annotation.name());
+            result.add(new Pair<>(column, escape(obj)));
 
             return result;
         }
@@ -573,8 +574,8 @@ final class PredicateImpl<T> implements ExpressionInt {
                     root.getAlias() + property.fieldName;
 
             for (BaseColumnObject primaryKey : referencedEntity.columns.getPrimaryKeys()) {
-                String column = referencedEntityAlias + "." + primaryKey.name;
-                String primaryKeyValue = objectToString(primaryKey.getValue(obj));
+                String column = escape(referencedEntityAlias) + "." + escape(primaryKey.name);
+                String primaryKeyValue = escape(String.valueOf(primaryKey.getValue(obj)));
 
                 result.add(new Pair<>(column, primaryKeyValue));
             }
@@ -583,21 +584,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         }
 
         throw new QueryException("Invalid parameters");
-    }
-
-
-    /**
-     * Convert object to string in order to be placed in the query.
-     *
-     * @param obj       object
-     * @return string
-     */
-    private static String objectToString(Object obj) {
-        if (obj instanceof String) {
-            return "\"" + obj + "\"";
-        } else {
-            return String.valueOf(obj);
-        }
     }
 
 

@@ -31,6 +31,7 @@ import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * QueryBuilder implementation.
@@ -197,9 +198,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         // Current entity
         for (BaseColumnObject column : entity.columns) {
             columns.add(
-                    root.getAlias() + "." + column.name +
+                    escape(root.getAlias()) + "." + escape(column.name) +
                     " AS " +
-                    "\"" + root.getAlias() + "." + column.name + "\""
+                    escape(root.getAlias() + "." + column.name)
             );
         }
 
@@ -209,9 +210,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         while (parent != null) {
             for (BaseColumnObject column : parent.columns) {
                 columns.add(
-                        root.getAlias() + parent.getName() + "." + column.name +
+                        escape(root.getAlias() + parent.getName()) + "." + escape(column.name) +
                         " AS " +
-                        "\"" + root.getAlias() + parent.getName() + "." + column.name + "\""
+                        escape(root.getAlias() + parent.getName() + "." + column.name)
                 );
             }
 
@@ -227,9 +228,9 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
 
             for (EntityObject<?> child : node.children) {
                 for (BaseColumnObject column : child.columns) {
-                    columns.add(root.getAlias() + child.getName() + "." + column.name +
+                    columns.add(escape(root.getAlias() + child.getName()) + "." + escape(column.name) +
                                 " AS " +
-                                "\"" + root.getAlias() + child.getName() + "." + column.name + "\""
+                                escape(root.getAlias() + child.getName() + "." + column.name)
                     );
                 }
 

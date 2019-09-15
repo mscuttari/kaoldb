@@ -16,19 +16,23 @@
 
 package it.mscuttari.examples.database;
 
+import java.util.List;
+
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 public class GenericDbMigrator implements DatabaseSchemaMigrator {
 
     @Override
-    public void onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-
+    public List<SchemaAction> onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
+        return null;
     }
 
     @Override
-    public void onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-
+    public List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
+        return null;
     }
 
 }

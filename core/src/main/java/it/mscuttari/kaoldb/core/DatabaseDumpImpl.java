@@ -16,21 +16,23 @@
 
 package it.mscuttari.kaoldb.core;
 
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
 
-import it.mscuttari.kaoldb.exceptions.DumpException;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
 
 class DatabaseDumpImpl implements DatabaseDump {
+
+    /** Database version */
+    private final int version;
 
     /** Map between table names and dumps */
     private final Map<String, TableDump> tables;
@@ -42,18 +44,14 @@ class DatabaseDumpImpl implements DatabaseDump {
      * @param db    readable database
      */
     public DatabaseDumpImpl(SQLiteDatabase db) {
-        // Get all the table names
-        Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-        Map<String, TableDump> tables = new HashMap<>(c.getCount(), 1);
+        version = db.getVersion();
 
-        for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            // Dump each table
-            String tableName = c.getString(0);
-            tables.put(tableName, new TableDumpImpl(db, tableName));
+        List<String> tablesNames = SQLiteUtils.getTables(db);
+        tables = new HashMap<>(tablesNames.size(), 1);
+
+        for (String table : tablesNames) {
+            tables.put(table, new TableDumpImpl(db, table));
         }
-
-        c.close();
-        this.tables = Collections.unmodifiableMap(tables);
     }
 
 
@@ -71,9 +69,15 @@ class DatabaseDumpImpl implements DatabaseDump {
 
 
     @Override
-    public TableDump getTable(String tableName) throws DumpException {
+    public int getVersion() {
+        return version;
+    }
+
+
+    @Override
+    public TableDump getTable(String tableName) {
         if (!tables.containsKey(tableName)) {
-            throw new DumpException("Table \"" + tableName + "\" not found");
+            throw new IllegalArgumentException("Table \"" + tableName + "\" not found");
         }
 
         return tables.get(tableName);
@@ -82,7 +86,7 @@ class DatabaseDumpImpl implements DatabaseDump {
 
     @Override
     public Collection<TableDump> getTables() {
-        return tables.values();
+        return Collections.unmodifiableCollection(tables.values());
     }
 
 }

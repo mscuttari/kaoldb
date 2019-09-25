@@ -34,7 +34,7 @@ class SQLiteUtils {
 
 
     /**
-     * Get tables of a database.
+     * Get the tables of a database.
      *
      * @param db    readable database
      * @return database tables
@@ -81,7 +81,6 @@ class SQLiteUtils {
     }
 
 
-
     /**
      * Get the primary keys of a table.
      *
@@ -116,7 +115,7 @@ class SQLiteUtils {
 
     /**
      * Get the statement to be used to create a column of a table.
-     * Example: "column_name" TEXT NOT NULL DEFAULT VALUE "test".
+     * <p>Example: <code>"column_name" TEXT NOT NULL DEFAULT VALUE "test"</code></p>
      *
      * @param db        readable database
      * @param table     table the column belongs to

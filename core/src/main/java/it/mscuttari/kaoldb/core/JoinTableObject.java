@@ -31,6 +31,7 @@ import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * This class allows to group the columns belonging to the same join table.
@@ -224,9 +225,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
                 "REFERENCES " + escape(directJoinEntity.tableName) + " (" +
-                StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
+                implode(referenced, StringUtils::escape, ", ") + ") " +
                 propagation
         );
 
@@ -243,13 +244,13 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
                 "REFERENCES " + escape(inverseJoinEntity.tableName) + " (" +
-                StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
+                implode(referenced, StringUtils::escape, ", ") + ") " +
                 propagation
         );
 
-        return StringUtils.implode(constraints, obj -> obj, ", ");
+        return implode(constraints, obj -> obj, ", ");
     }
 
 }

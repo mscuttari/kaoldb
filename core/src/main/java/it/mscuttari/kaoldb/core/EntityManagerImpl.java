@@ -18,31 +18,25 @@ package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
 import androidx.lifecycle.LiveData;
 
-import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
-import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.PostActionListener;
 import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
-import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,7 +48,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class EntityManagerImpl implements EntityManager {
 
     /** Unique entity manager for each database */
-    private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new HashMap<>();
+    private static Map<DatabaseObject, EntityManagerImpl> entityManagers = new ArrayMap<>();
 
     /** Android application context */
     private final WeakReference<Context> context;
@@ -64,7 +58,7 @@ class EntityManagerImpl implements EntityManager {
     public final ConcurrentSQLiteOpenHelper dbHelper;
 
     /** Map between the observed entities and the queries to be executed when they are modified */
-    private final Map<EntityObject<?>, Collection<WeakReference<LiveQuery<?>>>> observers = new HashMap<>();
+    private final Map<EntityObject<?>, Collection<WeakReference<LiveQuery<?>>>> observers = new ArrayMap<>();
 
 
     /**
@@ -76,117 +70,7 @@ class EntityManagerImpl implements EntityManager {
     private EntityManagerImpl(@NonNull Context context, @NonNull DatabaseObject database) {
         this.context = new WeakReference<>(checkNotNull(context));
         this.database = database;
-
-        SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(context, database.getName(), null, database.getVersion()) {
-            @Override
-            public void onCreate(SQLiteDatabase db) {
-                try {
-                    db.beginTransaction();
-
-                    for (EntityObject<?> entity : database.getEntities()) {
-                        // Entity table
-                        String entityTableCreateSQL = entity.getSQL();
-
-                        if (entityTableCreateSQL != null) {
-                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
-                            db.execSQL(entityTableCreateSQL);
-                            LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
-                        }
-
-                        // Join tables
-                        for (Relationship relationship : entity.relationships) {
-                            if (!relationship.field.isAnnotationPresent(JoinTable.class))
-                                continue;
-
-                            JoinTableObject joinTableObject = JoinTableObject.map(database, entity, relationship.field);
-                            String joinTableCreateSQL = joinTableObject.getSQL();
-                            LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
-                            db.execSQL(joinTableCreateSQL);
-                            LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
-                        }
-                    }
-
-                    db.setTransactionSuccessful();
-
-                } catch (Exception e) {
-                    throw new DatabaseManagementException(e);
-
-                } finally {
-                    db.endTransaction();
-                }
-            }
-
-            @Override
-            public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-                LogUtils.d("[Database \"" + database.getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
-
-                database.upgrading.set(true);
-                db.beginTransaction();
-
-                try {
-                    DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-
-                    // Apply changes one version by one
-                    for (int i = oldVersion; i < newVersion; i++) {
-                        List<SchemaAction> actions = migrator.onUpgrade(i, i + 1, database.getDump(db));
-
-                        if (actions != null) {
-                            for (SchemaAction action : actions) {
-                                ((SchemaBaseAction) action).run(db);
-                            }
-                        }
-                    }
-
-                    // Commit the changes
-                    db.setTransactionSuccessful();
-
-                } catch (Exception e) {
-                    throw new DatabaseManagementException(e);
-
-                } finally {
-                    db.endTransaction();
-                    database.upgrading.set(false);
-                }
-
-                LogUtils.i("[Database \"" + database.getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
-            }
-
-            @Override
-            public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-                LogUtils.d("[Database \"" + database.getName() + "\"] downgrading from version " + oldVersion + " to version " + newVersion);
-
-                database.upgrading.set(true);
-                db.beginTransaction();
-
-                try {
-                    DatabaseSchemaMigrator migrator = database.getSchemaMigrator().newInstance();
-
-                    for (int i = oldVersion; i > newVersion; i--) {
-                        List<SchemaAction> actions = migrator.onDowngrade(i, i - 1, database.getDump(db));
-
-                        if (actions != null) {
-                            for (SchemaAction action : actions) {
-                                ((SchemaBaseAction) action).run(db);
-                            }
-                        }
-                    }
-
-                    // Commit the changes
-                    db.setTransactionSuccessful();
-
-                } catch (Exception e) {
-                    throw new DatabaseManagementException(e);
-
-                } finally {
-                    db.endTransaction();
-                    database.upgrading.set(false);
-                }
-
-                LogUtils.i("[Database \"" + database.getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);
-            }
-        };
-
-        this.dbHelper = new ConcurrentSQLiteOpenHelper(dbHelper);
+        this.dbHelper = new ConcurrentSQLiteOpenHelper(context, database);
     }
 
 
@@ -255,6 +139,7 @@ class EntityManagerImpl implements EntityManager {
         return qb.build(root).getLiveResults();
     }
 
+
     @Override
     public synchronized void persist(Object obj) {
         persist(obj, null, null);
@@ -269,11 +154,11 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Keep track of observers that should be notified
-        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new ArraySet<>();
 
         // Current working entity and the previous child entity
-        EntityObject currentEntity = database.getEntity(obj.getClass());
-        EntityObject childEntity = null;
+        EntityObject<?> currentEntity = database.getEntity(obj.getClass());
+        EntityObject<?> childEntity = null;
 
         // Open the database and start a transaction
         dbHelper.open();
@@ -319,7 +204,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Notify the observers
         for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
-            LiveQuery query = observer.get();
+            LiveQuery<?> query = observer.get();
 
             if (query != null) {
                 query.refresh();
@@ -342,7 +227,7 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Keep track of observers that should be notified
-        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new ArraySet<>();
 
         // Current working entity and the previous child entity
         EntityObject currentEntity = database.getEntity(obj.getClass());
@@ -410,7 +295,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Notify the observers
         for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
-            LiveQuery query = observer.get();
+            LiveQuery<?> query = observer.get();
 
             if (query != null) {
                 query.refresh();
@@ -433,10 +318,10 @@ class EntityManagerImpl implements EntityManager {
         }
 
         // Keep track of observers that should be notified
-        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new HashSet<>();
+        Collection<WeakReference<LiveQuery<?>>> touchedObservers = new ArraySet<>();
 
         // Current working entity and the previous child entity
-        EntityObject currentEntity = database.getEntity(obj.getClass());
+        EntityObject<?> currentEntity = database.getEntity(obj.getClass());
 
         // Open the database and start a transaction
         dbHelper.open();
@@ -491,7 +376,7 @@ class EntityManagerImpl implements EntityManager {
 
         // Notify the observers
         for (WeakReference<LiveQuery<?>> observer : touchedObservers) {
-            LiveQuery query = observer.get();
+            LiveQuery<?> query = observer.get();
 
             if (query != null) {
                 query.refresh();
@@ -501,7 +386,7 @@ class EntityManagerImpl implements EntityManager {
 
 
     /**
-     * Get the application context
+     * Get the application context.
      *
      * @return context
      * @throws IllegalStateException if the context is <code>null</code> (normally not happening
@@ -511,7 +396,7 @@ class EntityManagerImpl implements EntityManager {
         Context context = this.context.get();
 
         if (context == null) {
-            throw new IllegalStateException("Context is null");
+            throw new IllegalStateException("Application context is null");
         }
 
         return context;
@@ -519,10 +404,11 @@ class EntityManagerImpl implements EntityManager {
 
 
     /**
-     * Register a live query as an observer for the entities it covers.
-     * If any of the observed entities receives an update, the query is re-executed.
+     * Register a live query as an observer for the entities it covers.<br>
+     * If any of its observed entities is affected by a change, the query is re-executed in order
+     * to retrieve the latest data from the database.
      *
-     * @param query             live query
+     * @param query     live query
      */
     public void registerLiveQuery(LiveQuery<?> query) {
         // Weak references are used in order to avoid query execution when their result
@@ -534,7 +420,7 @@ class EntityManagerImpl implements EntityManager {
             Collection<WeakReference<LiveQuery<?>>> observers = this.observers.get(entity);
 
             if (observers == null) {
-                observers = new HashSet<>();
+                observers = new ArraySet<>();
                 this.observers.put(entity, observers);
             }
 

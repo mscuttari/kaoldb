@@ -19,20 +19,22 @@ package it.mscuttari.kaoldb.core;
 import android.database.Cursor;
 
 import androidx.annotation.NonNull;
+import androidx.collection.ArrayMap;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import it.mscuttari.kaoldb.exceptions.DumpException;
 import it.mscuttari.kaoldb.interfaces.RowDump;
 
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
+
 class RowDumpImpl implements RowDump {
 
     /** Map between column names and column values */
-    private final HashMap<String, Object> values;
+    private final ArrayMap<String, Object> values;
 
 
     /**
@@ -42,7 +44,7 @@ class RowDumpImpl implements RowDump {
      */
     public RowDumpImpl(Cursor c) {
         List<String> columns = Arrays.asList(c.getColumnNames());
-        values = new HashMap<>(columns.size(), 1);
+        values = new ArrayMap<>(columns.size());
 
         for (String column : columns) {
             int columnIndex = c.getColumnIndex(column);
@@ -74,7 +76,7 @@ class RowDumpImpl implements RowDump {
     @Override
     public String toString() {
         return "{" +
-                StringUtils.implode(
+                implode(
                         values.keySet(),
                         obj -> obj + ": " + values.get(obj),
                         ", "

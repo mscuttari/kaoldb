@@ -28,6 +28,7 @@ import static it.mscuttari.kaoldb.core.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTableColumns;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTablePrimaryKeys;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * Database schema changer: add a new column to a table.
@@ -123,7 +124,7 @@ public final class SchemaAddColumn extends SchemaBaseAction {
             primaryKeys.add(name);
             columnsStatements.add(
                     "PRIMARY KEY(" +
-                    StringUtils.implode(primaryKeys, StringUtils::escape, ",") +
+                    implode(primaryKeys, StringUtils::escape, ",") +
                     ")"
             );
 
@@ -134,7 +135,7 @@ public final class SchemaAddColumn extends SchemaBaseAction {
 
             // Create the new table containing the new column
             String newTableSql = "CREATE TABLE " + escape(table) + "(" +
-                    StringUtils.implode(columnsStatements, statement -> statement, ",") +
+                    implode(columnsStatements, statement -> statement, ",") +
                     ")";
 
             log(newTableSql);
@@ -142,8 +143,8 @@ public final class SchemaAddColumn extends SchemaBaseAction {
 
             // Copy data from the old table
             String dataCopySql = "INSERT INTO " + escape(table) +
-                    "(" + StringUtils.implode(oldColumns, StringUtils::escape, ",") + ") " +
-                    "SELECT " + StringUtils.implode(oldColumns, StringUtils::escape, ",") +
+                    "(" + implode(oldColumns, StringUtils::escape, ",") + ") " +
+                    "SELECT " + implode(oldColumns, StringUtils::escape, ",") +
                     " FROM " + escape(tempTable);
 
             log(dataCopySql);

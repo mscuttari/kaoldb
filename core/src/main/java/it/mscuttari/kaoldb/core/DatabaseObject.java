@@ -19,21 +19,23 @@ package it.mscuttari.kaoldb.core;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.mscuttari.kaoldb.annotations.Entity;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 import it.mscuttari.kaoldb.interfaces.TableDump;
 
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
@@ -54,13 +56,13 @@ class DatabaseObject {
     private Class<? extends DatabaseSchemaMigrator> migrator;
 
     /** Entities */
-    private final Collection<Class<?>> classes = new HashSet<>();
+    private final Collection<Class<?>> classes = new ArraySet<>();
 
     /** Entities mapping */
-    private final Map<Class<?>, EntityObject<?>> entities = new HashMap<>();
+    private final Map<Class<?>, EntityObject<?>> entities = new ArrayMap<>();
 
     /** Whether the database version is being changed */
-    public final AtomicBoolean upgrading = new AtomicBoolean(false);
+    private boolean upgrading = false;
 
     /** Whether the entities have been mapped or not */
     private boolean mapped = false;
@@ -238,6 +240,16 @@ class DatabaseObject {
 
 
     /**
+     * Check whether the database is upgrading.
+     *
+     * @return <code>true</code> if an update is in progress; <code>false</code> otherwise
+     */
+    public boolean isUpgrading() {
+        return upgrading;
+    }
+
+
+    /**
      * Create an {@link EntityObject} for each class contained in {@link #classes}.
      *
      * <p>
@@ -253,7 +265,7 @@ class DatabaseObject {
     public void mapEntities() {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
-        mapped = false;
+        doAndNotifyAll(this, () -> mapped = false);
         doAndNotifyAll(this, entities::clear);
 
         try {
@@ -278,12 +290,146 @@ class DatabaseObject {
 
             columnsConcurrentSession.waitForAll();
 
-            mapped = true;
+            doAndNotifyAll(this, () -> mapped = true);
             LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
 
         } catch (Exception e) {
             throw new MappingException(e);
         }
+    }
+
+
+    /**
+     * Create the database.
+     *
+     * @param db    writable database
+     */
+    public void create(SQLiteDatabase db) {
+        try {
+            db.beginTransaction();
+
+            for (EntityObject<?> entity : getEntities()) {
+                // Entity table
+                String entityTableCreateSQL = entity.getSQL();
+
+                if (entityTableCreateSQL != null) {
+                    LogUtils.d("[Entity \"" + entity.getName() + "\"] " + entityTableCreateSQL);
+                    db.execSQL(entityTableCreateSQL);
+                    LogUtils.i("[Entity \"" + entity.getName() + "\"] table created");
+                }
+
+                // Join tables
+                for (Relationship relationship : entity.relationships) {
+                    if (!relationship.field.isAnnotationPresent(JoinTable.class))
+                        continue;
+
+                    JoinTableObject joinTableObject = JoinTableObject.map(this, entity, relationship.field);
+                    String joinTableCreateSQL = joinTableObject.getSQL();
+                    LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
+                    db.execSQL(joinTableCreateSQL);
+                    LogUtils.i("[Entity \"" + entity.getName() + "\"] join table created");
+                }
+            }
+
+            db.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new DatabaseManagementException(e);
+
+        } finally {
+            if (db.inTransaction()) {
+                db.endTransaction();
+            }
+        }
+    }
+
+
+    /**
+     * Upgrade the database.
+     *
+     * @param db            writable database
+     * @param oldVersion    old version
+     * @param newVersion    new version
+     */
+    public void upgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        LogUtils.d("[Database \"" + getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
+
+        doAndNotifyAll(this, () -> upgrading = true);
+        db.beginTransaction();
+
+        try {
+            DatabaseSchemaMigrator migrator = getSchemaMigrator().newInstance();
+
+            // Apply changes one version by one
+            for (int i = oldVersion; i < newVersion; i++) {
+                List<SchemaAction> actions = migrator.onUpgrade(i, i + 1, getDump(db));
+
+                if (actions != null) {
+                    for (SchemaAction action : actions) {
+                        ((SchemaBaseAction) action).run(db);
+                    }
+                }
+            }
+
+            // Commit the changes
+            db.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new DatabaseManagementException(e);
+
+        } finally {
+            if (db.inTransaction()) {
+                db.endTransaction();
+            }
+
+            doAndNotifyAll(this, () -> upgrading = false);
+        }
+
+        LogUtils.i("[Database \"" + getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
+    }
+
+
+    /**
+     * Downgrade the database.
+     *
+     * @param db            writable database
+     * @param oldVersion    old version
+     * @param newVersion    new version
+     */
+    public void downgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        LogUtils.d("[Database \"" + getName() + "\"] downgrading from version " + oldVersion + " to version " + newVersion);
+
+        doAndNotifyAll(this, () -> upgrading = true);
+        db.beginTransaction();
+
+        try {
+            DatabaseSchemaMigrator migrator = getSchemaMigrator().newInstance();
+
+            for (int i = oldVersion; i > newVersion; i--) {
+                List<SchemaAction> actions = migrator.onDowngrade(i, i - 1, getDump(db));
+
+                if (actions != null) {
+                    for (SchemaAction action : actions) {
+                        ((SchemaBaseAction) action).run(db);
+                    }
+                }
+            }
+
+            // Commit the changes
+            db.setTransactionSuccessful();
+
+        } catch (Exception e) {
+            throw new DatabaseManagementException(e);
+
+        } finally {
+            if (db.inTransaction()) {
+                db.endTransaction();
+            }
+
+            doAndNotifyAll(this, () -> upgrading = false);
+        }
+
+        LogUtils.i("[Database \"" + getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);
     }
 
 
@@ -311,7 +457,7 @@ class DatabaseObject {
             throw new DatabaseManagementException("Database not writable");
         }
 
-        dropAllTables(db);
+        deleteAllTables(db);
 
         for (TableDump table : dump.getTables()) {
             //db.rawQuery(table.get)
@@ -320,23 +466,21 @@ class DatabaseObject {
 
 
     /**
-     * Drop all the database tables.
+     * Delete all the database tables.
      *
      * @param db    writable database
      * @throws DatabaseManagementException if the database is read-only
      */
-    private void dropAllTables(SQLiteDatabase db) {
+    private void deleteAllTables(SQLiteDatabase db) {
         if (db.isReadOnly()) {
             throw new DatabaseManagementException("Database not writable");
         }
 
-        Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+        try (Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null)) {
+            List<String> tables = new ArrayList<>(c.getCount());
 
-        try {
-            List<String> tables = new ArrayList<>(cursor.getCount());
-
-            while (cursor.moveToNext()) {
-                tables.add(cursor.getString(0));
+            while (c.moveToNext()) {
+                tables.add(c.getString(0));
             }
 
             for (String table : tables) {
@@ -347,9 +491,6 @@ class DatabaseObject {
                 db.execSQL("DROP TABLE IF EXISTS " + table);
                 LogUtils.i("[Table \"" + table + "\"] dropped");
             }
-
-        } finally {
-            cursor.close();
         }
     }
 

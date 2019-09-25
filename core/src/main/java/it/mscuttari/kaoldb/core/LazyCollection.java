@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+
 import it.mscuttari.kaoldb.interfaces.Query;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -153,7 +154,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public void forEach(Consumer<? super T> action) {
         checkInitialization();
@@ -212,7 +213,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public boolean removeIf(Predicate<? super T> filter) {
         checkInitialization();
@@ -234,7 +235,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public Spliterator<T> spliterator() {
         checkInitialization();
@@ -242,7 +243,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public Stream<T> stream() {
         checkInitialization();
@@ -250,7 +251,7 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public Stream<T> parallelStream() {
         checkInitialization();

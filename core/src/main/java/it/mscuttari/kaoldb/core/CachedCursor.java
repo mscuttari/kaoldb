@@ -27,20 +27,20 @@ import android.os.Build;
 import android.os.Bundle;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import androidx.annotation.RequiresApi;
+import androidx.collection.ArrayMap;
 
 /**
  * Wrapper for {@link Cursor} which enables some performance improvements.
  *
  * <p>
- * The default {@link SQLiteCursor#getColumnIndex(String)} implementation doesn't exploit any caching
- * capability and each column name lookup can cost up to the number of the column and this is is
- * obviously quite expensive if there are a lot of columns. This cost is avoid by first creating a
- * map between each column name and its index; thus the linear cost is spent only on startup and
- * the subsequent calls to {@link #getColumnIndex(String)} will have fixed cost.
+ * The default {@link SQLiteCursor#getColumnIndex(String)} implementation doesn't exploit any
+ * caching capability and each column name lookup can cost up to the number of the column and this
+ * is is obviously quite expensive if there are a lot of columns. This cost is avoid by first
+ * creating a map between each column name and its index; thus the linear cost is spent only on
+ * startup and the subsequent calls to {@link #getColumnIndex(String)} will have fixed cost.
  * By doing this, this wrapper also enables the usage of column names containing a dot, such
  * as <code>tableName.columnName</code>. In fact, the default implementation has a section aimed
  * to fix bug 903852, but this workaround actually breaks the usage of dots in column names.
@@ -65,7 +65,7 @@ class CachedCursor implements Cursor {
 
         // Build column name-index map
         String[] columnNames = c.getColumnNames();
-        Map<String, Integer> columnIndexMap = new HashMap<>(columnNames.length, 1);
+        Map<String, Integer> columnIndexMap = new ArrayMap<>(columnNames.length);
 
         for (int i = 0; i < columnNames.length; i++) {
             columnIndexMap.put(columnNames[i], i);
@@ -301,7 +301,7 @@ class CachedCursor implements Cursor {
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @RequiresApi(Build.VERSION_CODES.KITKAT)
     @Override
     public Uri getNotificationUri() {
         return c.getNotificationUri();
@@ -314,7 +314,7 @@ class CachedCursor implements Cursor {
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+    @RequiresApi(Build.VERSION_CODES.M)
     @Override
     public void setExtras(Bundle extras) {
         c.setExtras(extras);

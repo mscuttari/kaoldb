@@ -32,6 +32,7 @@ import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * QueryBuilder implementation.
@@ -241,7 +242,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             }
         }
 
-        return StringUtils.implode(columns, obj -> obj, ", ");
+        return implode(columns, obj -> obj, ", ");
     }
 
 }

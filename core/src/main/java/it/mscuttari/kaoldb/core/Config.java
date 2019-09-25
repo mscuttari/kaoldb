@@ -18,13 +18,14 @@ package it.mscuttari.kaoldb.core;
 
 import android.content.res.XmlResourceParser;
 
+import androidx.collection.ArrayMap;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import it.mscuttari.kaoldb.BuildConfig;
@@ -34,7 +35,7 @@ import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 class Config {
 
     /** Maps each database name to its {@link DatabaseObject} */
-    private final Map<String, DatabaseObject> mapping = new HashMap<>();
+    private final Map<String, DatabaseObject> mapping = new ArrayMap<>();
 
     /** Whether the debug messages should be enabled or not */
     private boolean debug = BuildConfig.DEBUG;
@@ -55,7 +56,7 @@ class Config {
      *
      * @return database names
      */
-    public Collection<String> getDatabaseNames() {
+    public Collection<String> getDatabasesNames() {
         return Collections.unmodifiableCollection(mapping.keySet());
     }
 
@@ -76,12 +77,17 @@ class Config {
      * @param enabled       whether to enable or not the debug mode
      */
     public void setDebugMode(boolean enabled) {
+        if (!enabled) {
+            // The message must be printed before effectively disabling the debug mode, or it
+            // would not be printed at all.
+
+            LogUtils.i("Debug mode disabled");
+        }
+
         this.debug = enabled;
 
         if (enabled) {
             LogUtils.i("Debug mode enabled");
-        } else {
-            LogUtils.i("Debug mode disabled");
         }
     }
 

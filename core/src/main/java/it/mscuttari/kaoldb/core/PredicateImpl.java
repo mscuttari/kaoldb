@@ -36,6 +36,7 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ExpressionImpl.ExpressionType.AND;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * Predicate implementation
@@ -317,7 +318,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     private String processUnaryPredicate() {
         if (operation == PredicateType.IS_NULL) {
             if (x.hasProperty()) {
-                return StringUtils.implode(
+                return implode(
                         getPropertyColumns(x.getProperty(), x.getTableAlias()),
                         obj -> obj + " " + operation,
                         " " + AND + " "
@@ -346,7 +347,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         if (x.hasProperty() && y.hasProperty()) {
             // Two properties
-            return StringUtils.implode(
+            return implode(
                     bindProperties(x.getProperty(), x.getTableAlias(), y.getProperty(), y.getTableAlias()),
                     obj -> obj.first + operation + obj.second,
                     " " + AND + " "
@@ -354,7 +355,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         } else if (x.hasProperty()) {
             // Property + value
-            return StringUtils.implode(
+            return implode(
                     bindPropertyObject(x.getProperty(), y.getRawData()),
                     obj -> obj.first + operation + obj.second,
                     " " + AND + " "

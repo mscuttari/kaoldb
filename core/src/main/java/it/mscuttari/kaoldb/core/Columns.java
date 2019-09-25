@@ -21,8 +21,6 @@ import android.content.ContentValues;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -32,6 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
+
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -46,13 +47,13 @@ class Columns implements ColumnsContainer {
     @NonNull protected final EntityObject<?> entity;
 
     /** Table columns */
-    private final Collection<ColumnsContainer> columns = new HashSet<>();
+    private final Collection<ColumnsContainer> columns = new ArraySet<>();
 
     /** Columns mapped by name */
-    private final Map<String, BaseColumnObject> namesMap = new HashMap<>();
+    private final Map<String, BaseColumnObject> namesMap = new ArrayMap<>();
 
     /** Primary keys of the table (subset of {@link #columns}) */
-    private final Collection<BaseColumnObject> primaryKeys = new HashSet<>();
+    private final Collection<BaseColumnObject> primaryKeys = new ArraySet<>();
 
     /** Used to track the concurrent mapping. When 0, it means that all the columns have been mapped */
     public final AtomicInteger mappingStatus = new AtomicInteger(0);
@@ -249,7 +250,7 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Check that the column to be added are not already mapped
+     * Check that the column to be added are not already mapped.
      *
      * @param container     columns container to search for
      * @throws InvalidConfigException if some columns have already been defined
@@ -280,7 +281,7 @@ class Columns implements ColumnsContainer {
      * @return column objects collection
      */
     public static Collection<ColumnsContainer> entityFieldToColumns(DatabaseObject db, EntityObject<?> entity, Field field) {
-        Collection<ColumnsContainer> result = new HashSet<>();
+        Collection<ColumnsContainer> result = new ArraySet<>();
 
         if (field.isAnnotationPresent(Column.class)) {
             result.add(SimpleColumnObject.map(db, entity, field));

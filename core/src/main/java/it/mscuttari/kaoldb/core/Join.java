@@ -18,13 +18,14 @@ package it.mscuttari.kaoldb.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.ArrayMap;
+
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -64,10 +65,10 @@ final class Join<L, R> implements RootInt<L> {
     }
 
 
-    @NonNull  private final DatabaseObject db;
-    @NonNull  private final JoinType type;
-    @NonNull  private final RootInt<L> left;
-    @NonNull  private final RootInt<R> right;
+    @NonNull private final DatabaseObject db;
+    @NonNull private final JoinType type;
+    @NonNull private final RootInt<L> left;
+    @NonNull private final RootInt<R> right;
 
     // If the linking property is null then the ON expression is not null and vice versa
 
@@ -160,9 +161,9 @@ final class Join<L, R> implements RootInt<L> {
     public String toString() {
         Stack<Join<?, ?>> stack = new Stack<>();
 
-        // Go down to the left-most leaf
-        // That element represents the point of start for the "FROM" clause
-        // In the example: go down to node 4
+        // Go down to the left-most leaf.
+        // That element represents the point of start for the "FROM" clause.
+        // In the example: go down to node 4.
 
         RootInt<?> root = this;
 
@@ -305,7 +306,7 @@ final class Join<L, R> implements RootInt<L> {
      */
     @Override
     public Map<String, Root<?>> getRootsMap() {
-        Map<String, Root<?>> result = new HashMap<>(2, 1);
+        Map<String, Root<?>> result = new ArrayMap<>(2);
 
         Stack<Join<?, ?>> stack = new Stack<>();
         RootInt<?> root = this;

@@ -59,21 +59,14 @@ class ConcurrentSession<T> implements Iterable<T> {
     private final AtomicBoolean finished = new AtomicBoolean(true);
 
 
-    /**
-     * Constructor.
-     */
-    public ConcurrentSession() {
-        if (executorService == null) {
-            int cpuCores = Runtime.getRuntime().availableProcessors();
-
-            ConcurrentSession.executorService = new ThreadPoolExecutor(
-                    cpuCores,
-                    Integer.MAX_VALUE,
-                    60L,
-                    TimeUnit.SECONDS,
-                    new SynchronousQueue<>()
-            );
-        }
+    static {
+        executorService = new ThreadPoolExecutor(
+                Runtime.getRuntime().availableProcessors(),
+                Integer.MAX_VALUE,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>()
+        );
     }
 
 

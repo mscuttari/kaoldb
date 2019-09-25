@@ -30,6 +30,7 @@ import it.mscuttari.kaoldb.interfaces.RowDump;
 
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTablePrimaryKeys;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * Database schema changer: for each row, change the value of a column
@@ -73,54 +74,53 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction {
     void run(SQLiteDatabase db) {
         DatabaseDump dbDump = new DatabaseDumpImpl(db);
         List<String> primaryKeys = getTablePrimaryKeys(db, table);
-        Cursor c = db.query(table, null, null, null, null, null, null);
 
-        for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-            RowDump rowDump = new RowDumpImpl(c);
+        try (Cursor c = db.query(table, null, null, null, null, null, null)) {
+            for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+                RowDump rowDump = new RowDumpImpl(c);
 
-            ContentValues cv = new ContentValues();
-            DatabaseUtils.cursorRowToContentValues(c, cv);
+                ContentValues cv = new ContentValues();
+                DatabaseUtils.cursorRowToContentValues(c, cv);
 
-            // Obtain the new value by applying the user provided policy
-            Object value = listener.change(dbDump, rowDump, rowDump.getColumnValue(column));
+                // Obtain the new value by applying the user provided policy
+                Object value = listener.change(dbDump, rowDump, rowDump.getColumnValue(column));
 
-            if (value instanceof Enum) {
-                cv.put(column, ((Enum) value).name());
+                if (value instanceof Enum) {
+                    cv.put(column, ((Enum) value).name());
 
-            } else if (value instanceof Integer || value.getClass().equals(int.class)) {
-                cv.put(column, (int) value);
+                } else if (value instanceof Integer || value.getClass().equals(int.class)) {
+                    cv.put(column, (int) value);
 
-            } else if (value instanceof Long || value.getClass().equals(long.class)) {
-                cv.put(column, (long) value);
+                } else if (value instanceof Long || value.getClass().equals(long.class)) {
+                    cv.put(column, (long) value);
 
-            } else if (value instanceof Float || value.getClass().equals(float.class)) {
-                cv.put(column, (float) value);
+                } else if (value instanceof Float || value.getClass().equals(float.class)) {
+                    cv.put(column, (float) value);
 
-            } else if (value instanceof Double || value.getClass().equals(double.class)) {
-                cv.put(column, (double) value);
+                } else if (value instanceof Double || value.getClass().equals(double.class)) {
+                    cv.put(column, (double) value);
 
-            } else if (value instanceof String) {
-                cv.put(column, (String) value);
+                } else if (value instanceof String) {
+                    cv.put(column, (String) value);
+                }
+
+                db.update(
+                        table,
+                        cv,
+                        implode(primaryKeys, pk -> {
+                            // The row to be updated is identified by using its primary keys values
+                            Object pkVal = rowDump.getColumnValue(pk);
+
+                            if (pkVal instanceof String) {
+                                pkVal = escape((String) pkVal);
+                            }
+
+                            return escape(pk) + "=" + pkVal;
+                        }, " AND "),
+                        null
+                );
             }
-
-            db.update(
-                    table,
-                    cv,
-                    StringUtils.implode(primaryKeys, pk -> {
-                        // The row to be updated is identified by using its primary keys values
-                        Object pkVal = rowDump.getColumnValue(pk);
-
-                        if (pkVal instanceof String) {
-                            pkVal = escape((String) pkVal);
-                        }
-
-                        return escape(pk) + "=" + pkVal;
-                    }, " AND "),
-                    null
-            );
         }
-
-        c.close();
     }
 
 

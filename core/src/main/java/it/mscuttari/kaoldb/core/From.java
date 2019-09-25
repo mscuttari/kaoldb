@@ -41,8 +41,15 @@ final class From<X> implements RootInt<X> {
     @NonNull private final EntityObject<X> entity;
     @NonNull private final String alias;
 
-    // Used during the SQL string build to keep track of the visited roots
-    private boolean hierarchyVisited = false;
+    // Used during the SQL string build to keep track of the visited roots.
+    // The variable value is thread local because multiple queries may be concurrently building.
+
+    private ThreadLocal<Boolean> hierarchyVisited = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
 
     /**
@@ -67,6 +74,7 @@ final class From<X> implements RootInt<X> {
 
     /**
      * Get string representation to be used in query.
+     * The parent and children table are automatically joined.
      *
      * @return <code>FROM</code> clause
      */
@@ -75,10 +83,10 @@ final class From<X> implements RootInt<X> {
         try {
             // Resolve hierarchy joins if the hierarchy tree has not been visited yet
 
-            if (!hierarchyVisited && (entity.parent != null || entity.children.size() > 0)) {
+            if (Boolean.valueOf(false).equals(hierarchyVisited.get()) && (entity.parent != null || entity.children.size() > 0)) {
+                hierarchyVisited.set(true);
                 RootInt<X> root = this;
                 EntityObject<X> entity = db.getEntity(getEntityClass());
-                hierarchyVisited = true;
 
                 // Merge parent tables
                 if (entity.parent != null) {
@@ -100,7 +108,7 @@ final class From<X> implements RootInt<X> {
                             if (on == null)
                                 throw new QueryException("Can't merge inherited tables");
 
-                            parentRoot.hierarchyVisited = true;
+                            parentRoot.hierarchyVisited.set(true);
 
                             root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
                         }
@@ -134,7 +142,7 @@ final class From<X> implements RootInt<X> {
                                 if (on == null)
                                     throw new QueryException("Can't merge inherited tables");
 
-                                childRoot.hierarchyVisited = true;
+                                childRoot.hierarchyVisited.set(true);
 
                                 root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
 
@@ -154,8 +162,8 @@ final class From<X> implements RootInt<X> {
             return escape(entity.tableName) + " AS " + escape(getAlias());
 
         } finally {
-            // Reset the status ot allow a second query build
-            hierarchyVisited = false;
+            // Reset the status ot allow a second expansion (even in the same query)
+            hierarchyVisited.set(false);
         }
     }
 

@@ -27,6 +27,7 @@ import static it.mscuttari.kaoldb.core.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTableColumns;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTablePrimaryKeys;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * Database schema changer: rename the column of a table.
@@ -100,7 +101,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         List<String> primaryKeys = getTablePrimaryKeys(db, table);
 
         newColumnsStatements.add("PRIMARY KEY(" +
-                StringUtils.implode(primaryKeys, obj -> obj.equals(oldName) ? escape(newName) : escape(obj), ",") +
+                implode(primaryKeys, obj -> obj.equals(oldName) ? escape(newName) : escape(obj), ",") +
                 ")");
 
         // Backup old table
@@ -110,15 +111,15 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
 
         // Create new table with new column name
         String newTableSql = "CREATE TABLE " + escape(table) + "(" +
-                StringUtils.implode(newColumnsStatements, obj -> obj, ",") +
+                implode(newColumnsStatements, obj -> obj, ",") +
                 ")";
 
         log(newTableSql);
         db.execSQL(newTableSql);
 
         // Copy data from the old table
-        String oldColumns = StringUtils.implode(columns, StringUtils::escape, ",");
-        String newColumns = StringUtils.implode(columns, column -> column.equals(oldName) ? escape(newName) : escape(column), ",");
+        String oldColumns = implode(columns, StringUtils::escape, ",");
+        String newColumns = implode(columns, column -> column.equals(oldName) ? escape(newName) : escape(column), ",");
 
         String dataCopySql = "INSERT INTO " + escape(table) + "(" + newColumns + ") " +
                 "SELECT " + oldColumns + " FROM " + escape(tempTable);

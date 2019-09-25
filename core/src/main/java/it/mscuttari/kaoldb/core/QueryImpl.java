@@ -22,14 +22,13 @@ import android.util.Pair;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
+import androidx.collection.ArraySet;
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
@@ -95,14 +94,14 @@ class QueryImpl<M> implements Query<M> {
         LogUtils.d("[Database \"" + db.getName() + "\"] " + sql);
 
         entityManager.dbHelper.open();
-        Cursor c = entityManager.dbHelper.select(sql, null);
-
-        // Prepare a result list of the same size of the cursor rows amount
-        // (it's just a small performance improvement done in order to prevent the collection rescaling)
-        List<M> result = new ArrayList<>(c.getCount());
 
         // Iterate among the rows and convert them to POJOs
-        try {
+        try (Cursor c = entityManager.dbHelper.select(sql, null)) {
+
+            // Prepare a result list of the same size of the cursor rows amount
+            // (it's just a small performance improvement done in order to prevent the collection rescaling)
+            List<M> result = new ArrayList<>(c.getCount());
+
             for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
                 M object = db.getEntity(resultClass).parseCursor(c, alias);
 
@@ -123,37 +122,54 @@ class QueryImpl<M> implements Query<M> {
                 result.add(object);
             }
 
+            return result;
+
         } catch (Exception e) {
             throw new QueryException(e);
 
         } finally {
-            c.close();
             entityManager.dbHelper.close();
         }
-
-        return result;
     }
 
 
     @Override
     public M getSingleResult() {
         List<M> resultList = getResults();
-        return resultList == null || resultList.isEmpty() ? null : resultList.get(0);
+
+        if (resultList.isEmpty()) {
+            return null;
+        }
+
+        return resultList.get(0);
     }
 
 
     @Override
     public LiveData<List<M>> getLiveResults() {
-        Collection<EntityObject<?>> observed = new HashSet<>();
+        Collection<EntityObject<?>> observed = new ArraySet<>();
 
         EntityObject<?> entity = db.getEntity(resultClass);
 
+        // The entities in this stack will have their hierarchy tree navigated downwards
         // Add the current entity, the children entities and the entities linked by relationships
-        Stack<EntityObject<?>> stack = new Stack<>();
-        stack.push(entity);
+        Stack<EntityObject<?>> downStack = new Stack<>();
+        downStack.push(entity);
 
-        while (!stack.empty()) {
-            EntityObject<?> childEntity = stack.pop();
+        // The entities in this stack will have their hierarchy tree navigated upwards
+        Stack<EntityObject<?>> upStack = new Stack<>();
+
+        // The entity on its own is already added to the downStack.
+        // Let's directly start from it parent, if he has one.
+
+        if (entity.parent != null) {
+            upStack.push(entity.parent);
+        }
+
+        // Recursively add all the entities linked to the starting one
+
+        while (!downStack.empty()) {
+            EntityObject<?> childEntity = downStack.pop();
 
             observed.add(childEntity);
 
@@ -161,26 +177,41 @@ class QueryImpl<M> implements Query<M> {
                 EntityObject<?> linked = db.getEntity(relationship.linked);
 
                 if (!observed.contains(linked)) {
-                    stack.push(linked);
                     observed.add(linked);
+                    downStack.push(linked);
+                }
+
+                if (linked.parent != null && !observed.contains((linked.parent))) {
+                    upStack.push(linked.parent);
                 }
             }
 
             for (EntityObject<?> child : childEntity.children) {
-                stack.push(child);
-            }
-        }
-
-        // Add the entities linked to parent entities by relationships
-        entity = entity.parent;
-
-        while (entity != null) {
-            for (Relationship relationship : entity.relationships) {
-                EntityObject<?> linked = db.getEntity(relationship.linked);
-                observed.add(linked);
+                if (!observed.contains(child)) {
+                    downStack.push(child);
+                }
             }
 
-            entity = entity.parent;
+            while (!upStack.empty()) {
+                EntityObject<?> parentEntity = upStack.pop();
+
+                for (Relationship relationship : parentEntity.relationships) {
+                    EntityObject<?> linked = db.getEntity(relationship.linked);
+
+                    if (!observed.contains(linked)) {
+                        observed.add(linked);
+                        downStack.push(linked);
+                    }
+
+                    if (linked.parent != null && !observed.contains(linked.parent)) {
+                        upStack.push(linked.parent);
+                    }
+                }
+
+                if (parentEntity.parent != null && !observed.contains(parentEntity.parent)) {
+                    upStack.add(parentEntity.parent);
+                }
+            }
         }
 
         LiveQuery<M> liveQuery = new LiveQuery<>(this, observed);

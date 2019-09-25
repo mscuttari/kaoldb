@@ -54,7 +54,7 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public void replaceAll(@NonNull UnaryOperator<T> operator) {
         checkInitialization();
@@ -62,7 +62,7 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public void sort(Comparator<? super T> c) {
         checkInitialization();

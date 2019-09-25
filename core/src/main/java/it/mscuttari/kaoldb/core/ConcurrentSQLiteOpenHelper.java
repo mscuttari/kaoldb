@@ -17,26 +17,45 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import androidx.annotation.Nullable;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 
 final class ConcurrentSQLiteOpenHelper {
 
-    private final SQLiteOpenHelper dbHelper;
+    private final SQLiteOpenHelper helper;
     private SQLiteDatabase db;
     private int dbConnections = 0;
 
 
-    /**
-     * Constructor.
-     *
-     * @param dbHelper      database helper that needs thread safety
-     */
-    public ConcurrentSQLiteOpenHelper(SQLiteOpenHelper dbHelper) {
-        this.dbHelper = dbHelper;
+    public ConcurrentSQLiteOpenHelper(@Nullable Context context, DatabaseObject db) {
+        this.helper = new SQLiteOpenHelper(
+                context,
+                db.getName(),
+                (sqliteDb, masterQuery, editTable, query) -> new CachedCursor(new SQLiteCursor(sqliteDb, masterQuery, editTable, query)),
+                db.getVersion())
+        {
+            @Override
+            public void onCreate(SQLiteDatabase sqliteDb) {
+                db.create(sqliteDb);
+            }
+
+            @Override
+            public void onUpgrade(SQLiteDatabase sqliteDb, int oldVersion, int newVersion) {
+                db.upgrade(sqliteDb, oldVersion, newVersion);
+            }
+
+            @Override
+            public void onDowngrade(SQLiteDatabase sqliteDb, int oldVersion, int newVersion) {
+                db.downgrade(sqliteDb, oldVersion, newVersion);
+            }
+        };
     }
 
 
@@ -45,7 +64,7 @@ final class ConcurrentSQLiteOpenHelper {
      */
     public synchronized void open() {
         if (db == null || !db.isOpen()) {
-            db = dbHelper.getWritableDatabase();
+            db = helper.getWritableDatabase();
         }
 
         dbConnections++;
@@ -57,7 +76,7 @@ final class ConcurrentSQLiteOpenHelper {
      */
     public synchronized void close() {
         if (--dbConnections == 0) {
-            db.close();
+            helper.close();
             db = null;
         }
     }
@@ -144,7 +163,7 @@ final class ConcurrentSQLiteOpenHelper {
         if (db == null)
             throw new DatabaseManagementException("Database must be opened first");
 
-        return new CachedCursor(db.rawQuery(sql, selectionArgs));
+        return db.rawQuery(sql, selectionArgs);
     }
 
 

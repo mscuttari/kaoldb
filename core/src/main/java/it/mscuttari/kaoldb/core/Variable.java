@@ -17,6 +17,7 @@
 package it.mscuttari.kaoldb.core;
 
 import androidx.annotation.NonNull;
+
 import it.mscuttari.kaoldb.interfaces.Root;
 
 /**
@@ -100,7 +101,7 @@ class Variable<T> {
 
     /**
      * Get the raw data.
-     * Returns <code>null</code> if {@link #hasProperty()} is <code>true</code>.
+     * <p>Returns <code>null</code> if {@link #hasProperty()} is <code>true</code>.</p>
      *
      * @return raw data (<code>null</code> if the variable has a {@link Property property} instead of raw data)
      */

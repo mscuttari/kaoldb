@@ -33,7 +33,7 @@ import it.mscuttari.kaoldb.interfaces.Query;
  */
 class LiveQuery<T> extends MutableLiveData<List<T>> {
 
-    /** The query to be executed in order to retrieve the updated data */
+    /** The query to be executed in order to retrieve the latest data from the database */
     private final Query<T> query;
 
     /** The entities the query observes. If any of them gets an update the {@link #query} is executed */
@@ -53,7 +53,7 @@ class LiveQuery<T> extends MutableLiveData<List<T>> {
 
 
     /**
-     * Execute the query in order to fetch the updated data from the database.
+     * Execute the query in order to retrieve the latest data from the database.
      */
     public void refresh() {
         postValue(query.getResults());

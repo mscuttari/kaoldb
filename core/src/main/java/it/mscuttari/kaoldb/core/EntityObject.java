@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.ArraySet;
 
 import org.objenesis.Objenesis;
 import org.objenesis.ObjenesisStd;
@@ -65,6 +65,7 @@ import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
+import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -116,7 +117,7 @@ class EntityObject<T> {
      * @see #loadParent()
      */
     @NonNull
-    public Collection<EntityObject<? extends T>> children = new HashSet<>();
+    public Collection<EntityObject<? extends T>> children = new ArraySet<>();
 
     /**
      * Whether the entity has a real table or not.
@@ -216,7 +217,7 @@ class EntityObject<T> {
     public String toString() {
         return "Class: " + getName() + ", " +
                 "Parent: " + (parent == null ? "null" : parent.getName()) + ", " +
-                "Children: {" + StringUtils.implode(children, EntityObject::getName, ", ") + "}, " +
+                "Children: {" + implode(children, EntityObject::getName, ", ") + "}, " +
                 "Columns: {" + columns + "}, " +
                 "Primary keys: {" + columns.getPrimaryKeys() + "}";
     }
@@ -227,7 +228,7 @@ class EntityObject<T> {
         if (!(obj instanceof EntityObject))
             return false;
 
-        EntityObject entityObject = (EntityObject) obj;
+        EntityObject<?> entityObject = (EntityObject<?>) obj;
         return clazz.equals(entityObject.clazz);
     }
 
@@ -992,7 +993,7 @@ class EntityObject<T> {
         }
 
         return "PRIMARY KEY (" +
-                StringUtils.implode(primaryKeys, column -> escape(column.name), ", ") +
+                implode(primaryKeys, column -> escape(column.name), ", ") +
                 ")";
     }
 
@@ -1022,7 +1023,7 @@ class EntityObject<T> {
 
             uniqueSets.add(
                     "UNIQUE (" +
-                    StringUtils.implode(uniqueSet, column -> escape(column.name), ", ") +
+                    implode(uniqueSet, column -> escape(column.name), ", ") +
                     ")"
             );
         }
@@ -1031,7 +1032,7 @@ class EntityObject<T> {
             return null;
         }
 
-        return StringUtils.implode(uniqueSets, obj -> obj, ", ");
+        return implode(uniqueSets, obj -> obj, ", ");
     }
 
 
@@ -1070,7 +1071,7 @@ class EntityObject<T> {
             return null;
         }
 
-        return StringUtils.implode(constraints, obj -> obj, ", ");
+        return implode(constraints, obj -> obj, ", ");
     }
 
 
@@ -1106,7 +1107,7 @@ class EntityObject<T> {
 
         // Create associations
         Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
-        String columns = StringUtils.implode(parentPrimaryKeys, primaryKey -> escape(primaryKey.name), ", ");
+        String columns = implode(parentPrimaryKeys, primaryKey -> escape(primaryKey.name), ", ");
         Propagation propagation = new Propagation(CASCADE, CASCADE);
 
         return "FOREIGN KEY (" + columns + ") " +
@@ -1164,9 +1165,9 @@ class EntityObject<T> {
                 }
 
                 constraints.add(
-                        "FOREIGN KEY (" + StringUtils.implode(local, StringUtils::escape, ", ") + ") " +
+                        "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
                         "REFERENCES " + escape(linkedEntity.tableName) + " (" +
-                        StringUtils.implode(referenced, StringUtils::escape, ", ") + ") " +
+                        implode(referenced, StringUtils::escape, ", ") + ") " +
                         joinColumns.propagation
                 );
             }
@@ -1176,7 +1177,7 @@ class EntityObject<T> {
             return null;
         }
 
-        return StringUtils.implode(constraints, obj -> obj, ", ");
+        return implode(constraints, obj -> obj, ", ");
     }
 
 }

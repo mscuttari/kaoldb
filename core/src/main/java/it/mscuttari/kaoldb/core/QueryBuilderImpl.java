@@ -209,11 +209,13 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         EntityObject<?> parent = entity.parent;
 
         while (parent != null) {
+            String alias = root.getAlias() + parent.getName();
+
             for (BaseColumnObject column : parent.columns) {
                 columns.add(
-                        escape(root.getAlias() + parent.getName()) + "." + escape(column.name) +
+                        escape(alias) + "." + escape(column.name) +
                         " AS " +
-                        escape(root.getAlias() + parent.getName() + "." + column.name)
+                        escape(alias + "." + column.name)
                 );
             }
 
@@ -228,10 +230,12 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             EntityObject<?> node = children.pop();
 
             for (EntityObject<?> child : node.children) {
+                String alias = root.getAlias() + child.getName();
+
                 for (BaseColumnObject column : child.columns) {
-                    columns.add(escape(root.getAlias() + child.getName()) + "." + escape(column.name) +
+                    columns.add(escape(alias) + "." + escape(column.name) +
                                 " AS " +
-                                escape(root.getAlias() + child.getName() + "." + column.name)
+                                escape(alias + "." + column.name)
                     );
                 }
 

@@ -16,6 +16,7 @@
 
 package it.mscuttari.examples.films;
 
+import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Table;
@@ -37,5 +38,8 @@ public final class FantasyFilm extends Film {
     public FantasyFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
         super(title, year, new Genre("Fantasy"), director, length, restriction);
     }
+
+    @Column(name = "test")
+    public int test;
 
 }

@@ -24,8 +24,6 @@ import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorType;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
-import it.mscuttari.kaoldb.annotations.Inheritance;
-import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -35,7 +33,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 
 @Entity
 @Table(name = "films")
-@Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "genre", discriminatorType = DiscriminatorType.STRING)
 public abstract class Film {
 

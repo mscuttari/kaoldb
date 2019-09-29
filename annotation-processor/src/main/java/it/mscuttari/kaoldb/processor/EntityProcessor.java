@@ -33,19 +33,16 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
-import it.mscuttari.kaoldb.annotations.Inheritance;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -192,8 +189,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
     /**
      * If the specified <code>entity</code> extends another entity, check that the child
-     * entity is annotated with {@link DiscriminatorValue} and the parent one with
-     * {@link DiscriminatorColumn} and {@link Inheritance}.
+     * entity is annotated with {@link DiscriminatorValue}
      *
      * @param entity     entity element
      * @throws ProcessorException if {@link DiscriminatorValue} or {@link DiscriminatorColumn}
@@ -217,10 +213,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
             if (parent.getAnnotation(DiscriminatorColumn.class) == null) {
                 throw new ProcessorException("Parent entity \"" + parent.getSimpleName() + "\" doesn't have the @DiscriminatorColumn annotation", parent);
-            }
-
-            if (parent.getAnnotation(Inheritance.class) == null) {
-                throw new ProcessorException("Parent entity \"" + parent.getSimpleName() + "\" doesn't have the @Inheritance annotation", parent);
             }
         }
     }

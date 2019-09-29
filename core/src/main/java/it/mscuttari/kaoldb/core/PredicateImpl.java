@@ -318,6 +318,17 @@ final class PredicateImpl<T> implements ExpressionInt {
     private String processUnaryPredicate() {
         if (operation == PredicateType.IS_NULL) {
             if (x.hasProperty()) {
+                /*
+                EntityObject<?> entity = db.getEntity(x.getProperty().entityClass);
+                EntityObject<?> realTableEntity = entity;
+
+                while (realTableEntity.parent != null && realTableEntity.parent.inheritanceType == InheritanceType.SINGLE_TABLE)
+                    realTableEntity = realTableEntity.parent;
+
+                String alias = entity == realTableEntity ?
+                        x.getTableAlias() :
+                        x.getTableAlias() + realTableEntity.getName();
+*/
                 return implode(
                         getPropertyColumns(x.getProperty(), x.getTableAlias()),
                         obj -> obj + " " + operation,

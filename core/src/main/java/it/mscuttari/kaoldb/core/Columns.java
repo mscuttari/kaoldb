@@ -58,11 +58,8 @@ class Columns implements ColumnsContainer {
     /** Used to track the concurrent mapping. When 0, it means that all the columns have been mapped */
     public final AtomicInteger mappingStatus = new AtomicInteger(0);
 
-    /** Whether the parent columns have been added, in case of JOINED inheritance */
-    public final AtomicBoolean joinedColumnsInherited = new AtomicBoolean(false);
-
-    /** Whether the parent columns have been added, in case of SINGLE_TABLE inheritance */
-    public final AtomicBoolean singleTableColumnsInherited = new AtomicBoolean(false);
+    /** Whether the parent columns have been added */
+    public final AtomicBoolean parentColumnsInherited = new AtomicBoolean(false);
 
 
     /**
@@ -246,6 +243,16 @@ class Columns implements ColumnsContainer {
      */
     public synchronized boolean addAll(Columns columns) {
         return addAll(columns.columns);
+    }
+
+
+    /**
+     * Delete all the columns.
+     */
+    public synchronized void clear() {
+        columns.clear();
+        namesMap.clear();
+        primaryKeys.clear();
     }
 
 

@@ -22,7 +22,6 @@ import java.util.Stack;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
@@ -93,25 +92,23 @@ final class From<X> implements RootInt<X> {
                     EntityObject<? super X> parent = entity.parent;
 
                     while (parent != null) {
-                        if (parent.inheritanceType != InheritanceType.SINGLE_TABLE) {
-                            From<?> parentRoot = new From<>(db, queryBuilder, parent.clazz, getAlias() + parent.getName());
-                            Expression on = null;
+                        From<?> parentRoot = new From<>(db, queryBuilder, parent.clazz, getAlias() + parent.getName());
+                        Expression on = null;
 
-                            for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
-                                Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                Variable b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
+                        for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
+                            Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                            Variable b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
 
-                                Expression onParent = PredicateImpl.eq(db, this, a, b);
-                                on = on == null ? onParent : on.and(onParent);
-                            }
-
-                            if (on == null)
-                                throw new QueryException("Can't merge inherited tables");
-
-                            parentRoot.hierarchyVisited.set(true);
-
-                            root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
+                            Expression onParent = PredicateImpl.eq(db, this, a, b);
+                            on = on == null ? onParent : on.and(onParent);
                         }
+
+                        if (on == null)
+                            throw new QueryException("Can't merge inherited tables");
+
+                        parentRoot.hierarchyVisited.set(true);
+
+                        root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
 
                         parent = parent.parent;
                     }
@@ -126,30 +123,28 @@ final class From<X> implements RootInt<X> {
                         EntityObject<? extends X> node = children.pop();
 
                         for (EntityObject<? extends X> child : node.children) {
-                            if (child.inheritanceType != InheritanceType.SINGLE_TABLE) {
-                                // Perform the join with the child table
-                                From<?> childRoot = new From<>(db, queryBuilder, child.clazz, getAlias() + child.getName());
-                                Expression on = null;
+                            // Perform the join with the child table
+                            From<?> childRoot = new From<>(db, queryBuilder, child.clazz, getAlias() + child.getName());
+                            Expression on = null;
 
-                                for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-                                    Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
-                                    Variable b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
+                            for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
+                                Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
+                                Variable b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
 
-                                    Expression onChild = PredicateImpl.eq(db, this, a, b);
-                                    on = on == null ? onChild : on.and(onChild);
-                                }
+                                Expression onChild = PredicateImpl.eq(db, this, a, b);
+                                on = on == null ? onChild : on.and(onChild);
+                            }
 
-                                if (on == null)
-                                    throw new QueryException("Can't merge inherited tables");
+                            if (on == null)
+                                throw new QueryException("Can't merge inherited tables");
 
-                                childRoot.hierarchyVisited.set(true);
+                            childRoot.hierarchyVisited.set(true);
 
-                                root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
+                            root = new Join<>(db, Join.JoinType.LEFT, root, childRoot, on);
 
-                                // Depth first scan
-                                if (child.children.size() != 0) {
-                                    children.push(child);
-                                }
+                            // Depth first scan
+                            if (child.children.size() != 0) {
+                                children.push(child);
                             }
                         }
                     }

@@ -40,8 +40,6 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
-import it.mscuttari.kaoldb.annotations.Inheritance;
-import it.mscuttari.kaoldb.annotations.InheritanceType;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -81,15 +79,6 @@ class EntityObject<T> {
     /** Entity class instantiator */
     private final ObjectInstantiator<T> instantiator;
 
-    /**
-     * Inheritance type.
-     * <p><code>Null</code> if the entity has no children.</p>
-     *
-     * @see #loadInheritanceType()
-     */
-    @Nullable
-    public InheritanceType inheritanceType;
-
 
     /**
      * Parent entity.
@@ -118,13 +107,6 @@ class EntityObject<T> {
      */
     @NonNull
     public Collection<EntityObject<? extends T>> children = new ArraySet<>();
-
-    /**
-     * Whether the entity has a real table or not.
-     *
-     * @see #loadTableExistence()
-     */
-    public Boolean realTable;
 
     /**
      * Table name.
@@ -202,10 +184,8 @@ class EntityObject<T> {
             return result;
 
         } finally {
-            result.loadInheritanceType();
             result.loadParent();
             result.loadDiscriminatorValue();
-            result.loadTableExistence();
             result.loadTableName();
             result.loadRelationships();
         }
@@ -218,8 +198,8 @@ class EntityObject<T> {
         return "Class: " + getName() + ", " +
                 "Parent: " + (parent == null ? "null" : parent.getName()) + ", " +
                 "Children: {" + implode(children, EntityObject::getName, ", ") + "}, " +
-                "Columns: {" + columns + "}, " +
-                "Primary keys: {" + columns.getPrimaryKeys() + "}";
+                "Columns: " + columns + ", " +
+                "Primary keys: " + columns.getPrimaryKeys();
     }
 
 
@@ -250,35 +230,6 @@ class EntityObject<T> {
 
 
     /**
-     * Determine the inheritance type.
-     */
-    private void loadInheritanceType() {
-        Inheritance annotation = clazz.getAnnotation(Inheritance.class);
-        InheritanceType type = annotation == null ? null : annotation.strategy();
-        doAndNotifyAll(this, () -> inheritanceType = type);
-    }
-
-
-    /**
-     * Determine if the class is linked to a real table.
-     * <p>Must be called after {@link #loadParent()}.</p>
-     */
-    private void loadTableExistence() {
-        boolean result;
-
-        if (parent == null) {
-            result = true;
-
-        } else {
-            waitWhile(parent, () -> parent.inheritanceType == null);
-            result = parent.inheritanceType != InheritanceType.SINGLE_TABLE;
-        }
-
-        doAndNotifyAll(this, () -> realTable = result);
-    }
-
-
-    /**
      * Determine the table name.
      *
      * <p>If the table is not specified, the following policy is applied:</p>
@@ -297,14 +248,7 @@ class EntityObject<T> {
         Table annotation = clazz.getAnnotation(Table.class);
 
         if (annotation == null) {
-            // Wait for the table existence property to be determined
-            waitWhile(this, () -> realTable == null);
-
-            if (realTable) {
-                throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have the @Table annotation");
-            } else {
-                result = null;
-            }
+            throw new InvalidConfigException("Class " + clazz.getSimpleName() + " doesn't have the @Table annotation");
 
         } else if (!annotation.name().isEmpty()) {
             // Get specified table name
@@ -443,14 +387,6 @@ class EntityObject<T> {
             }
         }
 
-        // Children constraints (in case of SINGLE_TABLE inheritance strategy)
-        if (inheritanceType == InheritanceType.SINGLE_TABLE) {
-            for (EntityObject<? extends T> child : children) {
-                Collection<Collection<BaseColumnObject>> childConstrains = child.getMultipleUniqueColumns();
-                result.addAll(childConstrains);
-            }
-        }
-
         return result;
     }
 
@@ -494,31 +430,17 @@ class EntityObject<T> {
         waitWhile(columns, () -> columns.mappingStatus.get() != 0);
         LogUtils.i("[Entity \"" + getName() + "\"] own columns mapped");
 
-        // Parent inherited primary keys (in case of JOINED inheritance strategy)
-        if (parent != null && parent.inheritanceType == InheritanceType.JOINED) {
-            waitWhile(parent.columns, () -> !parent.columns.joinedColumnsInherited.get());
+        // Parent inherited primary keys
+        if (parent != null) {
+            waitWhile(parent.columns, () -> !parent.columns.parentColumnsInherited.get());
             columns.addAll(parent.columns.getPrimaryKeys());
         }
 
-        doAndNotifyAll(columns, () -> columns.joinedColumnsInherited.set(true));
-        LogUtils.i("[Entity \"" + getName() + "\"] JOINED inherited columns added");
-
-        // Children columns (in case of SINGLE_TABLE inheritance strategy)
-        if (inheritanceType == InheritanceType.SINGLE_TABLE) {
-            for (EntityObject child : children) {
-                waitWhile(child, () -> !child.columns.singleTableColumnsInherited.get());
-                columns.addAll(child.columns);
-            }
-        }
-
-        doAndNotifyAll(columns, () -> columns.singleTableColumnsInherited.set(true));
-        LogUtils.i("[Entity \"" + getName() + "\"] SINGLE_TABLE inherited columns added");
+        doAndNotifyAll(columns, () -> columns.parentColumnsInherited.set(true));
+        LogUtils.i("[Entity \"" + getName() + "\"] inherited columns added");
 
         // Discriminator column
         if (children.size() != 0) {
-            if (!clazz.isAnnotationPresent(Inheritance.class))
-                throw new InvalidConfigException("Class " + getName() + " doesn't have @Inheritance annotation");
-
             if (!clazz.isAnnotationPresent(DiscriminatorColumn.class))
                 throw new InvalidConfigException("Class " + getName() + " has @Inheritance annotation but not @DiscriminatorColumn");
 
@@ -660,20 +582,17 @@ class EntityObject<T> {
         EntityObject<?> entity = resultEntity;
 
         while (entity != null) {
-            if (entity.realTable) {
-                for (BaseColumnObject column : entity.columns) {
-                    if (column.hasRelationship()) {
-                        // Relationships are loaded separately
-                        continue;
-                    }
-
-                    // The parents and the children entities have their entity name
-                    // appended to their root aliases. The current entity is not the
-                    // queried one if its class is not the specified result class.
-
-                    Object fieldValue = column.parseCursor(c, entity.clazz.equals(clazz) ? alias: alias + entity.getName());
-                    column.setValue(result, fieldValue);
+            for (BaseColumnObject column : entity.columns) {
+                if (column.hasRelationship()) {
+                    // Relationships are loaded separately
+                    continue;
                 }
+
+                // The parents and the children entities have their entity name appended
+                // to their root aliases.
+
+                Object fieldValue = column.parseCursor(c, entity.clazz.equals(clazz) ? alias: alias + entity.getName());
+                column.setValue(result, fieldValue);
             }
 
             entity = entity.parent;
@@ -703,10 +622,6 @@ class EntityObject<T> {
     @NonNull
     public ContentValues toContentValues(Object obj, EntityObject childEntity, EntityManager entityManager) {
         ContentValues cv = new ContentValues();
-
-        // Skip the entity if it doesn't have its own dedicated table
-        if (!realTable)
-            return cv;
 
         // Discriminator column
         if (childEntity != null) {
@@ -930,14 +845,10 @@ class EntityObject<T> {
      * Optional join tables that are related to eventual internal fields must be managed
      * separately and in a second moment (after the creation of all the normal tables).</p>
      *
-     * @return SQL query (<code>null</code> if no table should be created)
+     * @return SQL query for table creation
      */
     @Nullable
     public String getSQL() {
-        // Skip entity if doesn't require a real table
-        if (!realTable)
-            return null;
-
         StringBuilder result = new StringBuilder();
 
         // Table name
@@ -1089,18 +1000,6 @@ class EntityObject<T> {
      */
     @Nullable
     private String getTableInheritanceConstraints() {
-        if (parent == null) {
-            return null;
-        }
-
-        EntityObject parent = this.parent;
-
-        // Go up in hierarchy until there is a real table
-        while (parent != null && !parent.realTable) {
-            parent = parent.parent;
-        }
-
-        // Check if there's a real parent table (TABLE_PER_CLASS strategy would make this unknown)
         if (parent == null) {
             return null;
         }

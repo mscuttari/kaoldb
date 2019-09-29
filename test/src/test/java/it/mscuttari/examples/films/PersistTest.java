@@ -110,6 +110,7 @@ public class PersistTest extends AbstractFilmTest {
         em.persist(film);
 
         // Polymorphic query
+        /*
         QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
         Root<Film> filmRoot = filmQb.getRoot(Film.class);
 
@@ -118,7 +119,9 @@ public class PersistTest extends AbstractFilmTest {
                         .and(filmRoot.eq(Film_.year, film.year))
         );
 
-        assertEquals(film, filmQb.build(filmRoot).getSingleResult());
+        Film result = filmQb.build(filmRoot).getSingleResult();
+        assertEquals(film, result);
+        */
 
         // Specific query
         QueryBuilder<FantasyFilm> fantasyFilmQb = em.getQueryBuilder(FantasyFilm.class);

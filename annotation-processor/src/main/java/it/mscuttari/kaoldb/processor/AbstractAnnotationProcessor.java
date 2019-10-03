@@ -147,6 +147,22 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
 
     /**
+     * Get superclass.
+     *
+     * @param element   class element
+     * @return superclass element
+     * @throws IllegalArgumentException if the provided element is not a class
+     */
+    protected final Element getSuperclass(Element element) {
+        if (element.getKind() != ElementKind.CLASS)
+            throw new IllegalArgumentException("Element \"" + element.getSimpleName() + "\" is not a class");
+
+        TypeMirror typeMirror = ((TypeElement) element).getSuperclass();
+        return getElement(typeMirror);
+    }
+
+
+    /**
      * Get the data type of a field that implements the {@link Collection} interface.
      *
      * @param field     field implementing the Collection interface

@@ -457,8 +457,9 @@ class EntityObject<T> {
 
             discriminatorColumn = columns.get(discriminatorColumnAnnotation.name());
 
-            if (discriminatorColumn == null)
-                throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
+            if (discriminatorColumn == null) {
+                throw new InvalidConfigException("Class " + getName() + ": discriminator column \"" + discriminatorColumnAnnotation.name() + "\" not found");
+            }
 
             doAndNotifyAll(discriminatorColumn, () -> discriminatorColumn.nullable = false);
 
@@ -478,11 +479,6 @@ class EntityObject<T> {
                     }
                 });
             }
-        }
-
-        // Discriminator value
-        if (parent != null && discriminatorValue == null) {
-            throw new InvalidConfigException("Class " + getName() + " doesn't have @DiscriminatorValue annotation");
         }
     }
 

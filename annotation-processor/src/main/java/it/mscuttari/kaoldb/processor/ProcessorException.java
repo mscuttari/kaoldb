@@ -27,8 +27,8 @@ public class ProcessorException extends Exception {
     /**
      * Constructor.
      *
-     * @param   message     error message
-     * @param   element     element causing the error
+     * @param message   error message
+     * @param element   element causing the error
      */
     public ProcessorException(String message, Element element) {
         this.message = message;

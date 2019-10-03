@@ -60,36 +60,25 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(OneToOne.class)) {
-            try {
+        try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(OneToOne.class)) {
                 checkOneToOneRelationship(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(OneToMany.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(OneToMany.class)) {
                 checkOneToManyRelationship(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(ManyToOne.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(ManyToOne.class)) {
                 checkManyToOneRelationship(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(ManyToMany.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(ManyToMany.class)) {
                 checkManyToManyRelationship(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
+
+        } catch (ProcessorException e) {
+            logError(e.getMessage(), e.getElement());
         }
 
         return true;

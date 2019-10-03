@@ -59,36 +59,25 @@ public final class ColumnProcessor extends AbstractAnnotationProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(Column.class)) {
-            try {
+        try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(Column.class)) {
                 checkColumn(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumn.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumn.class)) {
                 checkJoinColumn(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumns.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(JoinColumns.class)) {
                 checkJoinColumns(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
-        }
 
-        for (Element field : roundEnv.getElementsAnnotatedWith(JoinTable.class)) {
-            try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(JoinTable.class)) {
                 checkJoinTable(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
+
+        } catch (ProcessorException e) {
+            logError(e.getMessage(), e.getElement());
         }
 
         return true;

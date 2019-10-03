@@ -40,12 +40,13 @@ public final class IdProcessor extends AbstractAnnotationProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        for (Element field : roundEnv.getElementsAnnotatedWith(Id.class)) {
-            try {
+        try {
+            for (Element field : roundEnv.getElementsAnnotatedWith(Id.class)) {
                 checkField(field);
-            } catch (ProcessorException e) {
-                logError(e.getMessage(), e.getElement());
             }
+
+        } catch (ProcessorException e) {
+            logError(e.getMessage(), e.getElement());
         }
 
         return true;
@@ -67,7 +68,7 @@ public final class IdProcessor extends AbstractAnnotationProcessor {
      * @param   field       field element
      * @throws  ProcessorException if some constraints are not respected
      */
-    private static void checkField(Element field) throws ProcessorException {
+    private void checkField(Element field) throws ProcessorException {
         JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
 
         if (joinTableAnnotation != null) {

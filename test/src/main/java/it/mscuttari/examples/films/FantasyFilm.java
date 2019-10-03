@@ -39,7 +39,4 @@ public final class FantasyFilm extends Film {
         super(title, year, new Genre("Fantasy"), director, length, restriction);
     }
 
-    @Column(name = "test")
-    public int test;
-
 }

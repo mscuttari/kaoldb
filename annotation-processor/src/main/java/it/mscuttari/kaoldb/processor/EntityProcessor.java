@@ -168,8 +168,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                     }
 
                     // Superclass
-                    TypeMirror superClassTypeMirror = ((TypeElement) currentElement).getSuperclass();
-                    currentElement = getElement(superClassTypeMirror);
+                    currentElement = getSuperclass(currentElement);
                 }
 
                 // Create class file
@@ -189,7 +188,7 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
     /**
      * If the specified <code>entity</code> extends another entity, check that the child
-     * entity is annotated with {@link DiscriminatorValue}
+     * entity is annotated with {@link DiscriminatorValue}.
      *
      * @param entity     entity element
      * @throws ProcessorException if {@link DiscriminatorValue} or {@link DiscriminatorColumn}

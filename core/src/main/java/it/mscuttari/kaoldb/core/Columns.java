@@ -121,16 +121,11 @@ class Columns implements ColumnsContainer {
     /**
      * Get the column given its name.
      *
-     * @return column
-     * @throws IllegalArgumentException if the column doesn't exist
+     * @return column (<code>null</code> if the column doesn't exist)
      */
+    @Nullable
     public final synchronized BaseColumnObject get(String columnName) {
-        BaseColumnObject result = namesMap.get(columnName);
-
-        if (result == null)
-            throw new IllegalArgumentException("Column \"" + columnName + "\" not found");
-
-        return result;
+        return namesMap.get(columnName);
     }
 
 

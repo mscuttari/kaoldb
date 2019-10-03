@@ -16,12 +16,14 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
+
 import java.util.Collection;
 
 import it.mscuttari.kaoldb.exceptions.DumpException;
 
 public interface DatabaseDump {
-
 
     /**
      * Get database version.
@@ -36,6 +38,8 @@ public interface DatabaseDump {
      *
      * @return table dumps
      */
+    @CheckResult
+    @NonNull
     Collection<TableDump> getTables();
 
 
@@ -46,6 +50,8 @@ public interface DatabaseDump {
      * @return table dump
      * @throws IllegalArgumentException if the table doesn't exist
      */
+    @CheckResult
+    @NonNull
     TableDump getTable(String tableName);
 
 }

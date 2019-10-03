@@ -186,12 +186,12 @@ final class JoinColumnObject extends BaseColumnObject {
         BaseColumnObject referencedColumn = null;
 
         while (referencedEntity != null && referencedColumn == null) {
-            Map<String, BaseColumnObject> namesMap = referencedEntity.columns.getNamesMap();
+            EntityObject<?> refEntity = referencedEntity;
             String refColName = referencedColumnName;
 
             // Wait for the referenced column to be mapped
-            waitWhile(referencedEntity.columns, () -> namesMap.get(refColName) == null);
-            referencedColumn = namesMap.get(referencedColumnName);
+            waitWhile(referencedEntity.columns, () -> !refEntity.columns.contains(refColName));
+            referencedColumn = refEntity.columns.get(referencedColumnName);
 
             // Go up in entity hierarchy
             referencedEntity = referencedEntity.parent;
@@ -309,7 +309,7 @@ final class JoinColumnObject extends BaseColumnObject {
         // Wait for the linked column to be mapped
         waitWhile(linkedEntity.columns, () -> !linkedEntity.columns.contains(annotation.referencedColumnName()));
 
-        linkedColumn = linkedEntity.columns.getNamesMap().get(annotation.referencedColumnName());
+        linkedColumn = linkedEntity.columns.get(annotation.referencedColumnName());
     }
 
 
@@ -321,7 +321,7 @@ final class JoinColumnObject extends BaseColumnObject {
             insertIntoContentValues(cv, name, null);
         } else {
             EntityObject<?> destinationEntity = db.getEntity(sourceObject.getClass());
-            BaseColumnObject destinationColumn = destinationEntity.columns.getNamesMap().get(annotation.referencedColumnName());
+            BaseColumnObject destinationColumn = destinationEntity.columns.get(annotation.referencedColumnName());
             assert destinationColumn != null : "Column \"" + annotation.referencedColumnName() + "\" not found in entity \"" + destinationEntity.getName() + "\"";
             Object value = destinationColumn.getValue(sourceObject);
             insertIntoContentValues(cv, name, value);

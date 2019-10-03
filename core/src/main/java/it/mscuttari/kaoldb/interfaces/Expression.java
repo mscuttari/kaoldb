@@ -16,6 +16,7 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 
 /**
@@ -24,67 +25,83 @@ import androidx.annotation.NonNull;
 public interface Expression {
 
     /**
-     * Create <code>NOT</code> expression
+     * Create <code>NOT</code> expression.
      *
+     * <p>
      * In case of double negation, the internal one is deleted and the retrieved expression
      * is the originally non negated one: <code>NOT(NOT(expression)) = expression</code>
+     * </p>
      *
      * @return negated expression
      */
+    @CheckResult
+    @NonNull
     Expression not();
 
 
     /**
-     * Create <code>AND</code> expression
+     * Create <code>AND</code> expression.
      *
      * @param expressions   expressions to be bound with the <code>AND</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression and(@NonNull Expression... expressions);
 
 
     /**
-     * Create <code>OR</code> expression
+     * Create <code>OR</code> expression.
      *
      * @param expressions   expressions to be bound with the <code>OR</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression or(@NonNull Expression... expressions);
 
 
     /**
-     * Create <code>XOR</code> expression
+     * Create <code>XOR</code> expression.
      *
      * @param expressions   expressions to be bound with the <code>XOR</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression xor(@NonNull Expression... expressions);
 
 
     /**
-     * Create <code>NAND</code> expression
+     * Create <code>NAND</code> expression.
      *
      * @param expressions   expressions to be bound with the <code>NAND</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression nand(@NonNull Expression... expressions);
 
 
     /**
-     * Create <code>NOR</code> expression
+     * Create <code>NOR</code> expression.
      *
      * @param expressions   expressions to be bound with the <code>NOR</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression nor(@NonNull Expression... expressions);
 
 
     /**
-     * Create <code>XNOR</code> expression
+     * Create <code>XNOR</code> expression.
      *
      * @param expressions   expressions to be bound with <code>XNOR</code> operator
      * @return expression
      */
+    @CheckResult
+    @NonNull
     Expression xnor(@NonNull Expression... expressions);
 
 }

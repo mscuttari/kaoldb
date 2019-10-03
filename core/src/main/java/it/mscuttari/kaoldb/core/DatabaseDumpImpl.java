@@ -74,6 +74,7 @@ class DatabaseDumpImpl implements DatabaseDump {
     }
 
 
+    @NonNull
     @Override
     public TableDump getTable(String tableName) {
         if (!tables.containsKey(tableName)) {
@@ -84,6 +85,7 @@ class DatabaseDumpImpl implements DatabaseDump {
     }
 
 
+    @NonNull
     @Override
     public Collection<TableDump> getTables() {
         return Collections.unmodifiableCollection(tables.values());

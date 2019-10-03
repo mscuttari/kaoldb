@@ -43,11 +43,11 @@ public abstract class Property<M, T> {
     /** Current entity class */
     @NonNull final Class<M> entityClass;
 
-    /** The class the property originally belonged to */
-    @NonNull final Class<? super M> fieldParentClass;
+    /** The class where the field is declared */
+    @NonNull final Class<? super M> owningClass;
 
     /** The class of the entity involved by the property */
-    @NonNull final Class<T> fieldType;
+    @NonNull final Class<T> dataType;
 
     /** Field name (as specified in the entity class) */
     @NonNull final String fieldName;
@@ -69,37 +69,40 @@ public abstract class Property<M, T> {
 
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param entityClass   current entity class (the parent class is set to the set of the current class)
-     * @param fieldType     field type
+     * @param entityClass   current entity class (the parent class is set to the current class)
+     * @param dataType      data type
      * @param field         field the property is generated from
      */
-    Property(@NonNull Class<M> entityClass, @NonNull Class<T> fieldType, @NonNull Field field) {
-        this(entityClass, entityClass, fieldType, field.getName(), getColumnAnnotation(field), getRelationshipAnnotation(field));
+    Property(@NonNull Class<M> entityClass,
+             @NonNull Class<T> dataType,
+             @NonNull Field field) {
+
+        this(entityClass, entityClass, dataType, field.getName(), getColumnAnnotation(field), getRelationshipAnnotation(field));
     }
 
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param entityClass               current entity class
-     * @param fieldParentClass          the class the property really belongs to
-     * @param fieldType                 field type
+     * @param owningClass               the class declaring the field
+     * @param dataType                  data type
      * @param fieldName                 field name
-     * @param columnAnnotation          column class
-     * @param relationshipAnnotation    relationship class
+     * @param columnAnnotation          column type
+     * @param relationshipAnnotation    relationship type
      */
     public Property(@NonNull Class<M> entityClass,
-                    @NonNull Class<? super M> fieldParentClass,
-                    @NonNull Class<T> fieldType,
+                    @NonNull Class<? super M> owningClass,
+                    @NonNull Class<T> dataType,
                     @NonNull String fieldName,
                     @Nullable Class<? extends Annotation> columnAnnotation,
                     @Nullable Class<? extends Annotation> relationshipAnnotation) {
 
         this.entityClass            = checkNotNull(entityClass);
-        this.fieldParentClass       = checkNotNull(fieldParentClass);
-        this.fieldType              = checkNotNull(fieldType);
+        this.owningClass            = checkNotNull(owningClass);
+        this.dataType               = checkNotNull(dataType);
         this.fieldName              = checkNotNull(fieldName);
         this.columnAnnotation       = columnAnnotation;
         this.relationshipAnnotation = relationshipAnnotation;
@@ -107,7 +110,7 @@ public abstract class Property<M, T> {
 
 
     /**
-     * Get field the property is linked to
+     * Get field the property is linked to.
      *
      * @return field
      */
@@ -117,12 +120,16 @@ public abstract class Property<M, T> {
 
 
     /**
-     * Get the column annotation class of a field
+     * Get the column annotation class of a field.
+     *
+     * <p>It can be one of {@link Column}, {@link JoinColumn}, {@link JoinColumns} and
+     * {@link JoinTable}. It can also be <code>null</code> if none of the previous are
+     * specified.</p>
      *
      * @param field     field to be analyzed
      *
      * @return class of the column annotation linked to the field
-     *         (null if the field is not annotated with any column annotation)
+     *         (<code>null</code> if the field is not annotated with any column annotation)
      */
     @Nullable
     private static Class<? extends Annotation> getColumnAnnotation(Field field) {
@@ -143,14 +150,16 @@ public abstract class Property<M, T> {
 
 
     /**
-     * Get the relationship annotation class of a field
+     * Get the relationship annotation class of a field.
      *
-     * It can be one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and
-     * {@link ManyToMany}. It can also be null if none of the previous are specified.
+     * <p>It can be one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and
+     * {@link ManyToMany}. It can also be <code>null</code> if none of the previous are
+     * specified.</p>
      *
-     * @param   field   field to be analyzed
-     * @return  class of the relationship annotation linked to the field
-     *          (null if the field is not annotated with any relationship annotation)
+     * @param field     field to be analyzed
+     *
+     * @return class of the relationship annotation linked to the field
+     *         (<code>null</code> if the field is not annotated with any relationship annotation)
      */
     @Nullable
     private static Class<? extends Annotation> getRelationshipAnnotation(Field field) {

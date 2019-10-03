@@ -18,11 +18,13 @@ package it.mscuttari.kaoldb.interfaces;
 
 import java.util.List;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 
 /**
- * Entity manager gives access to all entity related operations, such as querying or persisting objects
+ * Entity manager gives access to all entity related operations, such as querying
+ * or persisting objects.
  */
 public interface EntityManager {
 
@@ -42,33 +44,43 @@ public interface EntityManager {
      *
      * @return query builder
      */
+    @CheckResult
+    @NonNull
     <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass);
 
 
     /**
      * Get all the entity elements.
      *
+     * <p>
      * The returned data is static and therefore will not reflect future database changes.
+     * </p>
      *
      * @param entityClass   entity class
      * @param <T>           entity class
      *
      * @return elements list
      */
+    @CheckResult
+    @NonNull
     <T> List<T> getAll(@NonNull Class<T> entityClass);
 
 
     /**
      * Get all the entity elements.
      *
+     * <p>
      * The returned data will reflect future database changes, both in term of list results and
      * internal values of each element.
+     * </p>
      *
      * @param entityClass   entity class
      * @param <T>           entity class
      *
      * @return live elements list
      */
+    @CheckResult
+    @NonNull
     <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass);
 
 

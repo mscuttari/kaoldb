@@ -18,6 +18,7 @@ package it.mscuttari.kaoldb.core;
 
 import android.database.Cursor;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.collection.ArrayMap;
 
@@ -85,6 +86,7 @@ class RowDumpImpl implements RowDump {
     }
 
 
+    @NonNull
     @Override
     public Collection<String> getColumns() {
         return Collections.unmodifiableCollection(values.keySet());
@@ -92,8 +94,12 @@ class RowDumpImpl implements RowDump {
 
 
     @SuppressWarnings("unchecked")
+    @CheckResult
     @Override
     public <T> T getColumnValue(String columnName) {
+        if (!values.containsKey(columnName))
+            throw new IllegalArgumentException("Column \"" + columnName + "\" not found");
+
         try {
             return (T) values.get(columnName);
         } catch (ClassCastException e) {

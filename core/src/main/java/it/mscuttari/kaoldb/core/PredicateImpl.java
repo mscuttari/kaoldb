@@ -26,12 +26,16 @@ import java.util.List;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import javax.annotation.Nonnull;
+
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
+import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ExpressionImpl.ExpressionType.AND;
@@ -73,7 +77,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
     @NonNull  private final PredicateType operation;
     @NonNull  private final DatabaseObject db;
-    @NonNull  public final RootInt<?> root;
+    @NonNull  public final Root<?> root;
     @NonNull  public final Variable<T> x;
     @Nullable public final Variable<T> y;
 
@@ -89,7 +93,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      */
     private PredicateImpl(@NonNull  PredicateType operation,
                           @NonNull  DatabaseObject db,
-                          @NonNull  RootInt<?> root,
+                          @NonNull  Root<?> root,
                           @NonNull  Variable<T> x,
                           @Nullable Variable<T> y) {
 
@@ -112,7 +116,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl isNull(DatabaseObject db, RootInt<?> root, Variable<T> x) {
+    public static <T> PredicateImpl isNull(DatabaseObject db, Root<?> root, Variable<T> x) {
         return new PredicateImpl<>(PredicateType.IS_NULL, db, root, x, null);
     }
 
@@ -127,7 +131,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl eq(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+    public static <T> PredicateImpl eq(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.EQUAL, db, root, x, y);
     }
 
@@ -142,7 +146,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl gt(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+    public static <T> PredicateImpl gt(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.GT, db, root, x, y);
     }
 
@@ -157,7 +161,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl ge(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+    public static <T> PredicateImpl ge(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.GE, db, root, x, y);
     }
 
@@ -172,7 +176,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl lt(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+    public static <T> PredicateImpl lt(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.LT, db, root, x, y);
     }
 
@@ -187,7 +191,7 @@ final class PredicateImpl<T> implements ExpressionInt {
      *
      * @return predicate
      */
-    public static <T> PredicateImpl le(DatabaseObject db, RootInt<?> root, Variable<T> x, Variable<T> y) {
+    public static <T> PredicateImpl le(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.LE, db, root, x, y);
     }
 
@@ -232,12 +236,14 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression not() {
         return ExpressionImpl.not(this);
     }
 
 
+    @NonNull
     @Override
     public Expression and(@NonNull Expression... expressions) {
         Expression result = this;
@@ -250,6 +256,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression or(@NonNull Expression... expressions) {
         Expression result = this;
@@ -262,6 +269,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression xor(@NonNull Expression... expressions) {
         Expression result = this;
@@ -274,6 +282,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression nand(@NonNull Expression... expressions) {
         Expression result = this;
@@ -286,6 +295,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression nor(@NonNull Expression... expressions) {
         Expression result = this;
@@ -298,6 +308,7 @@ final class PredicateImpl<T> implements ExpressionInt {
     }
 
 
+    @Nonnull
     @Override
     public Expression xnor(@NonNull Expression... expressions) {
         Expression result = this;
@@ -318,17 +329,6 @@ final class PredicateImpl<T> implements ExpressionInt {
     private String processUnaryPredicate() {
         if (operation == PredicateType.IS_NULL) {
             if (x.hasProperty()) {
-                /*
-                EntityObject<?> entity = db.getEntity(x.getProperty().entityClass);
-                EntityObject<?> realTableEntity = entity;
-
-                while (realTableEntity.parent != null && realTableEntity.parent.inheritanceType == InheritanceType.SINGLE_TABLE)
-                    realTableEntity = realTableEntity.parent;
-
-                String alias = entity == realTableEntity ?
-                        x.getTableAlias() :
-                        x.getTableAlias() + realTableEntity.getName();
-*/
                 return implode(
                         getPropertyColumns(x.getProperty(), x.getTableAlias()),
                         obj -> obj + " " + operation,
@@ -579,7 +579,7 @@ final class PredicateImpl<T> implements ExpressionInt {
                 property.columnAnnotation == JoinColumns.class ||
                 property.columnAnnotation == JoinTable.class) {
 
-            EntityObject<T> referencedEntity = db.getEntity(property.fieldType);
+            EntityObject<T> referencedEntity = db.getEntity(property.dataType);
 
             String referencedEntityAlias = isLeftVariableDerivedFromRoot() ?
                     root.getAlias() :
@@ -609,7 +609,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         if (x.hasProperty()) {
             Property<?, ?> property = x.getProperty();
-            result &= root.getEntityClass().equals(property.fieldType);
+            result &= root.getEntityClass().equals(property.dataType);
         }
 
         return result;

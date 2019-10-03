@@ -203,9 +203,11 @@ public class JoinTest extends AbstractFilmTest {
         assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
 
         // With join
+        /*
         Root<Film> joinRoot = filmRoot.join(genreRoot, Film_.genre);
         qb.from(joinRoot).where(genreRoot.eq(Genre_.name, "Thriller"));
         assertEquals(qb.build(filmRoot).getResults(), Arrays.asList(film1, film2));
+        */
     }
 
 

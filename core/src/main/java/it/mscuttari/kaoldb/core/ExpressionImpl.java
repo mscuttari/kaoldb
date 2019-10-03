@@ -196,6 +196,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression not() {
         // Double negation: NOT(NOT(expression)) = expression
@@ -206,6 +207,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression and(@NonNull Expression... expressions) {
         Expression result = this;
@@ -218,6 +220,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression or(@NonNull Expression... expressions) {
         Expression result = this;
@@ -230,6 +233,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression xor(@NonNull Expression... expressions) {
         Expression result = this;
@@ -242,6 +246,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression nand(@NonNull Expression... expressions) {
         Expression result = this;
@@ -254,6 +259,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression nor(@NonNull Expression... expressions) {
         Expression result = this;
@@ -266,6 +272,7 @@ final class ExpressionImpl implements ExpressionInt {
     }
 
 
+    @NonNull
     @Override
     public Expression xnor(@NonNull Expression... expressions) {
         Expression result = this;

@@ -16,6 +16,9 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
+
 import java.util.List;
 
 public interface TableDump {
@@ -25,6 +28,8 @@ public interface TableDump {
      *
      * @return table name
      */
+    @CheckResult
+    @NonNull
     String getName();
 
 
@@ -33,6 +38,8 @@ public interface TableDump {
      *
      * @return SQL query
      */
+    @CheckResult
+    @NonNull
     String getSql();
 
 
@@ -41,6 +48,8 @@ public interface TableDump {
      *
      * @return columns list
      */
+    @CheckResult
+    @NonNull
     List<String> getColumns();
 
 
@@ -49,6 +58,8 @@ public interface TableDump {
      *
      * @return row dumps
      */
+    @CheckResult
+    @NonNull
     List<RowDump> getRows();
 
 }

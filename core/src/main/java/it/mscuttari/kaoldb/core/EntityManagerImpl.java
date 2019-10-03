@@ -114,12 +114,14 @@ class EntityManagerImpl implements EntityManager {
     }
 
 
+    @NonNull
     @Override
     public <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass) {
         return new QueryBuilderImpl<>(database, resultClass, this);
     }
 
 
+    @NonNull
     @Override
     public <T> List<T> getAll(@NonNull Class<T> entityClass) {
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
@@ -130,6 +132,7 @@ class EntityManagerImpl implements EntityManager {
     }
 
 
+    @NonNull
     @Override
     public <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass) {
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
@@ -251,8 +254,6 @@ class EntityManagerImpl implements EntityManager {
 
                 // Update
                 if (cv.size() != 0) {
-                    dbHelper.insert(currentEntity.tableName, null, cv);
-
                     StringBuilder where = new StringBuilder();
                     Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
                     List<String> whereArgs = new ArrayList<>(primaryKeys.size());

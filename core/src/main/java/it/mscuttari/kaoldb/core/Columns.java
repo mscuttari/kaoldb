@@ -119,12 +119,18 @@ class Columns implements ColumnsContainer {
 
 
     /**
-     * Get an unmodifiable version of {@link #namesMap}.
+     * Get the column given its name.
      *
-     * @return column names map
+     * @return column
+     * @throws IllegalArgumentException if the column doesn't exist
      */
-    public final synchronized Map<String, BaseColumnObject> getNamesMap() {
-        return Collections.unmodifiableMap(namesMap);
+    public final synchronized BaseColumnObject get(String columnName) {
+        BaseColumnObject result = namesMap.get(columnName);
+
+        if (result == null)
+            throw new IllegalArgumentException("Column \"" + columnName + "\" not found");
+
+        return result;
     }
 
 

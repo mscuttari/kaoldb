@@ -337,7 +337,7 @@ class EntityObject<T> {
      * Determine the relationships fields.
      *
      * A field is considered a relationship one if it is annotated with {@link OneToOne},
-     * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}
+     * {@link OneToMany}, {@link ManyToMany} or {@link ManyToMany}.
      */
     private void loadRelationships() {
         for (Field field : clazz.getDeclaredFields()) {
@@ -356,7 +356,8 @@ class EntityObject<T> {
 
 
     /**
-     * Get the unique columns sets (both the unique columns specified in the {@link Table} annotation).
+     * Get the unique columns sets (both the unique columns specified in the
+     * {@link Table} annotation).
      *
      * @return list of unique columns sets
      * @throws InvalidConfigException if a column with the specified name doesn't exist
@@ -374,10 +375,10 @@ class EntityObject<T> {
                 Collection<BaseColumnObject> multipleUniqueColumns = new ArrayList<>(uniqueConstraint.columnNames().length);
 
                 for (String columnName : uniqueConstraint.columnNames()) {
-                    BaseColumnObject column = columns.getNamesMap().get(columnName);
+                    BaseColumnObject column = columns.get(columnName);
 
                     if (column == null) {
-                        throw new InvalidConfigException("Unique constraint: column " + columnName + " not found");
+                        throw new InvalidConfigException("Unique constraint: column \"" + columnName + "\" not found");
                     }
 
                     multipleUniqueColumns.add(column);
@@ -454,7 +455,7 @@ class EntityObject<T> {
             if (discriminatorColumnAnnotation.name().isEmpty())
                 throw new InvalidConfigException("Class " + getName() + ": empty discriminator column");
 
-            discriminatorColumn = columns.getNamesMap().get(discriminatorColumnAnnotation.name());
+            discriminatorColumn = columns.get(discriminatorColumnAnnotation.name());
 
             if (discriminatorColumn == null)
                 throw new InvalidConfigException("Class " + getName() + ": discriminator column " + discriminatorColumnAnnotation.name() + " not found");
@@ -500,7 +501,10 @@ class EntityObject<T> {
 
     /**
      * Get the field of a class given the field name.
-     * <p>The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.</p>
+     *
+     * <p>
+     * The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.
+     * </p>
      *
      * @param clazz         class the field belongs to
      * @param fieldName     field name

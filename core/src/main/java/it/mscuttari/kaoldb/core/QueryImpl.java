@@ -89,6 +89,7 @@ class QueryImpl<M> implements Query<M> {
     }
 
 
+    @NonNull
     @Override
     public synchronized List<M> getResults() {
         LogUtils.d("[Database \"" + db.getName() + "\"] " + sql);
@@ -145,6 +146,7 @@ class QueryImpl<M> implements Query<M> {
     }
 
 
+    @NonNull
     @Override
     public LiveData<List<M>> getLiveResults() {
         Collection<EntityObject<?>> observed = new ArraySet<>();

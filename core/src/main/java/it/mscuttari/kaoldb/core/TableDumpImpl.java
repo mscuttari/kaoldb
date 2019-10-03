@@ -79,24 +79,28 @@ class TableDumpImpl implements TableDump {
     }
 
 
+    @NonNull
     @Override
     public String getName() {
         return name;
     }
 
 
+    @NonNull
     @Override
     public String getSql() {
         return sql;
     }
 
 
+    @NonNull
     @Override
     public List<String> getColumns() {
         return Collections.unmodifiableList(columns);
     }
 
 
+    @NonNull
     @Override
     public List<RowDump> getRows() {
         return Collections.unmodifiableList(rows);

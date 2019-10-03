@@ -17,14 +17,14 @@
 package it.mscuttari.kaoldb.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
 
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
@@ -43,7 +43,7 @@ import static it.mscuttari.kaoldb.core.StringUtils.escape;
  * @param <L>   left side entity of the join
  * @param <R>   right side entity of the join
  */
-final class Join<L, R> implements RootInt<L> {
+final class Join<L, R> implements Root<L> {
 
     public enum JoinType {
 
@@ -67,13 +67,18 @@ final class Join<L, R> implements RootInt<L> {
 
     @NonNull private final DatabaseObject db;
     @NonNull private final JoinType type;
-    @NonNull private final RootInt<L> left;
-    @NonNull private final RootInt<R> right;
+    @NonNull private final Root<L> left;
+    @NonNull private final Root<R> right;
 
     // If the linking property is null then the ON expression is not null and vice versa
 
     @Nullable private final Property<L, R> property;
     @Nullable private final Expression on;
+
+    // Keep track of the leaf roots in order to avoid the tree spanning when searching for a
+    // specific root.
+
+    private final Collection<Root<?>> leaves;
 
 
     /**
@@ -84,13 +89,11 @@ final class Join<L, R> implements RootInt<L> {
      * @param left          left entity root to be joined
      * @param right         right entity root to be joined
      * @param property      first entity property to be used as bridge
-     *
-     * @see JoinType for the possible join types
      */
     Join(@NonNull DatabaseObject db,
          @NonNull JoinType type,
-         @NonNull RootInt<L> left,
-         @NonNull RootInt<R> right,
+         @NonNull Root<L> left,
+         @NonNull Root<R> right,
          @NonNull Property<L, R> property) {
 
         this.db = db;
@@ -99,6 +102,14 @@ final class Join<L, R> implements RootInt<L> {
         this.right = right;
         this.property = property;
         this.on = null;
+
+        Collection<Root<?>> leftRoots = left.getJoinedRoots();
+        Collection<Root<?>> rightRoots = right.getJoinedRoots();
+
+        this.leaves = new ArraySet<>(leftRoots.size() + rightRoots.size());
+
+        this.leaves.addAll(leftRoots);
+        this.leaves.addAll(rightRoots);
     }
 
 
@@ -110,13 +121,11 @@ final class Join<L, R> implements RootInt<L> {
      * @param left      left entity root to be joined
      * @param right     right entity root to be joined
      * @param on        custom "ON" expression
-     *
-     * @see JoinType for the possible join types
      */
     Join(@NonNull DatabaseObject db,
          @NonNull JoinType type,
-         @NonNull RootInt<L> left,
-         @NonNull RootInt<R> right,
+         @NonNull Root<L> left,
+         @NonNull Root<R> right,
          @NonNull Expression on) {
 
         this.db = db;
@@ -125,13 +134,22 @@ final class Join<L, R> implements RootInt<L> {
         this.right = right;
         this.property = null;
         this.on = on;
+
+        Collection<Root<?>> leftRoots = left.getJoinedRoots();
+        Collection<Root<?>> rightRoots = right.getJoinedRoots();
+
+        this.leaves = new ArraySet<>(leftRoots.size() + rightRoots.size());
+
+        this.leaves.addAll(leftRoots);
+        this.leaves.addAll(rightRoots);
     }
 
 
     /**
      * Get the <code>FROM</code> clause be used in the query.
      *
-     * <p>The join tree is spanned from the most left leaf to to the right most one.
+     * <p>
+     * The join tree is spanned from the most left leaf to to the right most one.
      * This is done because some SQLite implementations does not support, although standard-complaint,
      * "FROM" clauses such as <code>"(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)"</code>.
      * Therefore, the tree must be seen as a left recursive one, which lead to the equivalent but
@@ -165,7 +183,7 @@ final class Join<L, R> implements RootInt<L> {
         // That element represents the point of start for the "FROM" clause.
         // In the example: go down to node 4.
 
-        RootInt<?> root = this;
+        Root<?> root = this;
 
         while (root instanceof Join) {
             stack.push((Join<?, ?>) root);
@@ -191,7 +209,7 @@ final class Join<L, R> implements RootInt<L> {
 
             } else if (join.right instanceof Join) {
                 // Subtree found (as in nodes 2 and 5)
-                RootInt<?> rightRoot = join.right;
+                Root<?> rightRoot = join.right;
 
                 // Go down to the left-most leaf of the subtree.
                 // In the example, if we were in node 4, we now go to node 5.
@@ -217,129 +235,108 @@ final class Join<L, R> implements RootInt<L> {
     }
 
 
+    @NonNull
     @Override
     public Class<L> getEntityClass() {
         return left.getEntityClass();
     }
 
 
+    @NonNull
     @Override
     public String getAlias() {
         return left.getAlias();
     }
 
 
+    @NonNull
     @Override
     public <Y> Root<L> join(@NonNull Root<Y> root, @NonNull Property<L, Y> property) {
-        return new Join<>(db, Join.JoinType.INNER, this, (RootInt<Y>) root, property);
+        return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
 
 
+    @NonNull
+    @Override
+    public Collection<Root<?>> getJoinedRoots() {
+        return Collections.unmodifiableCollection(leaves);
+    }
+
+
+    @NonNull
     @Override
     public <T> Expression isNull(@NonNull SingleProperty<L, T> property) {
         return left.isNull(property);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<L, T> property, @Nullable T value) {
         return left.eq(property, value);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.eq(x, y);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<L, T> property, @NonNull T value) {
         return left.gt(property, value);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.gt(x, y);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<L, T> property, @NonNull T value) {
         return left.ge(property, value);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.ge(x, y);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<L, T> property, @NonNull T value) {
         return left.lt(property, value);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.lt(x, y);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<L, T> property, @NonNull T value) {
         return left.le(property, value);
     }
 
 
+    @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.le(x, y);
-    }
-
-
-    /**
-     * @see #toString()
-     */
-    @Override
-    public Map<String, Root<?>> getRootsMap() {
-        Map<String, Root<?>> result = new ArrayMap<>(2);
-
-        Stack<Join<?, ?>> stack = new Stack<>();
-        RootInt<?> root = this;
-
-        while (root instanceof Join) {
-            stack.push((Join<?, ?>) root);
-            root = ((Join<?, ?>) root).left;
-        }
-
-        result.put(root.getAlias(), root);
-
-        while (!stack.isEmpty()) {
-            Join<?, ?> join = stack.pop();
-
-            if (join.right instanceof From) {
-                result.put(join.right.getAlias(), join.right);
-
-            } else if (join.right instanceof Join) {
-                // Subtree found
-                RootInt<?> rightRoot = join.right;
-
-                // Go down to the left-most leaf of the subtree
-                while (rightRoot instanceof Join) {
-                    stack.push((Join<?, ?>) rightRoot);
-                    rightRoot = ((Join<?, ?>) rightRoot).left;
-                }
-
-                // Add the roots
-                result.put(rightRoot.getAlias(), rightRoot);
-            }
-        }
-
-        return Collections.unmodifiableMap(result);
     }
 
 
@@ -358,7 +355,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @see Relationship
      */
-    private static List<String> getJoinClauses(DatabaseObject db, JoinType type, RootInt<?> local, RootInt<?> joined, Property<?, ?> property, Expression on) {
+    private static List<String> getJoinClauses(DatabaseObject db, JoinType type, Root<?> local, Root<?> joined, Property<?, ?> property, Expression on) {
         // Predefined ON clause
         if (on != null) {
             return Collections.singletonList(" " + type + " " + joined.toString() + " ON " + on);
@@ -531,7 +528,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> owning, RootInt<?> referenced, JoinColumn annotation) {
+    private static Expression getTwoTablesOnClause(DatabaseObject db, Root<?> owning, Root<?> referenced, JoinColumn annotation) {
         return getColumnsEqualityExpression(
                 db,
                 owning,
@@ -551,7 +548,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getTwoTablesOnClause(DatabaseObject db, RootInt<?> owning, RootInt<?> referenced, JoinColumns annotation) {
+    private static Expression getTwoTablesOnClause(DatabaseObject db, Root<?> owning, Root<?> referenced, JoinColumns annotation) {
         Expression result = null;
 
         for (JoinColumn joinColumn : annotation.value()) {
@@ -573,7 +570,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesDirectOnClause(DatabaseObject db, RootInt<?> direct, RootInt<?> inverse, JoinTable annotation) {
+    private static Expression getThreeTablesDirectOnClause(DatabaseObject db, Root<?> direct, Root<?> inverse, JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), direct.getAlias(), inverse.getAlias());
         Expression result = null;
 
@@ -602,7 +599,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @return "ON" expression
      */
-    private static Expression getThreeTablesInverseOnClause(DatabaseObject db, RootInt<?> direct, RootInt<?> inverse, JoinTable annotation) {
+    private static Expression getThreeTablesInverseOnClause(DatabaseObject db, Root<?> direct, Root<?> inverse, JoinTable annotation) {
         String joinTableAlias = getJoinTableAlias(annotation.name(), direct.getAlias(), inverse.getAlias());
         Expression result = null;
 
@@ -630,7 +627,7 @@ final class Join<L, R> implements RootInt<L> {
      *
      * @return equality expression
      */
-    private static Expression getColumnsEqualityExpression(DatabaseObject db, RootInt<?> root, String firstColumn, String secondColumn) {
+    private static Expression getColumnsEqualityExpression(DatabaseObject db, Root<?> root, String firstColumn, String secondColumn) {
         Variable<StringUtils.EscapedString> a = new Variable<>(new StringUtils.EscapedString(firstColumn));
         Variable<StringUtils.EscapedString> b = new Variable<>(new StringUtils.EscapedString(secondColumn));
 

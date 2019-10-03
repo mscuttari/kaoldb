@@ -16,6 +16,9 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
+
 import java.util.Collection;
 
 import it.mscuttari.kaoldb.exceptions.DumpException;
@@ -27,8 +30,9 @@ public interface RowDump {
      *
      * @return names of the columns
      */
+    @CheckResult
+    @NonNull
     Collection<String> getColumns();
-
 
 
     /**
@@ -38,8 +42,11 @@ public interface RowDump {
      * @param <T>           data type
      *
      * @return column value
+     *
+     * @throws IllegalArgumentException if the column doesn't exist
      * @throws DumpException if the expected data type is different than the one in the database
      */
+    @CheckResult
     <T> T getColumnValue(String columnName);
 
 }

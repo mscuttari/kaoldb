@@ -16,8 +16,8 @@
 
 package it.mscuttari.kaoldb.core;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Stack;
 
 import androidx.annotation.NonNull;
@@ -33,7 +33,7 @@ import static it.mscuttari.kaoldb.core.StringUtils.escape;
 /**
  * @param   <X>     entity root
  */
-final class From<X> implements RootInt<X> {
+final class From<X> implements Root<X> {
 
     @NonNull private final DatabaseObject db;
     @NonNull private final QueryBuilder<?> queryBuilder;
@@ -84,7 +84,7 @@ final class From<X> implements RootInt<X> {
 
             if (Boolean.valueOf(false).equals(hierarchyVisited.get()) && (entity.parent != null || entity.children.size() > 0)) {
                 hierarchyVisited.set(true);
-                RootInt<X> root = this;
+                Root<X> root = this;
                 EntityObject<X> entity = db.getEntity(getEntityClass());
 
                 // Merge parent tables
@@ -163,6 +163,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public Class<X> getEntityClass() {
         return entity.clazz;
@@ -176,12 +177,21 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property) {
-        return new Join<>(db, Join.JoinType.INNER, this, (RootInt<Y>) root, property);
+        return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
 
 
+    @NonNull
+    @Override
+    public Collection<Root<?>> getJoinedRoots() {
+        return Collections.singletonList(this);
+    }
+
+
+    @NonNull
     @Override
     public <T> Expression isNull(@NonNull SingleProperty<X, T> property) {
         Variable<T> a = new Variable<>(alias, property);
@@ -190,6 +200,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<X, T> property, @Nullable T value) {
         // Just in case the user wants to check for a null property but wrongly calls this
@@ -205,6 +216,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
@@ -214,6 +226,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<X, T> property, @NonNull T value) {
         Variable<T> a = new Variable<>(alias, property);
@@ -223,6 +236,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
@@ -232,6 +246,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<X, T> property, @NonNull T value) {
         Variable<T> a = new Variable<>(alias, property);
@@ -241,6 +256,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
@@ -250,6 +266,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<X, T> property, @NonNull T value) {
         Variable<T> a = new Variable<>(alias, property);
@@ -259,6 +276,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
@@ -268,6 +286,7 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<X, T> property, @NonNull T value) {
         Variable<T> a = new Variable<>(alias, property);
@@ -277,18 +296,13 @@ final class From<X> implements RootInt<X> {
     }
 
 
+    @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
         Variable<T> a = new Variable<>(alias, x);
         Variable<T> b = new Variable<>(alias, y);
 
         return PredicateImpl.le(db, this, a, b);
-    }
-
-
-    @Override
-    public Map<String, Root<?>> getRootsMap() {
-        return Collections.singletonMap(getAlias(), this);
     }
 
 }

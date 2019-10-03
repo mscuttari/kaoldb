@@ -25,11 +25,11 @@ class Propagation {
 
     public enum Action {
 
-        NO_ACTION("NO ACTION"),
-        RESTRICT("RESTRICT"),
-        SET_NULL("SET NULL"),
-        SET_DEFAULT("SET DEFAULT"),
-        CASCADE("CASCADE");
+        NO_ACTION   ("NO ACTION"),
+        RESTRICT    ("RESTRICT"),
+        SET_NULL    ("SET NULL"),
+        SET_DEFAULT ("SET DEFAULT"),
+        CASCADE     ("CASCADE");
 
         private final String action;
 

@@ -340,6 +340,62 @@ final class Join<L, R> implements Root<L> {
     }
 
 
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull T x, @NonNull T y) {
+        return left.between(property, x, y);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull SingleProperty<L, T> x, @NonNull T y) {
+        return left.between(property, x, y);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull T x, @NonNull SingleProperty<L, T> y) {
+        return left.between(property, x, y);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
+        return left.between(property, x, y);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression like(@NonNull SingleProperty<L, String> property, @NonNull String value) {
+        return left.like(property, value);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression like(@NonNull SingleProperty<L, String> x, @NonNull SingleProperty<L, String> y) {
+        return left.like(x, y);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression glob(@NonNull SingleProperty<L, String> property, @NonNull String value) {
+        return left.glob(property, value);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression glob(@NonNull SingleProperty<L, String> x, @NonNull SingleProperty<L, String> y) {
+        return left.glob(x, y);
+    }
+
+
     /**
      * Get the join clauses of a join.
      *

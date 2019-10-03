@@ -305,4 +305,84 @@ final class From<X> implements Root<X> {
         return PredicateImpl.le(db, this, a, b);
     }
 
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull T y) {
+        Expression gt = gt(property, x);
+        Expression lt = lt(property, y);
+
+        return gt.and(lt);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull T y) {
+        Expression gt = gt(property, x);
+        Expression lt = lt(property, y);
+
+        return gt.and(lt);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull SingleProperty<X, T> y) {
+        Expression gt = gt(property, x);
+        Expression lt = lt(property, y);
+
+        return gt.and(lt);
+    }
+
+
+    @NonNull
+    @Override
+    public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
+        Expression gt = gt(property, x);
+        Expression lt = lt(property, y);
+
+        return gt.and(lt);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression like(@NonNull SingleProperty<X, String> property, @NonNull String value) {
+        Variable<String> a = new Variable<>(alias, property);
+        Variable<String> b = new Variable<>(value);
+
+        return PredicateImpl.like(db, this, a, b);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression like(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y) {
+        Variable<String> a = new Variable<>(alias, x);
+        Variable<String> b = new Variable<>(alias, y);
+
+        return PredicateImpl.like(db, this, a, b);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression glob(@NonNull SingleProperty<X, String> property, @NonNull String value) {
+        Variable<String> a = new Variable<>(alias, property);
+        Variable<String> b = new Variable<>(value);
+
+        return PredicateImpl.like(db, this, a, b);
+    }
+
+
+    @NonNull
+    @Override
+    public Expression glob(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y) {
+        Variable<String> a = new Variable<>(alias, x);
+        Variable<String> b = new Variable<>(alias, y);
+
+        return PredicateImpl.like(db, this, a, b);
+    }
+
 }

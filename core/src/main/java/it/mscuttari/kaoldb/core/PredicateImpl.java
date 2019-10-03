@@ -56,7 +56,9 @@ final class PredicateImpl<T> implements ExpressionInt {
         GT      (">",       2),
         GE      (">=",      2),
         LT      ("<",       2),
-        LE      ("<=",      2);
+        LE      ("<=",      2),
+        LIKE    ("LIKE",    2),
+        GLOB    ("GLOB",    2);
 
         private final String operation;
         public final int cardinality;
@@ -193,6 +195,36 @@ final class PredicateImpl<T> implements ExpressionInt {
      */
     public static <T> PredicateImpl le(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.LE, db, root, x, y);
+    }
+
+
+    /**
+     * Create <code>"LIKE"</code> predicate.
+     *
+     * @param db    database object
+     * @param root  root the predicate is generated from
+     * @param x     first variable
+     * @param y     second variable
+     *
+     * @return predicate
+     */
+    public static <T> PredicateImpl like(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.LIKE, db, root, x, y);
+    }
+
+
+    /**
+     * Create <code>"GLOB"</code> predicate.
+     *
+     * @param db    database object
+     * @param root  root the predicate is generated from
+     * @param x     first variable
+     * @param y     second variable
+     *
+     * @return predicate
+     */
+    public static <T> PredicateImpl glob(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
+        return new PredicateImpl<>(PredicateType.GLOB, db, root, x, y);
     }
 
 

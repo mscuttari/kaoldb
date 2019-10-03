@@ -233,4 +233,116 @@ public interface Root<X> {
     @NonNull
     <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
 
+
+    /**
+     * Get <code>BETWEEN</code> expression for a property using two values as comparison.
+     *
+     * @param property  entity property
+     * @param x         first value
+     * @param y         second value
+     * @param <T>       data type
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull T y);
+
+
+    /**
+     * Get <code>BETWEEN</code> expression for a property using a property and a value as comparison.
+     *
+     * @param property  entity property
+     * @param x         first property
+     * @param y         second value
+     * @param <T>       data type
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull T y);
+
+
+    /**
+     * Get <code>BETWEEN</code> expression for a property using a value and a property as comparison.
+     *
+     * @param property  entity property
+     * @param x         first value
+     * @param y         second property
+     * @param <T>       data type
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull SingleProperty<X, T> y);
+
+
+    /**
+     * Get <code>BETWEEN</code> expression for a property using two properties as comparison.
+     *
+     * @param property  entity property
+     * @param x         first value
+     * @param y         second property
+     * @param <T>       data type
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
+
+
+    /**
+     * Get <code>LIKE</code> expression between a property and a value.
+     *
+     * @param property  entity property
+     * @param value     value
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    Expression like(@NonNull SingleProperty<X, String> property, @NonNull String value);
+
+
+    /**
+     * Get <code>LIKE</code> expression between two properties.
+     *
+     * @param x     first property
+     * @param y     second property
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    Expression like(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y);
+
+
+    /**
+     * Get <code>GLOB</code> expression between a property and a value.
+     *
+     * @param property  entity property
+     * @param value     value
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    Expression glob(@NonNull SingleProperty<X, String> property, @NonNull String value);
+
+
+    /**
+     * Get <code>GLOB</code> expression between two properties.
+     *
+     * @param x     first property
+     * @param y     second property
+     *
+     * @return expression
+     */
+    @CheckResult
+    @NonNull
+    Expression glob(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y);
+
 }

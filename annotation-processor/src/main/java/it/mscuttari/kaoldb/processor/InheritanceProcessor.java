@@ -70,14 +70,14 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
             Map<Element, Collection<String>> parentsMap = new HashMap<>();
 
             for (Element element : roundEnv.getElementsAnnotatedWith(Entity.class)) {
-                boolean parentFound = false;
-                Element current = getSuperclass(element);
+                boolean parentFound;
+                Element current = element;
 
-                while (!parentFound && !ClassName.get(current.asType()).equals(ClassName.OBJECT)) {
-                    if (current.getAnnotation(Entity.class) != null) {
-                        parentFound = true;
-                    }
-                }
+                do {
+                    current = getSuperclass(current);
+                    parentFound = current.getAnnotation(Entity.class) != null;
+
+                } while (!parentFound && !ClassName.get(current.asType()).equals(ClassName.OBJECT));
 
                 if (parentFound) {
                     Collection<String> discriminatorValues = parentsMap.containsKey(current) ?
@@ -131,16 +131,23 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
         }
 
         // Check for @DiscriminatorValue if a parent entity exists
-        boolean parentFound = false;
-        Element currentClass = getSuperclass(element);
+        boolean parentFound;
+        Element currentClass = element;
 
-        while (!parentFound && !ClassName.get(currentClass.asType()).equals(ClassName.OBJECT)) {
+        do {
+            currentClass = getSuperclass(currentClass);
             parentFound = currentClass.getAnnotation(Entity.class) != null;
-            currentClass = getPackage(currentClass);
-        }
 
-        if (parentFound && element.getAnnotation(DiscriminatorValue.class) == null) {
-            throw new ProcessorException("Discriminator value not set", element);
+        } while (!parentFound && !ClassName.get(currentClass.asType()).equals(ClassName.OBJECT));
+
+        if (parentFound) {
+            if (currentClass.getAnnotation(DiscriminatorColumn.class) == null) {
+                throw new ProcessorException("Discriminator column not set", currentClass);
+            }
+
+            if (element.getAnnotation(DiscriminatorValue.class) == null) {
+                throw new ProcessorException("Discriminator value not set", element);
+            }
         }
     }
 
@@ -217,10 +224,10 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
 
         // Search the first parent entity and check for DiscriminatorColumn existence and compatibility
 
-        boolean found = false;
+        boolean parentFound = false;
         Element currentClass = getSuperclass(element);
 
-        while (!found && !ClassName.get(currentClass.asType()).equals(ClassName.OBJECT)) {
+        while (!parentFound && !ClassName.get(currentClass.asType()).equals(ClassName.OBJECT)) {
             Entity entityAnnotation = currentClass.getAnnotation(Entity.class);
             DiscriminatorColumn discriminatorColumnAnnotation = currentClass.getAnnotation(DiscriminatorColumn.class);
 
@@ -251,13 +258,13 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
                         throw new IllegalStateException("Unknown discriminator type");
                 }
 
-                found = true;
+                parentFound = true;
             }
 
             currentClass = getSuperclass(currentClass);
         }
 
-        if (!found) {
+        if (!parentFound) {
             throw new ProcessorException("No parent entity found", element);
         }
     }

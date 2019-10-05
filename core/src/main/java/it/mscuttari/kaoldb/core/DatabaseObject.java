@@ -265,8 +265,10 @@ class DatabaseObject {
     public void mapEntities() {
         LogUtils.d("[Database \"" + name + "\"] mapping the entities");
 
-        doAndNotifyAll(this, () -> mapped = false);
-        doAndNotifyAll(this, entities::clear);
+        doAndNotifyAll(this, () -> {
+            mapped = false;
+            entities.clear();
+        });
 
         try {
             // First scan to get basic data

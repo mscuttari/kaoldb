@@ -77,11 +77,13 @@ class DatabaseDumpImpl implements DatabaseDump {
     @NonNull
     @Override
     public TableDump getTable(String tableName) {
-        if (!tables.containsKey(tableName)) {
+        TableDump table = tables.get(tableName);
+
+        if (table == null) {
             throw new IllegalArgumentException("Table \"" + tableName + "\" not found");
         }
 
-        return tables.get(tableName);
+        return table;
     }
 
 

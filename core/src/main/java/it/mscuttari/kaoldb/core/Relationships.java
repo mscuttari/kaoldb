@@ -1,42 +1,64 @@
 package it.mscuttari.kaoldb.core;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import android.os.Build;
+
+import androidx.annotation.CheckResult;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
+
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 
-class Relationships extends HashSet<Relationship> {
+class Relationships implements Iterable<Relationship> {
+
+    /** Relationships container */
+    private final Collection<Relationship> relationships = new ArraySet<>();
 
     /** Map the fields by their field name in order to quickly search for the mapped relationship */
-    private final Map<String, Relationship> mapByFieldName = new HashMap<>();
+    private final Map<String, Relationship> mapByFieldName = new ArrayMap<>();
 
 
+    @NonNull
     @Override
-    public boolean add(Relationship relationship) {
+    public synchronized Iterator<Relationship> iterator() {
+        return new RelationshipsIterator(this);
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @Override
+    public synchronized void forEach(Consumer<? super Relationship> action) {
+        relationships.forEach(action);
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @Override
+    public synchronized Spliterator<Relationship> spliterator() {
+        return relationships.spliterator();
+    }
+
+
+    /**
+     * Add a relationship.
+     *
+     * @param relationship      relationship to be added
+     * @return <code>true</code> if the relationships collection has changed; <code>false otherwise</code>
+     */
+    public synchronized boolean add(Relationship relationship) {
         mapByFieldName.put(relationship.field.getName(), relationship);
-        return super.add(relationship);
-    }
-
-
-    @Override
-    public boolean remove(Object o) {
-        if (o instanceof Relationship) {
-            mapByFieldName.remove(((Relationship) o).field.getName());
-        }
-
-        return super.remove(o);
-    }
-
-
-    @Override
-    public void clear() {
-        mapByFieldName.clear();
-        super.clear();
+        return relationships.add(relationship);
     }
 
 
@@ -48,7 +70,8 @@ class Relationships extends HashSet<Relationship> {
      *         {@link OneToMany}, {@link ManyToOne} or {@link ManyToMany}; <code>false</code>
      *         otherwise
      */
-    public boolean contains(String fieldName) {
+    @CheckResult
+    public synchronized boolean contains(String fieldName) {
         return mapByFieldName.containsKey(fieldName);
     }
 
@@ -60,13 +83,71 @@ class Relationships extends HashSet<Relationship> {
      * @return relationship
      * @throws NoSuchElementException if there is no relationship linked to that field
      */
-    public Relationship getByFieldName(String fieldName) {
+    @CheckResult
+    public synchronized Relationship get(String fieldName) {
         Relationship result = mapByFieldName.get(fieldName);
 
         if (result != null)
             return result;
 
         throw new NoSuchElementException("Field \"" + fieldName + "\" doesn't have a relationship");
+    }
+
+
+    /**
+     * Iterator for the {@link Relationships} container.
+     */
+    private static class RelationshipsIterator implements Iterator<Relationship> {
+
+        private final Relationships relationships;
+        private final Iterator<Relationship> iterator;
+        private Relationship current;
+
+        /**
+         * Constructor.
+         *
+         * @param relationships     relationships container
+         */
+        public RelationshipsIterator(@NonNull Relationships relationships) {
+            this.relationships = relationships;
+            this.iterator = relationships.relationships.iterator();
+        }
+
+
+        @Override
+        public boolean hasNext() {
+            synchronized (relationships) {
+                return iterator.hasNext();
+            }
+        }
+
+
+        @Override
+        public Relationship next() {
+            synchronized (relationships) {
+                current = iterator.next();
+                return current;
+            }
+        }
+
+
+        @Override
+        public void remove() {
+            synchronized (relationships) {
+                iterator.remove();
+                relationships.mapByFieldName.remove(current.field.getName());
+            }
+        }
+
+
+        @RequiresApi(Build.VERSION_CODES.N)
+        @Override
+        public void forEachRemaining(@NonNull Consumer<? super Relationship> action) {
+            synchronized (relationships) {
+                iterator.forEachRemaining(action);
+            }
+        }
+
     }
 
 }

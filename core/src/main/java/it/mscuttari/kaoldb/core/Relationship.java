@@ -260,10 +260,10 @@ class Relationship {
 
     /**
      * Determine whether the lazy initialization can be done, according to declared field class.<br>
-     * In fact, if the field isn't declared as a Collection, List or Set, the lazy initialization
-     * wrapper can not be assigned to the field.
+     * In fact, if the field isn't declared as a {@link java.util.Collections}, {@link List} or
+     * {@link Set}, the lazy initialization wrapper can not be assigned to the field.
      *
-     * @return true if the lazy initialization is allowed; false otherwise
+     * @return <code>true</code> if the lazy initialization is allowed; <code>false</code> otherwise
      * @see LazyCollection
      */
     public boolean isLazilyInitializable() {

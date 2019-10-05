@@ -70,9 +70,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
                     throw new ProcessorException("Element \"" + entity.getSimpleName() + "\" should not have the @Entity annotation", entity);
                 }
 
-                // Check that the inheritance is correctly used
-                checkInheritance(entity);
-
                 // Check the existence of at least one primary key
                 checkPrimaryKeyExistence(entity);
 
@@ -183,37 +180,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
         }
 
         return true;
-    }
-
-
-    /**
-     * If the specified <code>entity</code> extends another entity, check that the child
-     * entity is annotated with {@link DiscriminatorValue}.
-     *
-     * @param entity     entity element
-     * @throws ProcessorException if {@link DiscriminatorValue} or {@link DiscriminatorColumn}
-     *                            are missing respectively in the child and the parent classes
-     */
-    private void checkInheritance(Element entity) throws ProcessorException {
-        boolean hasParent = false;
-        Element parent = entity;
-
-        while (!hasParent && !ClassName.get(parent.asType()).equals(ClassName.OBJECT)) {
-            TypeMirror superClassTypeMirror = ((TypeElement) parent).getSuperclass();
-            parent = getElement(superClassTypeMirror);
-            Entity entityAnnotation = parent.getAnnotation(Entity.class);
-            hasParent = entityAnnotation != null;
-        }
-
-        if (hasParent) {
-            if (entity.getAnnotation(DiscriminatorValue.class) == null) {
-                throw new ProcessorException("Child entity \"" + entity.getSimpleName() + "\" doesn't have the @DiscriminatorValue annotation", entity);
-            }
-
-            if (parent.getAnnotation(DiscriminatorColumn.class) == null) {
-                throw new ProcessorException("Parent entity \"" + parent.getSimpleName() + "\" doesn't have the @DiscriminatorColumn annotation", parent);
-            }
-        }
     }
 
 

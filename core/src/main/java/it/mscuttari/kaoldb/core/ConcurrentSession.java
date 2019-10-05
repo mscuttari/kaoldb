@@ -76,10 +76,9 @@ class ConcurrentSession<T> implements Iterable<T> {
      *
      * @param task  task to be executed
      */
-    @SuppressWarnings("unchecked")
     public synchronized void submit(Runnable task) {
         finished.set(false);
-        Future<T> future = (Future<T>) executorService.submit(task);
+        Future<T> future = executorService.submit(task, null);
         tasks.add(future);
     }
 

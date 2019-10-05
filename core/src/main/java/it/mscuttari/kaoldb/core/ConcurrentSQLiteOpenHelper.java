@@ -23,10 +23,13 @@ import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 
+/**
+ * Utility class to handle concurrent database accesses.
+ */
 final class ConcurrentSQLiteOpenHelper {
 
     private final SQLiteOpenHelper helper;
@@ -34,9 +37,17 @@ final class ConcurrentSQLiteOpenHelper {
     private int dbConnections = 0;
 
 
-    public ConcurrentSQLiteOpenHelper(@Nullable Context context, DatabaseObject db) {
+    /**
+     * Constructor.
+     *
+     * @param context   application context
+     * @param db        database
+     */
+    public ConcurrentSQLiteOpenHelper(@NonNull Context context,
+                                      @NonNull DatabaseObject db) {
+
         this.helper = new SQLiteOpenHelper(
-                context,
+                context.getApplicationContext(),
                 db.getName(),
                 (sqliteDb, masterQuery, editTable, query) -> new CachedCursor(new SQLiteCursor(sqliteDb, masterQuery, editTable, query)),
                 db.getVersion())

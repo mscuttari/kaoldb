@@ -16,6 +16,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Annotations for KaolDB'
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

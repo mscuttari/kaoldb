@@ -16,13 +16,19 @@
 
 apply plugin: 'java-library'
 
+description = 'Annotation processor for KaolDB'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.squareup:javapoet:1.11.1'
-    implementation project(path: ':annotations')
-}
 
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
+    // KaolDB annotations
+    implementation project(path: ':annotations')
+
+    // https://mvnrepository.com/artifact/com.squareup/javapoet
+    implementation group: 'com.squareup', name: 'javapoet', version: '1.11.1'
+}
 
 apply from: rootProject.file('release-bintray.gradle')

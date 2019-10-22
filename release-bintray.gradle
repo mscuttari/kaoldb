@@ -19,19 +19,19 @@
  **/
 ext {
     bintrayRepo = 'KaolDB'
-    bintrayName = POM_BINTRAY_NAME
 
     publishedGroupId = 'it.mscuttari.kaoldb'
     libraryName = 'KaolDB'
-    artifact = POM_ARTIFACT_ID
-    packagingType = POM_PACKAGING
+    artifact = project.name
+    bintrayName = publishedGroupId + ":" + artifact
+    packagingType = 'jar'
 
-    libraryDescription = POM_DESCRIPTION
+    libraryDescription = project.description
 
     siteUrl = 'https://github.com/mscuttari/KaolDB'
     gitUrl = 'https://github.com/mscuttari/KaolDB.git'
 
-    libraryVersion = POM_VERSION
+    libraryVersion = '1.0.0-beta.6'
 
     developerId = 'mscuttari'
     developerName = 'Michele Scuttari'

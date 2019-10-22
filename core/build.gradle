@@ -17,7 +17,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group = 'com.github.mscuttari'
+description = 'Core functionalities of KaolDB'
 
 android {
     compileSdkVersion 28
@@ -25,32 +25,18 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0.0-beta.3"
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-    }
-
-    buildTypes {
-        release {
-            useProguard true
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    dexOptions {
-        preDexLibraries = false
     }
 
     compileOptions {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    // KaolDB annotations
     api project(path: ':annotations')
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
@@ -66,6 +52,7 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '27.1-android'
 
     // https://mvnrepository.com/artifact/org.objenesis/objenesis
+    // Version 2.6 is required for pre Oreo compatibility
     implementation group: 'org.objenesis', name: 'objenesis', version: '2.6'
 }
 

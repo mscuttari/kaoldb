@@ -152,7 +152,7 @@ final class Join<L, R> implements Root<L> {
      * The join tree is spanned from the most left leaf to to the right most one.
      * This is done because some SQLite implementations does not support, although standard-complaint,
      * "FROM" clauses such as <code>"(table1 INNER JOIN (table2 INNER JOIN table3 ON exp2) ON exp1)"</code>.
-     * Therefore, the tree must be seen as a left recursive one, which lead to the equivalent but
+     * Therefore, the tree must be seen as a left recursive one, which leads to the equivalent but
      * correctly interpreted clause <code>"((table1 INNER JOIN table2 ON exp1) INNER JOIN table3 ON exp2)"</code>.
      * </p>
      *
@@ -204,7 +204,7 @@ final class Join<L, R> implements Root<L> {
                 List<String> clauses = getJoinClauses(db, join.type, root, join.right, join.property, join.on);
 
                 for (String clause : clauses) {
-                    result = new StringBuilder("(" + result + clause + ")");
+                    result.insert(0, "(").append(clause).append(")");
                 }
 
             } else if (join.right instanceof Join) {
@@ -223,7 +223,7 @@ final class Join<L, R> implements Root<L> {
                 List<String> clauses = getJoinClauses(db, join.type, root, rightRoot, join.property, join.on);
 
                 for (String clause : clauses) {
-                    result = new StringBuilder("(" + result + clause + ")");
+                    result.insert(0, "(").append(clause).append(")");
                 }
 
                 // Save the leaf as the new left-most leaf (the bigger tree analysis has already finished)

@@ -1025,8 +1025,8 @@ class EntityObject<T> {
      *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code><br>
      * <code>
-     *     FOREIGN KEY (column_3, column_4)
-     *     REFERENCES "referenced_table_2" (referenced_column_3, referenced_column_4)
+     *     FOREIGN KEY ("column_3", "column_4")
+     *     REFERENCES "referenced_table_2" ("referenced_column_3", "referenced_column_4")
      *     ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
      * </code></p>
      *

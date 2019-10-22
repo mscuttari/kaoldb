@@ -34,6 +34,7 @@ class StringUtils {
      * @return escaped string (<code>null</code> if <code>obj</code> is <code>null</code>)
      */
     @CheckResult
+    @Nullable
     public static String escape(Object obj) {
         if (obj == null) {
             return null;
@@ -56,6 +57,7 @@ class StringUtils {
      * @return escaped string (<code>null</code> if <code>str</code> is <code>null</code>)
      */
     @CheckResult
+    @Nullable
     public static String escape(String str) {
         if (str == null) {
             return null;
@@ -112,13 +114,14 @@ class StringUtils {
      * default {@link Object#toString()} implementation of each object is used.<br>
      * If the separator is set to <code>null</code>, a comma is placed between the elements.</p>
      *
-     * @param objs      objects collection
-     * @param converter convert to be used to get the string representation of each object
+     * @param objs      objects
+     * @param converter converter to be used to get the string representation of each object
      * @param separator separator to be used between the elements
      * @param <T>       objects type
      *
      * @return string representation
      */
+    @CheckResult
     public static <T> String implode(Iterable<T> objs,
                                      @Nullable StringConverter<T> converter,
                                      @Nullable String separator) {

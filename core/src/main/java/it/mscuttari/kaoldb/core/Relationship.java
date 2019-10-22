@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -260,8 +261,8 @@ class Relationship {
 
     /**
      * Determine whether the lazy initialization can be done, according to declared field class.<br>
-     * In fact, if the field isn't declared as a {@link java.util.Collections}, {@link List} or
-     * {@link Set}, the lazy initialization wrapper can not be assigned to the field.
+     * In fact, if the field isn't declared as a {@link Collections}, {@link List} or {@link Set},
+     * the lazy initialization wrapper can not be assigned to the field.
      *
      * @return <code>true</code> if the lazy initialization is allowed; <code>false</code> otherwise
      * @see LazyCollection

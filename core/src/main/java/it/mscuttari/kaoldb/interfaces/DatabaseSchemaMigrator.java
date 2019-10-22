@@ -73,8 +73,6 @@ public interface DatabaseSchemaMigrator {
      *
      * @return list of actions to be executed on the schema
      */
-    default List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-        throw new UnsupportedOperationException();
-    }
+    List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
 
 }

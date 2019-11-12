@@ -28,11 +28,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
-import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
@@ -62,10 +63,13 @@ class DatabaseObject {
     private final Map<Class<?>, EntityObject<?>> entities = new ArrayMap<>();
 
     /** Whether the database version is being changed */
-    private boolean upgrading = false;
+    private boolean updating = false;
 
-    /** Whether the entities have been mapped or not */
-    private boolean mapped = false;
+    /** Whether the mapping process has been started at least once (it may be still running) */
+    private final AtomicBoolean mappedOnce = new AtomicBoolean(false);
+
+    /** Used to track the entities mapping. When 0, it means that all the entities have been mapped */
+    private final AtomicInteger mappingStatus = new AtomicInteger(0);
 
 
     /**
@@ -170,17 +174,6 @@ class DatabaseObject {
 
 
     /**
-     * Get an unmodifiable {@link Collection} of all entities classes.
-     * To add new classes, use {@link #addEntityClass(Class)}.
-     *
-     * @return entity classes
-     */
-    public Collection<Class<?>> getEntityClasses() {
-        return Collections.unmodifiableCollection(classes);
-    }
-
-
-    /**
      * Add entity class.
      *
      * @param clazz     entity class
@@ -201,6 +194,17 @@ class DatabaseObject {
 
 
     /**
+     * Check whether a class belongs to the database entities.
+     *
+     * @param clazz     class
+     * @return <code>true</code> if the class is an entity; <code>false</code> otherwise
+     */
+    public synchronized boolean contains(Class<?> clazz) {
+        return classes.contains(clazz);
+    }
+
+
+    /**
      * Get {@link EntityObject} corresponding to an entity class.
      *
      * @param clazz     entity class
@@ -210,14 +214,14 @@ class DatabaseObject {
      */
     @SuppressWarnings("unchecked")
     public <T> EntityObject<T> getEntity(Class<T> clazz) {
-        // Check if the entity should exists and eventually wait for it to be mapped, but only
-        // if the entities have not been mapped yet.
+        // Check if the entity should exists and eventually wait for it to be discovered, but only
+        // if the mapping process has not completed yet.
         // When the mapping process is finished, all the constraint should be consistent by design
         // and therefore this check is not needed.
 
-        if (!mapped) {
+        if (!isMapped()) {
             // Check if the class is an entity of this database
-            if (!classes.contains(clazz)) {
+            if (!contains(clazz)) {
                 throw new IllegalArgumentException("Entity \"" + clazz.getSimpleName() + "\" not found");
             }
 
@@ -235,68 +239,90 @@ class DatabaseObject {
      * @return mapped entities
      */
     public Collection<EntityObject<?>> getEntities() {
+        if (!isMapped()) {
+            waitWhile(this, () -> entities.size() != classes.size());
+        }
+
         return Collections.unmodifiableCollection(entities.values());
     }
 
 
     /**
-     * Check whether the database is upgrading.
+     * Check whether the entities have been mapped.
      *
-     * @return <code>true</code> if an update is in progress; <code>false</code> otherwise
+     * @return <code>true</code> if the entities have been mapped at least once;
+     *         <code>false</code> otherwise
      */
-    public boolean isUpgrading() {
-        return upgrading;
+    private synchronized boolean isMapped() {
+        return mappedOnce.get() && !isMapping();
+    }
+
+
+    /**
+     * Check whether the mapping process is currently executing.
+     *
+     * @return <code>true</code> if entities are being mapped; <code>false</code> otherwise
+     */
+    private boolean isMapping() {
+        return mappingStatus.get() != 0;
+    }
+
+
+    /**
+     * Register the fact that an entity has been completely mapped.
+     *
+     * @see #mappingStatus
+     */
+    public void entityMapped() {
+        doAndNotifyAll(this, () -> {
+            if (mappingStatus.decrementAndGet() == 0) {
+                LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
+            }
+        });
+    }
+
+
+    /**
+     * Check whether the database is ready for use.
+     *
+     * <p>The database is considered ready if the mapping process has finished and the
+     * database version is not being upgraded or downgraded</p>
+     *
+     * @return <code>true</code> if the database is ready; <code>false</code> otherwise
+     */
+    public synchronized boolean isReady() {
+        return isMapped() && !updating;
+    }
+
+
+    /**
+     * Block the calling thread until the database becomes ready.
+     */
+    public void waitUntilReady() {
+        waitWhile(this, () -> !isReady());
     }
 
 
     /**
      * Create an {@link EntityObject} for each class contained in {@link #classes}.
-     *
-     * <p>
-     * The mapping process is done in two phases:
-     * <ol>
-     *      <li>Get the basic entity data in order to establish the paternity relationships</li>
-     *      <li>Determine the columns of each table (own columns and inherited ones)</li>
-     * </ol>
-     * </p>
-     *
-     * @throws MappingException in case of mapping error
      */
     public void mapEntities() {
-        LogUtils.d("[Database \"" + name + "\"] mapping the entities");
+        if (isMapped()) {
+            LogUtils.w("[Database \"" + name + "\"] entities already mapped");
 
-        doAndNotifyAll(this, () -> {
-            mapped = false;
-            entities.clear();
-        });
+        } else if (isMapping()) {
+            LogUtils.w("[Database \"" + name + "\"] entities are already being mapped");
 
-        try {
-            // First scan to get basic data
-            ConcurrentSession entitiesConcurrentSession = new ConcurrentSession();
-            LogUtils.v("[Database \"" + name + "\"] entities mapping: first scan to get basic data");
+        } else {
+            mappingStatus.set(classes.size());
 
-            for (Class<?> clazz : classes) {
-                Runnable action = () -> entities.put(clazz, EntityObject.map(this, clazz));
-                entitiesConcurrentSession.submit(() -> doAndNotifyAll(this, action));
-            }
+            doAndNotifyAll(this, () -> {
+                for (Class<?> clazz : classes) {
+                    entities.put(clazz, EntityObject.map(this, clazz));
+                }
 
-            entitiesConcurrentSession.waitForAll();
-
-            // Second scan to load the columns
-            ConcurrentSession columnsConcurrentSession = new ConcurrentSession();
-            LogUtils.v("[Database \"" + name + "\"] entities mapping: second scan to load the columns");
-
-            for (EntityObject<?> entity : entities.values()) {
-                columnsConcurrentSession.submit(entity::loadColumns);
-            }
-
-            columnsConcurrentSession.waitForAll();
-
-            doAndNotifyAll(this, () -> mapped = true);
-            LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
-
-        } catch (Exception e) {
-            throw new MappingException(e);
+                mappedOnce.set(true);
+            });
         }
     }
 
@@ -305,8 +331,21 @@ class DatabaseObject {
      * Create the database.
      *
      * @param db    writable database
+     * @throws IllegalStateException if the entities have not been mapped yet and there is no
+     *                               mapping process going on
      */
     public void create(SQLiteDatabase db) {
+        if (!isMapped()) {
+            if (isMapping()) {
+                // Wait for the mapping process to end
+                waitWhile(this, () -> !this.isMapped());
+
+            } else {
+                // There is no mapping process going on
+                throw new IllegalStateException("Database not mapped");
+            }
+        }
+
         try {
             db.beginTransaction();
 
@@ -325,7 +364,10 @@ class DatabaseObject {
                     if (!relationship.field.isAnnotationPresent(JoinTable.class))
                         continue;
 
-                    JoinTableObject joinTableObject = JoinTableObject.map(this, entity, relationship.field);
+                    JoinTableObject joinTableObject = new JoinTableObject(this, entity, relationship.field);
+                    joinTableObject.map();
+                    joinTableObject.waitUntilMapped();
+
                     String joinTableCreateSQL = joinTableObject.getSQL();
                     LogUtils.d("[Entity \"" + entity.getName() + "\"] " + joinTableCreateSQL);
                     db.execSQL(joinTableCreateSQL);
@@ -356,7 +398,7 @@ class DatabaseObject {
     public void upgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + getName() + "\"] upgrading from version " + oldVersion + " to version " + newVersion);
 
-        doAndNotifyAll(this, () -> upgrading = true);
+        doAndNotifyAll(this, () -> updating = true);
         db.beginTransaction();
 
         try {
@@ -384,7 +426,7 @@ class DatabaseObject {
                 db.endTransaction();
             }
 
-            doAndNotifyAll(this, () -> upgrading = false);
+            doAndNotifyAll(this, () -> updating = false);
         }
 
         LogUtils.i("[Database \"" + getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
@@ -401,7 +443,7 @@ class DatabaseObject {
     public void downgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         LogUtils.d("[Database \"" + getName() + "\"] downgrading from version " + oldVersion + " to version " + newVersion);
 
-        doAndNotifyAll(this, () -> upgrading = true);
+        doAndNotifyAll(this, () -> updating = true);
         db.beginTransaction();
 
         try {
@@ -428,7 +470,7 @@ class DatabaseObject {
                 db.endTransaction();
             }
 
-            doAndNotifyAll(this, () -> upgrading = false);
+            doAndNotifyAll(this, () -> updating = false);
         }
 
         LogUtils.i("[Database \"" + getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);

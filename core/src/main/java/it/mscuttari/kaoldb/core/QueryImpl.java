@@ -164,8 +164,8 @@ class QueryImpl<M> implements Query<M> {
         // The entity on its own is already added to the downStack.
         // Let's directly start from it parent, if he has one.
 
-        if (entity.parent != null) {
-            upStack.push(entity.parent);
+        if (entity.getParent() != null) {
+            upStack.push(entity.getParent());
         }
 
         // Recursively add all the entities linked to the starting one
@@ -183,8 +183,8 @@ class QueryImpl<M> implements Query<M> {
                     downStack.push(linked);
                 }
 
-                if (linked.parent != null && !observed.contains((linked.parent))) {
-                    upStack.push(linked.parent);
+                if (linked.getParent() != null && !observed.contains((linked.getParent()))) {
+                    upStack.push(linked.getParent());
                 }
             }
 
@@ -205,13 +205,13 @@ class QueryImpl<M> implements Query<M> {
                         downStack.push(linked);
                     }
 
-                    if (linked.parent != null && !observed.contains(linked.parent)) {
-                        upStack.push(linked.parent);
+                    if (linked.getParent() != null && !observed.contains(linked.getParent())) {
+                        upStack.push(linked.getParent());
                     }
                 }
 
-                if (parentEntity.parent != null && !observed.contains(parentEntity.parent)) {
-                    upStack.add(parentEntity.parent);
+                if (parentEntity.getParent() != null && !observed.contains(parentEntity.getParent())) {
+                    upStack.add(parentEntity.getParent());
                 }
             }
         }
@@ -279,7 +279,7 @@ class QueryImpl<M> implements Query<M> {
             }
 
             // Load the fields of the parent entities
-            entity = entity.parent;
+            entity = entity.getParent();
         }
 
         return concurrentSession;
@@ -376,7 +376,7 @@ class QueryImpl<M> implements Query<M> {
                 }
             }
 
-            current = current.parent;
+            current = current.getParent();
         }
     }
 

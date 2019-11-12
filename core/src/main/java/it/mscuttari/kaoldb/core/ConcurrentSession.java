@@ -71,6 +71,29 @@ class ConcurrentSession<T> implements Iterable<T> {
 
 
     /**
+     * Start a single task in parallel.
+     *
+     * @param task  task to be executed
+     */
+    public static void singleTask(Runnable task) {
+        ConcurrentSession session = new ConcurrentSession();
+        session.submit(task);
+    }
+
+
+    /**
+     * Start a single task in parallel
+     *
+     * @param task  task to be executed
+     * @param <T>   type of the task result
+     */
+    public static <T> void singleTask(Callable<T> task) {
+        ConcurrentSession<T> session = new ConcurrentSession<>();
+        session.submit(task);
+    }
+
+
+    /**
      * Submits a {@link Runnable} task for execution and returns a {@link Future}
      * representing that task.
      *
@@ -129,7 +152,7 @@ class ConcurrentSession<T> implements Iterable<T> {
 
 
     /**
-     * Wait until a condition is satisfied.
+     * Wait while a condition is satisfied.
      *
      * @param lock          object to be locked
      * @param condition     condition to be checked
@@ -138,12 +161,14 @@ class ConcurrentSession<T> implements Iterable<T> {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void waitWhile(Object lock, SynchCondition condition) throws KaolDBException {
-        synchronized (lock) {
-            while (condition.check()) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    throw new ConcurrenceException(e);
+        if (condition.check()) {
+            synchronized (lock) {
+                while (condition.check()) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        throw new ConcurrenceException(e);
+                    }
                 }
             }
         }

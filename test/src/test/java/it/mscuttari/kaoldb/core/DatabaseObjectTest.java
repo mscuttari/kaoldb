@@ -129,7 +129,7 @@ public class DatabaseObjectTest extends AbstractTest {
     @Test
     public void addEntityClass() {
         db.addEntityClass(EntityA.class);
-        assertTrue(db.getEntityClasses().contains(EntityA.class));
+        assertTrue(db.contains(EntityA.class));
     }
 
 

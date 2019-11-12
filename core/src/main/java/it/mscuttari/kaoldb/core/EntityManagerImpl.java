@@ -117,6 +117,7 @@ class EntityManagerImpl implements EntityManager {
     @NonNull
     @Override
     public <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass) {
+        database.waitUntilReady();
         return new QueryBuilderImpl<>(database, resultClass, this);
     }
 
@@ -124,6 +125,8 @@ class EntityManagerImpl implements EntityManager {
     @NonNull
     @Override
     public <T> List<T> getAll(@NonNull Class<T> entityClass) {
+        database.waitUntilReady();
+
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
         Root<T> root = qb.getRoot(entityClass);
         qb.from(root);
@@ -135,6 +138,8 @@ class EntityManagerImpl implements EntityManager {
     @NonNull
     @Override
     public <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass) {
+        database.waitUntilReady();
+
         QueryBuilder<T> qb = getQueryBuilder(entityClass);
         Root<T> root = qb.getRoot(entityClass);
         qb.from(root);
@@ -151,6 +156,8 @@ class EntityManagerImpl implements EntityManager {
 
     @Override
     public synchronized <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist) {
+        database.waitUntilReady();
+
         // Pre persist actions
         if (prePersist != null) {
             prePersist.run(obj);
@@ -186,7 +193,7 @@ class EntityManagerImpl implements EntityManager {
 
                 // Go up in the entity hierarchy
                 childEntity = currentEntity;
-                currentEntity = currentEntity.parent;
+                currentEntity = currentEntity.getParent();
             }
 
             dbHelper.setTransactionSuccessful();
@@ -224,6 +231,8 @@ class EntityManagerImpl implements EntityManager {
 
     @Override
     public <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate) {
+        database.waitUntilReady();
+
         // Pre update actions
         if (preUpdate != null) {
             preUpdate.run(obj);
@@ -275,7 +284,7 @@ class EntityManagerImpl implements EntityManager {
 
                 // Go up in the entity hierarchy
                 childEntity = currentEntity;
-                currentEntity = currentEntity.parent;
+                currentEntity = currentEntity.getParent();
             }
 
             dbHelper.setTransactionSuccessful();
@@ -313,6 +322,8 @@ class EntityManagerImpl implements EntityManager {
 
     @Override
     public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postRemove) {
+        database.waitUntilReady();
+
         // Pre remove actions
         if (preRemove != null) {
             preRemove.run(obj);
@@ -356,7 +367,7 @@ class EntityManagerImpl implements EntityManager {
                 );
 
                 // Go up in the entity hierarchy
-                currentEntity = currentEntity.parent;
+                currentEntity = currentEntity.getParent();
             }
 
             dbHelper.setTransactionSuccessful();

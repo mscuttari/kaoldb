@@ -19,7 +19,6 @@ package it.mscuttari.kaoldb.core;
 import android.content.ContentValues;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 
@@ -61,7 +60,7 @@ final class JoinColumnObject extends BaseColumnObject {
      * @param field         field the column is generated from
      * @param annotation    {@link JoinColumn} annotation the column is generated from
      */
-    private JoinColumnObject(@NonNull DatabaseObject db,
+    public JoinColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
                             @NonNull Field field,
                             @NonNull JoinColumn annotation) {
@@ -69,44 +68,20 @@ final class JoinColumnObject extends BaseColumnObject {
         super(db, entity, field);
 
         this.annotation = annotation;
+        loadName();
     }
 
 
-    /**
-     * Create the {@link JoinColumnObject} linked to a field annotated with {@link JoinColumn}
-     * and start the mapping process.
-     *
-     * @param db            database
-     * @param entity        entity the column belongs to
-     * @param field         field the column is generated from
-     * @param annotation    {@link JoinColumn} annotation the column is generated from
-     *
-     * @return column object
-     */
-    public static JoinColumnObject map(@NonNull DatabaseObject db,
-                                       @NonNull EntityObject<?> entity,
-                                       @NonNull Field field,
-                                       @NonNull JoinColumn annotation) {
-
-        JoinColumnObject result = new JoinColumnObject(db, entity, field, annotation);
-        result.loadName();
-
-        ConcurrentSession concurrentSession = new ConcurrentSession();
-
-        concurrentSession.submit(() -> {
-            result.loadCustomColumnDefinition();
-            result.loadType();
-            result.loadNullableProperty();
-            result.loadPrimaryKeyProperty();
-            result.loadUniqueProperty();
-            result.loadDefaultValue();
-            result.loadPropagationProperty();
-            result.loadLinkedColumn();
-
-            doAndNotifyAll(entity.columns, () -> entity.columns.mappingStatus.decrementAndGet());
-        });
-
-        return result;
+    @Override
+    protected void mapAsync() {
+        loadCustomColumnDefinition();
+        loadType();
+        loadNullableProperty();
+        loadPrimaryKeyProperty();
+        loadUniqueProperty();
+        loadDefaultValue();
+        loadPropagationProperty();
+        loadLinkedColumn();
     }
 
 
@@ -178,10 +153,6 @@ final class JoinColumnObject extends BaseColumnObject {
             throw new InvalidConfigException("Field \"" + field.getName() + "\": can't determine the referenced class");
         }
 
-        // Search the referenced column
-        if (!db.getEntityClasses().contains(referencedClass))
-            throw new InvalidConfigException("Field \"" + field.getName() + "\": \"" + referencedClass.getSimpleName() + "\" is not an entity");
-
         EntityObject<?> referencedEntity = db.getEntity(referencedClass);
         BaseColumnObject referencedColumn = null;
 
@@ -194,7 +165,7 @@ final class JoinColumnObject extends BaseColumnObject {
             referencedColumn = refEntity.columns.get(referencedColumnName);
 
             // Go up in entity hierarchy
-            referencedEntity = referencedEntity.parent;
+            referencedEntity = referencedEntity.getParent();
         }
 
         if (referencedColumn == null) {

@@ -43,6 +43,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     /** Database the table belongs to */
     @NonNull private final DatabaseObject db;
 
+    /** Entity that owns the relationship */
+    @NonNull private final EntityObject entity;
+
     /** Field annotated with {@link JoinTable} */
     @NonNull private final Field field;
 
@@ -77,11 +80,12 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @param entity    entity that owns the relationship
      * @param field     field the table and its columns are generated from
      */
-    private JoinTableObject(@NonNull DatabaseObject db,
+    public JoinTableObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity,
                             @NonNull Field field) {
 
         this.db                 = db;
+        this.entity             = entity;
         this.field              = field;
         this.directJoinColumns  = new Columns(entity);
         this.inverseJoinColumns = new Columns(entity);
@@ -89,49 +93,48 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
     }
 
 
-
     /**
-     * Create the {@link JoinTableObject} linked to a field annotated with {@link JoinTable}
-     * and start the mapping process.
-     *
-     * @param db        database the table belongs to
-     * @param entity    entity that owns the relationship
-     * @param field     field the table and its columns are generated from
-     *
-     * @return join table object
+     * Start the mapping process.
      */
-    public static JoinTableObject map(@NonNull DatabaseObject db,
-                                      @NonNull EntityObject<?> entity,
-                                      @NonNull Field field) {
-
-        JoinTableObject result = new JoinTableObject(db, entity, field);
+    public void map() {
         JoinTable annotation = field.getAnnotation(JoinTable.class);
 
         LogUtils.d("[Table \"" + annotation.name() + "\"] adding direct join columns");
 
         for (JoinColumn directJoinColumn : annotation.joinColumns()) {
-            BaseColumnObject column = JoinColumnObject.map(db, entity, field, directJoinColumn);
+            BaseColumnObject column = new JoinColumnObject(db, entity, field, directJoinColumn);
 
-            doAndNotifyAll(result, () -> {
-                result.directJoinColumns.add(column);
-                result.joinColumns.add(column);
+            doAndNotifyAll(this, () -> {
+                directJoinColumns.add(column);
+                joinColumns.add(column);
             });
+
+            column.map();
         }
 
         LogUtils.d("[Table \"" + annotation.name() + "\"] adding inverse join columns");
 
         for (JoinColumn inverseJoinColumn : annotation.inverseJoinColumns()) {
-            BaseColumnObject column = JoinColumnObject.map(db, entity, field, inverseJoinColumn);
+            BaseColumnObject column = new JoinColumnObject(db, entity, field, inverseJoinColumn);
 
-            doAndNotifyAll(result, () -> {
-                result.inverseJoinColumns.add(column);
-                result.joinColumns.add(column);
+            doAndNotifyAll(this, () -> {
+                inverseJoinColumns.add(column);
+                joinColumns.add(column);
             });
+
+            column.map();
+        }
+    }
+
+
+    public void waitUntilMapped() {
+        for (BaseColumnObject column : directJoinColumns) {
+            column.waitUntilMapped();
         }
 
-        waitWhile(entity.columns, () -> entity.columns.mappingStatus.get() != 0);
-
-        return result;
+        for (BaseColumnObject column : inverseJoinColumns) {
+            column.waitUntilMapped();
+        }
     }
 
 

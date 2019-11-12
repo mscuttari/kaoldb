@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -79,7 +80,6 @@ class EntityObject<T> {
     /** Entity class instantiator */
     private final ObjectInstantiator<T> instantiator;
 
-
     /**
      * Parent entity.
      * <p><code>Null</code> if the entity has no parent.</p>
@@ -87,7 +87,10 @@ class EntityObject<T> {
      * @see #loadParent()
      */
     @Nullable
-    public EntityObject<? super T> parent;
+    private EntityObject<? super T> parent;
+
+    /** Whether the parent has been determined or not during the mapping process */
+    private final AtomicBoolean parentLoaded = new AtomicBoolean(false);
 
     /**
      * Discriminator value.
@@ -130,6 +133,9 @@ class EntityObject<T> {
      * @see DatabaseObject#mapEntities()
      */
     public Columns columns = new Columns(this);
+
+    /** Whether, during the mapping process, the parent columns have already been added or not */
+    private final AtomicBoolean parentColumnsInherited = new AtomicBoolean(false);
 
     /**
      * Discriminator column.
@@ -180,15 +186,20 @@ class EntityObject<T> {
     public static <T> EntityObject<T> map(@NonNull DatabaseObject db, @NonNull Class<T> clazz) {
         EntityObject<T> result = new EntityObject<>(db, clazz);
 
-        try {
-            return result;
+        ConcurrentSession.singleTask(() -> {
+            LogUtils.d("[Database \"" + db.getName() + "\"] mapping class " + clazz.getSimpleName());
 
-        } finally {
+            result.loadTableName();
             result.loadParent();
             result.loadDiscriminatorValue();
-            result.loadTableName();
             result.loadRelationships();
-        }
+            result.loadColumns();
+
+            // Tell the database that the entity has been completely mapped
+            db.entityMapped();
+        });
+
+        return result;
     }
 
 
@@ -196,7 +207,7 @@ class EntityObject<T> {
     @Override
     public String toString() {
         return "Class: " + getName() + ", " +
-                "Parent: " + (parent == null ? "null" : parent.getName()) + ", " +
+                "Parent: " + (getParent() == null ? "null" : getParent().getName()) + ", " +
                 "Children: {" + implode(children, EntityObject::getName, ", ") + "}, " +
                 "Columns: " + columns + ", " +
                 "Primary keys: " + columns.getPrimaryKeys();
@@ -275,28 +286,67 @@ class EntityObject<T> {
     private void loadParent() {
         EntityObject<? super T> parent = null;
         Class<? super T> superClass = clazz.getSuperclass();
-        Collection<Class<?>> classes = db.getEntityClasses();
 
         while (superClass != null && superClass != Object.class && parent == null) {
             // We need to check if the current class is one of the mapped classes,
             // because there could be non-entity classes between the child and the
             // parent entities.
 
-            if (classes.contains(superClass)) {
+            if (db.contains(superClass)) {
                 parent = db.getEntity(superClass);
             }
 
             // Go up in the class hierarchy (which can be, as explained before,
-            // different from entity hierarchy.
+            // different from entity hierarchy).
             superClass = superClass.getSuperclass();
         }
 
         if (parent != null) {
-            parent.children.add(this);
+            parent.addChild(this);
         }
 
         EntityObject<? super T> result = parent;
-        doAndNotifyAll(this, () -> this.parent = result);
+
+        doAndNotifyAll(this, () -> {
+            this.parent = result;
+            parentLoaded.set(true);
+        });
+    }
+
+
+    /**
+     * Add a child to the children list.
+     *
+     * @param child     child entity
+     */
+    private void addChild(EntityObject<? extends T> child) {
+        doAndNotifyAll(this, () -> {
+            LogUtils.d("[Entity \"" + getName() + "\"] found child " + child.getName());
+            children.add(child);
+        });
+    }
+
+
+    /**
+     * Block the calling thread until the parent has been determined.
+     *
+     * @see #loadParent()
+     */
+    private void waitUntilParentLoaded() {
+        waitWhile(this, () -> !parentLoaded.get());
+    }
+
+
+    /**
+     * Get the parent entity.
+     * <p>The calling thread is blocked until the parent has been determined by the mapping process.</p>
+     *
+     * @return parent entity (<code>null</code> if the current entity has no parent)
+     */
+    @Nullable
+    public EntityObject<? super T> getParent() {
+        waitUntilParentLoaded();
+        return parent;
     }
 
 
@@ -329,7 +379,7 @@ class EntityObject<T> {
             }
         }
 
-        throw new NoSuchElementException("Entity \"" + clazz.getSimpleName() + "\" has no child with discriminator value \"" + discriminatorValue + "\"");
+        throw new NoSuchElementException("Entity \"" + clazz.getSimpleName() + "\" has no child with discriminator value \"" + discriminator + "\"");
     }
 
 
@@ -406,9 +456,8 @@ class EntityObject<T> {
      */
     public void loadColumns() {
         // Normal and join columns
-        Field[] allFields = clazz.getDeclaredFields();
 
-        for (Field field : allFields) {
+        for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Column.class)) {
                 columns.addAll(Columns.entityFieldToColumns(db, this, field));
 
@@ -428,19 +477,31 @@ class EntityObject<T> {
             // In fact, those annotations should only map the existing table columns to the join table ones.
         }
 
-        waitWhile(columns, () -> columns.mappingStatus.get() != 0);
+        columns.map();
+        columns.waitUntilMapped();
+
         LogUtils.i("[Entity \"" + getName() + "\"] own columns mapped");
 
+        // Wait until all the hierarchies are determined
+        Collection<EntityObject<?>> entities = db.getEntities();
+
+        for (EntityObject<?> entity : entities) {
+            entity.waitUntilParentLoaded();
+        }
+
         // Parent inherited primary keys
+        EntityObject<? super T> parent = getParent();
+
         if (parent != null) {
-            waitWhile(parent.columns, () -> !parent.columns.parentColumnsInherited.get());
+            waitWhile(this, () -> !parent.parentColumnsInherited.get());
             columns.addAll(parent.columns.getPrimaryKeys());
         }
 
-        doAndNotifyAll(columns, () -> columns.parentColumnsInherited.set(true));
+        doAndNotifyAll(this, () -> parentColumnsInherited.set(true));
         LogUtils.i("[Entity \"" + getName() + "\"] inherited columns added");
 
         // Discriminator column
+
         if (children.size() != 0) {
             if (!clazz.isAnnotationPresent(DiscriminatorColumn.class))
                 throw new InvalidConfigException("Class " + getName() + " has @Inheritance annotation but not @DiscriminatorColumn");
@@ -480,6 +541,8 @@ class EntityObject<T> {
                 });
             }
         }
+
+        LogUtils.d("[Entity \"" + getName() + "\"] all columns loaded");
     }
 
 
@@ -595,7 +658,7 @@ class EntityObject<T> {
                 column.setValue(result, fieldValue);
             }
 
-            entity = entity.parent;
+            entity = entity.getParent();
         }
 
         return result;
@@ -779,7 +842,6 @@ class EntityObject<T> {
 
         if (isPrimitiveType(clazz))
             return true;
-
 
         // Non-primitive data existence must be checked and so a select query is executed
         // The select query is based on the primary keys of the entity
@@ -1000,6 +1062,8 @@ class EntityObject<T> {
      */
     @Nullable
     private String getTableInheritanceConstraints() {
+        EntityObject<? super T> parent = getParent();
+
         if (parent == null) {
             return null;
         }

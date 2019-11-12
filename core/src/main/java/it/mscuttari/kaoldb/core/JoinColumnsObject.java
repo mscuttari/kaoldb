@@ -32,7 +32,7 @@ import static it.mscuttari.kaoldb.core.Propagation.Action.*;
  *
  * @see JoinColumns
  */
-final class JoinColumnsObject extends Columns implements ColumnsContainer {
+final class JoinColumnsObject extends Columns {
 
     /** Field annotated with {@link JoinColumns} */
     public final Field field;
@@ -48,7 +48,7 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
      * @param entity    entity the columns belong to
      * @param field     field the columns are generated from
      */
-    private JoinColumnsObject(@NonNull DatabaseObject db,
+    public JoinColumnsObject(@NonNull DatabaseObject db,
                               @NonNull EntityObject<?> entity,
                               @NonNull Field field) {
 
@@ -67,35 +67,19 @@ final class JoinColumnsObject extends Columns implements ColumnsContainer {
             // Normally not reachable
             throw new MappingException("@OneToOne or @ManyToOne annotations not found on field \"" + field.getName() + "\"");
         }
+
+        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
+
+        for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
+            add(new JoinColumnObject(db, entity, field, joinColumnAnnotation));
+        }
     }
 
 
-    /**
-     * Create the {@link JoinColumnsObject} linked to a field annotated with {@link JoinColumns}
-     * and start the mapping process.
-     *
-     * @param db        database
-     * @param entity    entity the columns belong to
-     * @param field     field the columns are generated from
-     *
-     * @return columns container
-     */
-    public static JoinColumnsObject map(@NonNull DatabaseObject db,
-                                        @NonNull EntityObject<?> entity,
-                                        @NonNull Field field) {
-
-        JoinColumnsObject result = new JoinColumnsObject(db, entity, field);
-
-        try {
-            return result;
-
-        } finally {
-            JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
-
-            for (JoinColumn joinColumnAnnotation : joinColumnsAnnotation.value()) {
-                JoinColumnObject joinColumn = JoinColumnObject.map(db, entity, field, joinColumnAnnotation);
-                result.add(joinColumn);
-            }
+    @Override
+    public void map() {
+        for (BaseColumnObject column : this) {
+            column.map();
         }
     }
 

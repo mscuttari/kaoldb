@@ -43,45 +43,24 @@ final class SimpleColumnObject extends BaseColumnObject {
      * @param entity    entity the column belongs to
      * @param field     field the column is generated from
      */
-    private SimpleColumnObject(@NonNull DatabaseObject db,
+    public SimpleColumnObject(@NonNull DatabaseObject db,
                                @NonNull EntityObject<?> entity,
                                @NonNull Field field) {
 
         super(db, entity, field);
+
+        loadName();
     }
 
 
-    /**
-     * Create the {@link SimpleColumnObject} linked to a field annotated with {@link Column}
-     * and start the mapping process.
-     *
-     * @param db        database
-     * @param entity    entity the column belongs to
-     * @param field     field the column is generated from
-     *
-     * @return column object
-     */
-    public static SimpleColumnObject map(@NonNull DatabaseObject db,
-                                         @NonNull EntityObject<?> entity,
-                                         @NonNull Field field) {
-
-        SimpleColumnObject result = new SimpleColumnObject(db, entity, field);
-        result.loadName();
-
-        ConcurrentSession concurrentSession = new ConcurrentSession();
-
-        concurrentSession.submit(() -> {
-            result.loadCustomColumnDefinition();
-            result.loadType();
-            result.loadNullableProperty();
-            result.loadPrimaryKeyProperty();
-            result.loadUniqueProperty();
-            result.loadDefaultValue();
-
-            doAndNotifyAll(entity.columns, () -> entity.columns.mappingStatus.decrementAndGet());
-        });
-
-        return result;
+    @Override
+    public void mapAsync() {
+        loadCustomColumnDefinition();
+        loadType();
+        loadNullableProperty();
+        loadPrimaryKeyProperty();
+        loadUniqueProperty();
+        loadDefaultValue();
     }
 
 

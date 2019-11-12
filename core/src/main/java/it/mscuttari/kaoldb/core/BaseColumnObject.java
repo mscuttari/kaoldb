@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,6 +35,7 @@ import org.objenesis.instantiator.ObjectInstantiator;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
@@ -60,6 +62,9 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
     /** Field class instantiator */
     private final ObjectInstantiator<?> instantiator;
+
+    /** Mapping session */
+    private final ConcurrentSession mappingSession = new ConcurrentSession();
 
     /** Column name */
     public String name;
@@ -122,9 +127,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
         }
 
         this.instantiator = objenesis.getInstantiatorOf(fieldClass);
-
-        // Tell the entity that a new column is being mapped
-        entity.columns.mappingStatus.incrementAndGet();
     }
 
 
@@ -155,6 +157,29 @@ abstract class BaseColumnObject implements ColumnsContainer {
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new SingleColumnIterator(this);
+    }
+
+
+    @Override
+    public final void map() {
+        mappingSession.submit(this::mapAsync);
+    }
+
+
+    /**
+     * Actions that are executed asynchronously in order to load the column properties.
+     */
+    protected abstract void mapAsync();
+
+
+    @Override
+    public final void waitUntilMapped() {
+        try {
+            mappingSession.waitForAll();
+
+        } catch (ExecutionException | InterruptedException e) {
+            throw new MappingException(e);
+        }
     }
 
 
@@ -451,7 +476,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
         } else if (clazz.equals(Date.class) || clazz.equals(Calendar.class)) {
             return "INTEGER";
         } else if (clazz.isEnum()) {
-            return  "TEXT";
+            return "TEXT";
         } else {
             return "BLOB";
         }

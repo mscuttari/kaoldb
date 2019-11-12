@@ -202,7 +202,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
         }
 
         // Parents
-        EntityObject<?> parent = entity.parent;
+        EntityObject<?> parent = entity.getParent();
 
         while (parent != null) {
             String alias = root.getAlias() + parent.getName();
@@ -215,7 +215,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
                 );
             }
 
-            parent = parent.parent;
+            parent = parent.getParent();
         }
 
         // Children

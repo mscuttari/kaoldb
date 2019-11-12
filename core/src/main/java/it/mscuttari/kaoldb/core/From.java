@@ -82,14 +82,14 @@ final class From<X> implements Root<X> {
         try {
             // Resolve hierarchy joins if the hierarchy tree has not been visited yet
 
-            if (Boolean.valueOf(false).equals(hierarchyVisited.get()) && (entity.parent != null || entity.children.size() > 0)) {
+            if (Boolean.valueOf(false).equals(hierarchyVisited.get()) && (entity.getParent() != null || entity.children.size() > 0)) {
                 hierarchyVisited.set(true);
                 Root<X> root = this;
                 EntityObject<X> entity = db.getEntity(getEntityClass());
 
                 // Merge parent tables
-                if (entity.parent != null) {
-                    EntityObject<? super X> parent = entity.parent;
+                if (entity.getParent() != null) {
+                    EntityObject<? super X> parent = entity.getParent();
 
                     while (parent != null) {
                         From<?> parentRoot = new From<>(db, queryBuilder, parent.clazz, getAlias() + parent.getName());
@@ -110,7 +110,7 @@ final class From<X> implements Root<X> {
 
                         root = new Join<>(db, Join.JoinType.INNER, root, parentRoot, on);
 
-                        parent = parent.parent;
+                        parent = parent.getParent();
                     }
                 }
 

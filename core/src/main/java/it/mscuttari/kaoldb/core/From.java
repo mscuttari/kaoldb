@@ -95,7 +95,7 @@ final class From<X> implements Root<X> {
                         From<?> parentRoot = new From<>(db, queryBuilder, parent.clazz, getAlias() + parent.getName());
                         Expression on = null;
 
-                        for (BaseColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
+                        for (FieldColumnObject primaryKey : parent.columns.getPrimaryKeys()) {
                             Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
                             Variable b = new Variable<>(parentRoot.getAlias(), new SingleProperty<>(parent.clazz, primaryKey.type, primaryKey.field));
 
@@ -127,7 +127,7 @@ final class From<X> implements Root<X> {
                             From<?> childRoot = new From<>(db, queryBuilder, child.clazz, getAlias() + child.getName());
                             Expression on = null;
 
-                            for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
+                            for (FieldColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
                                 Variable a = new Variable<>(alias, new SingleProperty<>(entity.clazz, primaryKey.type, primaryKey.field));
                                 Variable b = new Variable<>(childRoot.getAlias(), new SingleProperty<>(child.clazz, primaryKey.type, primaryKey.field));
 

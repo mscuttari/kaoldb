@@ -50,7 +50,7 @@ class Columns implements ColumnsContainer {
     private final Map<String, BaseColumnObject> namesMap = new ArrayMap<>();
 
     /** Primary keys of the table (subset of {@link #columns}) */
-    private final Collection<BaseColumnObject> primaryKeys = new ArraySet<>();
+    private final Collection<FieldColumnObject> primaryKeys = new ArraySet<>();
 
 
     /**
@@ -100,8 +100,9 @@ class Columns implements ColumnsContainer {
         waitUntilMapped();
 
         for (BaseColumnObject column : this) {
-            if (column.primaryKey)
-                primaryKeys.add(column);
+            if (column.primaryKey && column instanceof FieldColumnObject) {
+                primaryKeys.add((FieldColumnObject) column);
+            }
         }
     }
 
@@ -148,7 +149,7 @@ class Columns implements ColumnsContainer {
      *
      * @return primary keys
      */
-    public final synchronized Collection<BaseColumnObject> getPrimaryKeys() {
+    public final synchronized Collection<FieldColumnObject> getPrimaryKeys() {
         return Collections.unmodifiableCollection(primaryKeys);
     }
 

@@ -55,6 +55,7 @@ class EntityManagerImpl implements EntityManager {
 
     /** The database managed by this entity manager */
     @NonNull private final DatabaseObject database;
+
     public final ConcurrentSQLiteOpenHelper dbHelper;
 
     /** Map between the observed entities and the queries to be executed when they are modified */
@@ -168,7 +169,6 @@ class EntityManagerImpl implements EntityManager {
 
         // Current working entity and the previous child entity
         EntityObject<?> currentEntity = database.getEntity(obj.getClass());
-        EntityObject<?> childEntity = null;
 
         // Open the database and start a transaction
         dbHelper.open();
@@ -184,7 +184,7 @@ class EntityManagerImpl implements EntityManager {
                 }
 
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
+                ContentValues cv = currentEntity.toContentValues(obj, this);
 
                 // Persist
                 if (cv.size() != 0) {
@@ -192,7 +192,6 @@ class EntityManagerImpl implements EntityManager {
                 }
 
                 // Go up in the entity hierarchy
-                childEntity = currentEntity;
                 currentEntity = currentEntity.getParent();
             }
 
@@ -243,7 +242,6 @@ class EntityManagerImpl implements EntityManager {
 
         // Current working entity and the previous child entity
         EntityObject currentEntity = database.getEntity(obj.getClass());
-        EntityObject childEntity = null;
 
         // Open the database and start a transaction
         dbHelper.open();
@@ -259,12 +257,12 @@ class EntityManagerImpl implements EntityManager {
                 }
 
                 // Extract the current entity data from the object to be persisted
-                ContentValues cv = currentEntity.toContentValues(obj, childEntity, this);
+                ContentValues cv = currentEntity.toContentValues(obj, this);
 
                 // Update
                 if (cv.size() != 0) {
                     StringBuilder where = new StringBuilder();
-                    Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
+                    Collection<FieldColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
                     List<String> whereArgs = new ArrayList<>(primaryKeys.size());
 
                     for (BaseColumnObject primaryKey : primaryKeys) {
@@ -283,7 +281,6 @@ class EntityManagerImpl implements EntityManager {
                 }
 
                 // Go up in the entity hierarchy
-                childEntity = currentEntity;
                 currentEntity = currentEntity.getParent();
             }
 
@@ -350,7 +347,7 @@ class EntityManagerImpl implements EntityManager {
 
                 // Remove
                 StringBuilder where = new StringBuilder();
-                Collection<BaseColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
+                Collection<FieldColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
                 List<String> whereArgs = new ArrayList<>(primaryKeys.size());
 
                 for (BaseColumnObject primaryKey : primaryKeys) {

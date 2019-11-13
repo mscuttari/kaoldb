@@ -19,7 +19,6 @@ package it.mscuttari.kaoldb.core;
 import android.content.ContentValues;
 import android.database.Cursor;
 
-import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
@@ -28,15 +27,9 @@ import java.util.concurrent.ExecutionException;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisStd;
-import org.objenesis.instantiator.ObjectInstantiator;
-
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
+import it.mscuttari.kaoldb.interfaces.EntityManager;
 
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
@@ -45,6 +38,7 @@ import static it.mscuttari.kaoldb.core.StringUtils.escape;
  *
  * @see SimpleColumnObject
  * @see JoinColumnObject
+ * @see DiscriminatorColumnObject
  */
 abstract class BaseColumnObject implements ColumnsContainer {
 
@@ -55,13 +49,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
     /** Entity the column belongs to */
     @NonNull
     protected final EntityObject<?> entity;
-
-    /** Field the column is generated from */
-    @NonNull
-    public final Field field;
-
-    /** Field class instantiator */
-    private final ObjectInstantiator<?> instantiator;
 
     /** Mapping session */
     private final ConcurrentSession mappingSession = new ConcurrentSession();
@@ -95,38 +82,12 @@ abstract class BaseColumnObject implements ColumnsContainer {
      *
      * @param db                database
      * @param entity            entity the column belongs to
-     * @param field             field the column is generated from
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
-                            @NonNull EntityObject<?> entity,
-                            @NonNull Field field) {
+                            @NonNull EntityObject<?> entity) {
 
         this.db = db;
         this.entity = entity;
-        this.field = field;
-
-        Objenesis objenesis = new ObjenesisStd();
-        Class<?> fieldClass = field.getType();
-
-        if (fieldClass == boolean.class) {
-            fieldClass = Boolean.class;
-        } else if (fieldClass == byte.class) {
-            fieldClass = Byte.class;
-        } else if (fieldClass == char.class) {
-            fieldClass = Character.class;
-        } else if (fieldClass == short.class) {
-            fieldClass = Short.class;
-        } else if (fieldClass == int.class) {
-            fieldClass = Integer.class;
-        } else if (fieldClass == long.class) {
-            fieldClass = Long.class;
-        } else if (fieldClass == float.class) {
-            fieldClass = Float.class;
-        } else if (fieldClass == double.class) {
-            fieldClass = Double.class;
-        }
-
-        this.instantiator = objenesis.getInstantiatorOf(fieldClass);
     }
 
 
@@ -155,7 +116,7 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
     @NonNull
     @Override
-    public Iterator<BaseColumnObject> iterator() {
+    public final Iterator<BaseColumnObject> iterator() {
         return new SingleColumnIterator(this);
     }
 
@@ -184,100 +145,56 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
 
     /**
-     * Get the default name for a column.
-     *
-     * <p>
-     * Uppercase characters are replaced with underscore followed by the same character converted
-     * to lowercase. Only the first character, if uppercase, is converted to lowercase avoiding
-     * the underscore.<br>
-     * Example: <code>columnFieldName</code> => <code>column_field_name</code>
-     * </p>
-     *
-     * @param field     field the column is generated from
-     * @return column name
-     */
-    protected static String getDefaultName(@NonNull Field field) {
-        String fieldName = field.getName();
-        char[] c = fieldName.toCharArray();
-        c[0] = Character.toLowerCase(c[0]);
-        fieldName = new String(c);
-        return fieldName.replaceAll("([A-Z])", "_$1").toLowerCase();
-    }
-
-
-    /**
-     * Get field value.
+     * Extract from an object the value associated to this column.
      *
      * @param obj       object to get the value from
-     * @return field value
-     * @throws PojoException if the field can't be accessed
+     * @return value
      */
     @Nullable
-    public final Object getValue(Object obj) {
-        if (obj == null)
-            return null;
-
-        field.setAccessible(true);
-
-        try {
-            return field.get(obj);
-        } catch (IllegalAccessException e) {
-            throw new PojoException(e);
-        }
-    }
+    public abstract Object getValue(Object obj);
 
 
     /**
-     * Set field value.
+     * Set the object's field associated to this column to a given value.
      *
      * @param obj       object containing the field to be set
      * @param value     value to be set
-     *
-     * @throws PojoException if the field can't be accessed
      */
-    public final void setValue(Object obj, Object value) {
-        field.setAccessible(true);
-
-        try {
-            field.set(obj, value);
-        } catch (IllegalAccessException e) {
-            throw new PojoException(e);
-        }
-    }
+    public abstract void setValue(Object obj, Object value);
 
 
     /**
-     * Check if the field leads to a relationship with another entity.<br>
-     * This is the same of checking if the field is annotated with {@link JoinColumn},
-     * {@link JoinColumns} or {@link JoinTable}.
+     * Check if the column leads to a relationship with another entity.
      *
-     * @return <code>true</code> if the field leads to a relationship; <code>false</code> otherwise
+     * @return <code>true</code> if the column has a relationship with another one;
+     *         <code>false</code> otherwise
      */
     public abstract boolean hasRelationship();
 
 
     /**
-     * Create an instance of the field class.
+     * Check if the object returned by {@link #getValue(Object)} already exists in the database.
      *
-     * @return object having a class equal to the one of {@link #field}
+     * @param obj               object containing this column
+     * @param entityManager     entity manager
+     *
+     * @return <code>true</code> if the data already exits in the database; <code>false</code> otherwise
      */
-    public Object newInstance() {
-        return instantiator.newInstance();
-    }
+    public abstract boolean isDataExisting(Object obj, EntityManager entityManager);
 
 
     /**
      * Extract the column value from a {@link Cursor}.
      *
-     * @param c             cursor
-     * @param alias         alias of the table
+     * @param c         cursor
+     * @param alias     alias of the table
      *
      * @return column value
      *
      * @throws PojoException if the data type is not compatible with the one found in the cursor
      */
     @SuppressWarnings("unchecked")
-    public Object parseCursor(Cursor c, String alias) {
+    public final Object parseCursor(Cursor c, String alias) {
         int columnIndex = c.getColumnIndexOrThrow(alias + "." + name);
         int columnType = c.getType(columnIndex);
 
@@ -325,8 +242,9 @@ abstract class BaseColumnObject implements ColumnsContainer {
                 value = c.getString(columnIndex);
             }
 
-            if (!(type.equals(String.class)))
+            if (!(type.equals(String.class))) {
                 throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found String");
+            }
 
         }
 

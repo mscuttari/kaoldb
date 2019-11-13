@@ -34,6 +34,6 @@ public enum DiscriminatorType {
     /**
      * Integer as the discriminator type.
      */
-    INTEGER;
+    INTEGER
 
 }

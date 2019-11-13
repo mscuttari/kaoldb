@@ -22,9 +22,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,8 +40,6 @@ import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinColumns;
-import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
@@ -55,9 +51,6 @@ import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
-import it.mscuttari.kaoldb.interfaces.Expression;
-import it.mscuttari.kaoldb.interfaces.QueryBuilder;
-import it.mscuttari.kaoldb.interfaces.Root;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
@@ -123,14 +116,10 @@ class EntityObject<T> {
     /**
      * Columns of the table.
      *
-     * <p>Populated during the 2nd phase of the mapping process.<br>
-     * At the end of the mapping process, it contains all and only the columns that build
-     * the real table in the database. Therefore, it contains also the inherited primary key
-     * columns in case of a <code>JOINED</code> inheritance strategy or the children columns
-     * in case of a <code>SINGLE_TABLE</code> inheritance strategy.</p>
+     * <p>At the end of the mapping process, it contains all and only the columns that build
+     * the real table in the database. Therefore, it contains also the inherited primary key</p>
      *
      * @see #loadColumns()
-     * @see DatabaseObject#mapEntities()
      */
     public Columns columns = new Columns(this);
 
@@ -139,10 +128,8 @@ class EntityObject<T> {
 
     /**
      * Discriminator column.
-     * <p>Determined during the 2nd phase of the mapping process.</p>
      *
      * @see #loadColumns()
-     * @see DatabaseObject#mapEntities()
      */
     @Nullable
     public BaseColumnObject discriminatorColumn;
@@ -509,7 +496,7 @@ class EntityObject<T> {
             DiscriminatorColumn discriminatorColumnAnnotation = clazz.getAnnotation(DiscriminatorColumn.class);
 
             if (discriminatorColumnAnnotation == null) {
-                // Security check. Normally not reachable
+                // Security check. Normally not reachable.
                 throw new MappingException("Class " + getName() + " doesn't have @DiscriminatorColumn annotation");
             }
 
@@ -518,8 +505,13 @@ class EntityObject<T> {
 
             discriminatorColumn = columns.get(discriminatorColumnAnnotation.name());
 
+            // Create the discriminator column if it doesn't exist
             if (discriminatorColumn == null) {
-                throw new InvalidConfigException("Class " + getName() + ": discriminator column \"" + discriminatorColumnAnnotation.name() + "\" not found");
+                discriminatorColumn = new DiscriminatorColumnObject(db, this);
+                discriminatorColumn.map();
+                discriminatorColumn.waitUntilMapped();
+
+                columns.add(discriminatorColumn);
             }
 
             doAndNotifyAll(discriminatorColumn, () -> discriminatorColumn.nullable = false);
@@ -673,7 +665,6 @@ class EntityObject<T> {
      * {@link SQLiteDatabase#insert(String, String, ContentValues)} method would throw an exception.</p>
      *
      * @param entityManager     entity manager
-     * @param childEntity       immediate child entity (can be <code>null</code> if this entity has no children)
      * @param obj               object to be converted
      *
      * @return data ready to be saved in the database
@@ -683,220 +674,18 @@ class EntityObject<T> {
      * @throws PojoException if the field associated with the discriminator value can't be accessed
      */
     @NonNull
-    public ContentValues toContentValues(Object obj, EntityObject childEntity, EntityManager entityManager) {
+    public ContentValues toContentValues(Object obj, EntityManager entityManager) {
         ContentValues cv = new ContentValues();
 
-        // Discriminator column
-        if (childEntity != null) {
-            assert discriminatorColumn != null;
-
-            if (cv.containsKey(discriminatorColumn.name)) {
-                // Discriminator value has been manually set.
-                // Checking if it is in accordance with the child entity class.
-
-                Object specifiedDiscriminatorValue = cv.get(discriminatorColumn.name);
-
-                if (specifiedDiscriminatorValue == null || !specifiedDiscriminatorValue.equals(childEntity.discriminatorValue))
-                    throw new PojoException("Wrong discriminator value: expected \"" + childEntity.discriminatorValue + "\", found \"" + specifiedDiscriminatorValue + "\"");
-
-            } else {
-                // The discriminator value has not been found. Adding it automatically
-
-                if (discriminatorColumn.field.isAnnotationPresent(Column.class)) {
-                    // The discriminator column is linked to a field annotated with @Column
-                    discriminatorColumn.addToContentValues(cv, childEntity.discriminatorValue);
-
-                } else if (discriminatorColumn.field.isAnnotationPresent(JoinColumn.class)) {
-                    // The discriminator column is linked to a field annotated with @JoinColumn
-                    JoinColumn joinColumnAnnotation = discriminatorColumn.field.getAnnotation(JoinColumn.class);
-                    Class<?> discriminatorType = discriminatorColumn.field.getType();
-
-                    // Create the discriminator object containing the discriminator column
-                    Object discriminator = discriminatorColumn.newInstance();
-
-                    try {
-                        // Set the child discriminator value
-                        Field discriminatorField = discriminatorType.getField(joinColumnAnnotation.referencedColumnName());
-                        discriminatorField.setAccessible(true);
-                        discriminatorField.set(discriminator, childEntity.discriminatorValue);
-
-                        // Assign the discriminator value to the object to be persisted
-                        discriminatorColumn.setValue(obj, discriminator);
-
-                    } catch (IllegalAccessException e) {
-                        throw new PojoException(e);
-
-                    } catch (NoSuchFieldException e) {
-                        throw new PojoException(e);
-                    }
-
-                    discriminatorColumn.addToContentValues(cv, obj);
-
-                } else if (discriminatorColumn.field.isAnnotationPresent(JoinColumns.class)) {
-                    // The discriminator column is linked to a field annotated with @JoinColumns
-                    JoinColumns joinColumnsAnnotation = discriminatorColumn.field.getAnnotation(JoinColumns.class);
-                    Class<?> discriminatorType = discriminatorColumn.field.getType();
-
-                    // Create the discriminator object containing the discriminator column
-                    Object discriminator = discriminatorColumn.newInstance();
-
-                    try {
-                        for (JoinColumn joinColumn : joinColumnsAnnotation.value()) {
-                            if (joinColumn.name().equals(discriminatorColumn.name)) {
-                                // Set the child discriminator value
-                                Field discriminatorField = discriminatorType.getField(joinColumn.referencedColumnName());
-                                discriminatorField.set(discriminator, childEntity.discriminatorValue);
-
-                                // Assign the discriminator value to the object to be persisted
-                                discriminatorColumn.setValue(obj, discriminator);
-
-                                break;
-                            }
-                        }
-
-                    } catch (IllegalAccessException e) {
-                        throw new PojoException(e);
-
-                    } catch (NoSuchFieldException e) {
-                        throw new PojoException(e);
-                    }
-
-                    discriminatorColumn.addToContentValues(cv, obj);
-
-                } else if (discriminatorColumn.field.isAnnotationPresent(JoinTable.class)) {
-                    // The discriminator column is linked to a field annotated with @JoinTable
-                    Class<?> discriminatorType = discriminatorColumn.field.getType();
-
-                    // Create the discriminator object containing the discriminator column
-                    Object discriminator = discriminatorColumn.newInstance();
-
-                    try {
-                        JoinTable discriminatorColumnAnnotation = discriminatorColumn.field.getAnnotation(JoinTable.class);
-
-                        for (JoinColumn joinColumn : (discriminatorColumnAnnotation).joinColumns()) {
-                            if (joinColumn.name().equals(discriminatorColumn.name)) {
-                                // Set the child discriminator value
-                                Field discriminatorField = discriminatorType.getField(joinColumn.referencedColumnName());
-                                discriminatorField.set(discriminator, childEntity.discriminatorValue);
-
-                                // Assign the discriminator value to the object to be persisted
-                                discriminatorColumn.setValue(obj, discriminator);
-
-                                break;
-                            }
-                        }
-
-                    } catch (IllegalAccessException e) {
-                        throw new PojoException(e);
-
-                    } catch (NoSuchFieldException e) {
-                        throw new PojoException(e);
-                    }
-
-                    discriminatorColumn.addToContentValues(cv, obj);
-                }
-            }
-        }
-
-        // Columns
         for (BaseColumnObject column : columns) {
-            Object fieldValue = column.getValue(obj);
-
-            if (!checkDataExistence(fieldValue, db, entityManager))
-                throw new QueryException("Field \"" + column.field.getName() + "\" doesn't exist in the database. Persist it first!");
+            if (!column.isDataExisting(obj, entityManager)) {
+                throw new QueryException("Object of column \"" + column.name + "\" doesn't exist in the database. Persist it first!");
+            }
 
             column.addToContentValues(cv, obj);
         }
 
         return cv;
-    }
-
-
-    /**
-     * Check if an object already exists in the database.
-     *
-     * @param obj               object to be searched. In case of basic object type (Integer,
-     *                          String, etc.) the check will be successful; in case of complex type
-     *                          (custom classes), a query searching for the object is run
-     * @param db                {@link DatabaseObject} of the database the entity belongs to
-     * @param entityManager     entity manager
-     *
-     * @return <code>true</code> if the data already exits in the database; <code>false</code> otherwise
-     *
-     * @throws InvalidConfigException  if the entity has a primary key not linked to a class field
-     *                                 (not normally reachable situation)
-     *
-     * @see #isPrimitiveType(Class)
-     */
-    @SuppressWarnings("unchecked")
-    private static boolean checkDataExistence(Object obj, DatabaseObject db, EntityManager entityManager) {
-        // Null data is considered to be existing
-        if (obj == null)
-            return true;
-
-        Class<?> clazz = obj.getClass();
-
-        // Primitive data can't be stored alone in the database because they have no table associated.
-        // Therefore, primitive data existence check should be skipped (this way it is always
-        // considered successful)
-
-        if (isPrimitiveType(clazz))
-            return true;
-
-        // Non-primitive data existence must be checked and so a select query is executed
-        // The select query is based on the primary keys of the entity
-        EntityObject entity = db.getEntity(clazz);
-
-        QueryBuilder<?> qb = entityManager.getQueryBuilder(entity.clazz);
-        Root root = qb.getRoot(entity.clazz);
-
-        Expression where = null;
-
-        for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
-            // Create the property that the generated class would have because of the primary key field
-            SingleProperty property = new SingleProperty<>(entity.clazz, primaryKey.field.getType(), primaryKey.field);
-
-            Object value = primaryKey.getValue(obj);
-            Expression expression = root.eq(property, value);
-
-            // In case of multiple primary keys, concatenated the WHERE expressions
-            where = where == null ? expression : where.and(expression);
-        }
-
-        // Run the query and check if its result is not an empty set
-        Object queryResult = qb.from(root).where(where).build(root).getSingleResult();
-        return queryResult != null;
-    }
-
-
-    /**
-     * Check if the data class can be stored in the database as if it is a primitive type.
-     *
-     * @param clazz     data class
-     * @return <code>true</code> if a "primitive-compatible class" is found;
-     *         <code>false</code> otherwise
-     */
-    private static boolean isPrimitiveType(Class<?> clazz) {
-        return Enum.class.isAssignableFrom(clazz) ||
-                boolean.class.isAssignableFrom(clazz) ||
-                Boolean.class.isAssignableFrom(clazz) ||
-                byte.class.isAssignableFrom(clazz) ||
-                Byte.class.isAssignableFrom(clazz) ||
-                char.class.isAssignableFrom(clazz) ||
-                Character.class.isAssignableFrom(clazz) ||
-                short.class.isAssignableFrom(clazz) ||
-                Short.class.isAssignableFrom(clazz) ||
-                int.class.isAssignableFrom(clazz) ||
-                Integer.class.isAssignableFrom(clazz) ||
-                long.class.isAssignableFrom(clazz) ||
-                Long.class.isAssignableFrom(clazz) ||
-                float.class.isAssignableFrom(clazz) ||
-                Float.class.isAssignableFrom(clazz) ||
-                double.class.isAssignableFrom(clazz) ||
-                Double.class.isAssignableFrom(clazz) ||
-                String.class.isAssignableFrom(clazz) ||
-                Date.class.isAssignableFrom(clazz) ||
-                Calendar.class.isAssignableFrom(clazz);
     }
 
 
@@ -960,7 +749,7 @@ class EntityObject<T> {
      * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
      */
     @Nullable
-    public static String getTablePrimaryKeysSql(Collection<BaseColumnObject> primaryKeys) {
+    public static String getTablePrimaryKeysSql(Collection<FieldColumnObject> primaryKeys) {
         if (primaryKeys == null || primaryKeys.size() == 0) {
             return null;
         }
@@ -1069,7 +858,7 @@ class EntityObject<T> {
         }
 
         // Create associations
-        Collection<BaseColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
+        Collection<FieldColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
         String columns = implode(parentPrimaryKeys, primaryKey -> escape(primaryKey.name), ", ");
         Propagation propagation = new Propagation(CASCADE, CASCADE);
 

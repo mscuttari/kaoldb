@@ -28,6 +28,7 @@ import it.mscuttari.kaoldb.exceptions.PojoException;
  * columns seem to be part of a single collection.
  *
  * @see BaseColumnObject
+ * @see DiscriminatorColumnObject
  * @see SimpleColumnObject
  * @see JoinColumnObject
  * @see JoinColumnsObject
@@ -47,6 +48,7 @@ interface ColumnsContainer extends Iterable<BaseColumnObject> {
      * @see #map()
      */
     void waitUntilMapped();
+
 
     /**
      * Add the columns to a {@link ContentValues} data set.

@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import androidx.annotation.NonNull;
+
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.exceptions.MappingException;
@@ -34,7 +35,7 @@ import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
  *
  * @see Column
  */
-final class SimpleColumnObject extends BaseColumnObject {
+final class SimpleColumnObject extends FieldColumnObject {
 
     /**
      * Constructor.
@@ -44,8 +45,8 @@ final class SimpleColumnObject extends BaseColumnObject {
      * @param field     field the column is generated from
      */
     public SimpleColumnObject(@NonNull DatabaseObject db,
-                               @NonNull EntityObject<?> entity,
-                               @NonNull Field field) {
+                              @NonNull EntityObject<?> entity,
+                              @NonNull Field field) {
 
         super(db, entity, field);
 

@@ -266,7 +266,7 @@ class QueryImpl<M> implements Query<M> {
 
                     Expression where = null;
 
-                    for (BaseColumnObject primaryKey : currentEntity.columns.getPrimaryKeys()) {
+                    for (FieldColumnObject primaryKey : currentEntity.columns.getPrimaryKeys()) {
                         SingleProperty primaryKeyProperty = new SingleProperty<>(currentEntity.clazz, primaryKey.type, primaryKey.field);
                         Expression primaryKeyEquality = leftRoot.eq(primaryKeyProperty, primaryKey.getValue(object));
                         where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);
@@ -327,7 +327,7 @@ class QueryImpl<M> implements Query<M> {
                 Root<M> join = owningRoot.join(nonOwningRoot, property);
                 Expression where = null;
 
-                for (BaseColumnObject primaryKey : current.columns.getPrimaryKeys()) {
+                for (FieldColumnObject primaryKey : current.columns.getPrimaryKeys()) {
                     SingleProperty primaryKeyProperty = new SingleProperty<>(current.clazz, primaryKey.type, primaryKey.field);
                     Expression primaryKeyEquality = objectRoot.eq(primaryKeyProperty, primaryKey.getValue(object));
                     where = where == null ? primaryKeyEquality : where.and(primaryKeyEquality);

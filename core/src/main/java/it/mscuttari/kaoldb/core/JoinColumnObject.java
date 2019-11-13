@@ -39,7 +39,7 @@ import static it.mscuttari.kaoldb.core.Propagation.Action.*;
  *
  * @see JoinColumn
  */
-final class JoinColumnObject extends BaseColumnObject {
+final class JoinColumnObject extends FieldColumnObject {
 
     /** The {@link JoinColumn} annotation that is responsible of this column properties */
     @NonNull

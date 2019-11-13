@@ -28,7 +28,6 @@ import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 
 import static it.mscuttari.kaoldb.core.ConcurrentSession.doAndNotifyAll;
-import static it.mscuttari.kaoldb.core.ConcurrentSession.waitWhile;
 import static it.mscuttari.kaoldb.core.Propagation.Action.*;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
 import static it.mscuttari.kaoldb.core.StringUtils.implode;

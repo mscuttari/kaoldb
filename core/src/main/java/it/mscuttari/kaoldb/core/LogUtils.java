@@ -26,11 +26,9 @@ class LogUtils {
     /** Whether the logs should be sent to Logcat or directly to the standard output */
     private static final boolean writeToLogcat = false;
 
-
     private LogUtils() {
 
     }
-
 
     /**
      * Log verbose message.
@@ -47,7 +45,6 @@ class LogUtils {
         }
     }
 
-
     /**
      * Log debug message.
      *
@@ -62,7 +59,6 @@ class LogUtils {
             }
         }
     }
-
 
     /**
      * Log information message.
@@ -79,7 +75,6 @@ class LogUtils {
         }
     }
 
-
     /**
      * Log warning message.
      *
@@ -95,7 +90,6 @@ class LogUtils {
         }
     }
 
-
     /**
      * Log error message.
      *
@@ -110,7 +104,6 @@ class LogUtils {
             }
         }
     }
-
 
     /**
      * Log critical message.

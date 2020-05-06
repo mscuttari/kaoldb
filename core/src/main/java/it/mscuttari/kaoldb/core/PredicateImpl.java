@@ -76,13 +76,11 @@ final class PredicateImpl<T> implements ExpressionInt {
 
     }
 
-
     @NonNull  private final PredicateType operation;
     @NonNull  private final DatabaseObject db;
     @NonNull  public final Root<?> root;
     @NonNull  public final Variable<T> x;
     @Nullable public final Variable<T> y;
-
 
     /**
      * Constructor.
@@ -108,7 +106,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
 
-
     /**
      * Create <code>"IS NULL"</code> predicate.
      *
@@ -121,7 +118,6 @@ final class PredicateImpl<T> implements ExpressionInt {
     public static <T> PredicateImpl isNull(DatabaseObject db, Root<?> root, Variable<T> x) {
         return new PredicateImpl<>(PredicateType.IS_NULL, db, root, x, null);
     }
-
 
     /**
      * Create <code>"EQUALS"</code> predicate.
@@ -137,7 +133,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return new PredicateImpl<>(PredicateType.EQUAL, db, root, x, y);
     }
 
-
     /**
      * Create <code>"GREATER THAN"</code> predicate.
      *
@@ -151,7 +146,6 @@ final class PredicateImpl<T> implements ExpressionInt {
     public static <T> PredicateImpl gt(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.GT, db, root, x, y);
     }
-
 
     /**
      * Create <code>"GREATER OR EQUALS THAN"</code> predicate.
@@ -167,7 +161,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return new PredicateImpl<>(PredicateType.GE, db, root, x, y);
     }
 
-
     /**
      * Create <code>"LESS THAN"</code> predicate.
      *
@@ -181,7 +174,6 @@ final class PredicateImpl<T> implements ExpressionInt {
     public static <T> PredicateImpl lt(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.LT, db, root, x, y);
     }
-
 
     /**
      * Create <code>"LESS OR EQUAL THAN"</code> predicate.
@@ -197,7 +189,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return new PredicateImpl<>(PredicateType.LE, db, root, x, y);
     }
 
-
     /**
      * Create <code>"LIKE"</code> predicate.
      *
@@ -212,7 +203,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return new PredicateImpl<>(PredicateType.LIKE, db, root, x, y);
     }
 
-
     /**
      * Create <code>"GLOB"</code> predicate.
      *
@@ -226,7 +216,6 @@ final class PredicateImpl<T> implements ExpressionInt {
     public static <T> PredicateImpl glob(DatabaseObject db, Root<?> root, Variable<T> x, Variable<T> y) {
         return new PredicateImpl<>(PredicateType.GLOB, db, root, x, y);
     }
-
 
     /**
      * Get the string representation to be used in SQL query.
@@ -260,20 +249,17 @@ final class PredicateImpl<T> implements ExpressionInt {
         }
     }
 
-
     @NonNull
     @Override
     public Iterator<PredicateImpl> iterator() {
         return new SinglePredicateIterator(this);
     }
 
-
     @NonNull
     @Override
     public Expression not() {
         return ExpressionImpl.not(this);
     }
-
 
     @NonNull
     @Override
@@ -287,7 +273,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return result;
     }
 
-
     @NonNull
     @Override
     public Expression or(@NonNull Expression... expressions) {
@@ -299,7 +284,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         return result;
     }
-
 
     @NonNull
     @Override
@@ -313,7 +297,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return result;
     }
 
-
     @NonNull
     @Override
     public Expression nand(@NonNull Expression... expressions) {
@@ -325,7 +308,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         return result;
     }
-
 
     @NonNull
     @Override
@@ -339,7 +321,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         return result;
     }
 
-
     @Nonnull
     @Override
     public Expression xnor(@NonNull Expression... expressions) {
@@ -351,7 +332,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         return result;
     }
-
 
     /**
      * Get string representation of an unary predicate.
@@ -375,7 +355,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         // Normally not reachable
         throw new IllegalStateException("Unknown predicate operation: " + operation);
     }
-
 
     /**
      * Get string representation of an binary predicate.
@@ -409,7 +388,6 @@ final class PredicateImpl<T> implements ExpressionInt {
             return escape(x.getRawData()) + operation + escape(y.getRawData());
         }
     }
-
 
     /**
      * Get the columns linked to a property.
@@ -485,7 +463,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         throw new QueryException("Invalid parameter");
     }
-
 
     /**
      * Create property-property associations for the query.
@@ -578,7 +555,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         throw new QueryException("Invalid parameters");
     }
 
-
     /**
      * Create property-value associations for the query.
      *
@@ -630,7 +606,6 @@ final class PredicateImpl<T> implements ExpressionInt {
         throw new QueryException("Invalid parameters");
     }
 
-
     /**
      * Check if {@link #x} derives from {@link #root}.
      *
@@ -646,7 +621,6 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         return result;
     }
-
 
     /**
      * Fake iterator to be used to iterate on a single predicate.

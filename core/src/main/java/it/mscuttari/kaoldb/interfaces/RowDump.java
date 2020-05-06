@@ -34,7 +34,6 @@ public interface RowDump {
     @NonNull
     Collection<String> getColumns();
 
-
     /**
      * Get the value of a column at this row.
      *

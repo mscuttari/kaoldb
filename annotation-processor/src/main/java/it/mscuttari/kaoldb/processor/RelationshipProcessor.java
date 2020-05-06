@@ -84,7 +84,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         return true;
     }
 
-
     /**
      * Check field annotated with {@link OneToOne} annotation.
      *
@@ -149,7 +148,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         }
     }
 
-
     /**
      * Check field annotated with {@link OneToMany} annotation.
      *
@@ -211,7 +209,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         }
     }
 
-
     /**
      * Check field annotated with {@link ManyToOne} annotation.
      *
@@ -239,7 +236,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         if (joinColumnAnnotation == null && joinColumnsAnnotation == null && joinTableAnnotation == null)
             throw new ProcessorException("@ManyToOne relationship doesn't have @JoinColumn, @JoinColumns or @JoinTable annotation", field);
     }
-
 
     /**
      * Check field annotated with {@link ManyToMany} annotation.
@@ -311,7 +307,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
         }
     }
 
-
     /**
      * Check if the field has only one between {@link OneToOne}, {@link OneToMany},
      * {@link ManyToOne} and {@link ManyToMany} annotations.
@@ -336,7 +331,6 @@ public final class RelationshipProcessor extends AbstractAnnotationProcessor {
             throw new ProcessorException("Only one annotation between @OneToOne, @OneToMany, @ManyToOne and @ManyToMany is allowed", field);
         }
     }
-
 
     /**
      * Get a class field given its name.

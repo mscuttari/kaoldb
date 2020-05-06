@@ -44,7 +44,6 @@ public final class SingleProperty<M, T> extends Property<M, T> {
         super(entityClass, fieldType, field);
     }
 
-
     /**
      * Constructor.
      *

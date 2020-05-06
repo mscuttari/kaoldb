@@ -42,7 +42,6 @@ class TableDumpImpl implements TableDump {
     /** Row dumps */
     private final List<RowDump> rows;
 
-
     /**
      * Dump the content of a table.
      *
@@ -71,13 +70,11 @@ class TableDumpImpl implements TableDump {
         }
     }
 
-
     @NonNull
     @Override
     public String toString() {
         return "[" + StringUtils.implode(rows, Object::toString, ", ") + "]";
     }
-
 
     @NonNull
     @Override
@@ -85,20 +82,17 @@ class TableDumpImpl implements TableDump {
         return name;
     }
 
-
     @NonNull
     @Override
     public String getSql() {
         return sql;
     }
 
-
     @NonNull
     @Override
     public List<String> getColumns() {
         return Collections.unmodifiableList(columns);
     }
-
 
     @NonNull
     @Override

@@ -32,19 +32,16 @@ class ConcatIterator<T> implements Iterator<T> {
     private final List<Iterable<T>> iterables;
     private Iterator<T> current;
 
-
     @SafeVarargs
     public ConcatIterator(final Iterable<T>... iterables) {
         this.iterables = new LinkedList<>(Arrays.asList(iterables));
     }
-
 
     @Override
     public boolean hasNext() {
         loadNext();
         return current != null && current.hasNext();
     }
-
 
     @Override
     public T next() {
@@ -56,7 +53,6 @@ class ConcatIterator<T> implements Iterator<T> {
         return current.next();
     }
 
-
     @Override
     public void remove() {
         if (current == null)
@@ -64,7 +60,6 @@ class ConcatIterator<T> implements Iterator<T> {
 
         current.remove();
     }
-
 
     /**
      * Load the next item

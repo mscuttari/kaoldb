@@ -43,17 +43,17 @@ dependencies {
     implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.2.0-beta01'
+    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-alpha02'
 
     // https://mvnrepository.com/artifact/com.android.support/support-v4
     implementation group: 'com.android.support', name: 'support-v4', version: '28.0.0'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
-    implementation group: 'com.google.guava', name: 'guava', version: '27.1-android'
+    implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
 
     // https://mvnrepository.com/artifact/org.objenesis/objenesis
     // Version 2.6 is required for pre Oreo compatibility
-    implementation group: 'org.objenesis', name: 'objenesis', version: '2.6'
+    implementation group: 'org.objenesis', name: 'objenesis', version: '3.1'
 }
 
 apply from: rootProject.file('release-bintray.gradle')

@@ -46,13 +46,11 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         super(container == null ? new ArrayList<>() : container, query);
     }
 
-
     @Override
     public boolean addAll(int index, @NonNull Collection<? extends T> c) {
         checkInitialization();
         return getContainer().addAll(c);
     }
-
 
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
@@ -61,7 +59,6 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         getContainer().replaceAll(operator);
     }
 
-
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public void sort(Comparator<? super T> c) {
@@ -69,13 +66,11 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         getContainer().sort(c);
     }
 
-
     @Override
     public T get(int index) {
         checkInitialization();
         return getContainer().get(index);
     }
-
 
     @Override
     public T set(int index, T element) {
@@ -83,13 +78,11 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         return getContainer().set(index, element);
     }
 
-
     @Override
     public void add(int index, T element) {
         checkInitialization();
         getContainer().add(index, element);
     }
-
 
     @Override
     public T remove(int index) {
@@ -97,20 +90,17 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         return getContainer().remove(index);
     }
 
-
     @Override
     public int indexOf(Object o) {
         checkInitialization();
         return getContainer().indexOf(o);
     }
 
-
     @Override
     public int lastIndexOf(Object o) {
         checkInitialization();
         return getContainer().lastIndexOf(o);
     }
-
 
     @NonNull
     @Override
@@ -119,14 +109,12 @@ class LazyList<T> extends LazyCollection<T, List<T>> implements List<T> {
         return getContainer().listIterator();
     }
 
-
     @NonNull
     @Override
     public ListIterator<T> listIterator(int index) {
         checkInitialization();
         return getContainer().listIterator(index);
     }
-
 
     @NonNull
     @Override

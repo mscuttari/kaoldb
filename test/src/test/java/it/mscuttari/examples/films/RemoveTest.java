@@ -31,12 +31,7 @@ public class RemoveTest extends AbstractFilmTest {
 
     @Test
     public void removePerson() {
-        Person person = new Person(
-                "Robert",
-                "Downey Jr.",
-                getCalendar(1965, Calendar.APRIL, 4),
-                new Country("USA")
-        );
+        Person person = new Person("Robert", "Downey Jr.", getCalendar(1965, Calendar.APRIL, 4), new Country("USA"));
 
         em.persist(person.country);
         em.persist(person);

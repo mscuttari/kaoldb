@@ -18,20 +18,8 @@ public class LiveDataTest extends AbstractFilmTest {
 
     @Test
     public void updateFilmDirectorCountry() {
-        Person director = new Person(
-                "David",
-                "Yates",
-                getCalendar(1963, Calendar.OCTOBER, 8),
-                new Country("IT")
-        );
-
-        FantasyFilm film = new FantasyFilm(
-                "Fantastic Beasts and Where to Find Them",
-                2016,
-                director,
-                133,
-                null
-        );
+        Person director = new Person("David", "Yates", getCalendar(1963, Calendar.OCTOBER, 8), new Country("IT"));
+        FantasyFilm film = new FantasyFilm("Fantastic Beasts and Where to Find Them", 2016, director, 133, null);
 
         em.persist(director.country);
         em.persist(director);

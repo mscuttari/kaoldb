@@ -64,7 +64,6 @@ final class Join<L, R> implements Root<L> {
 
     }
 
-
     @NonNull private final DatabaseObject db;
     @NonNull private final JoinType type;
     @NonNull private final Root<L> left;
@@ -79,7 +78,6 @@ final class Join<L, R> implements Root<L> {
     // specific root.
 
     private final Collection<Root<?>> leaves;
-
 
     /**
      * Constructor.
@@ -112,7 +110,6 @@ final class Join<L, R> implements Root<L> {
         this.leaves.addAll(rightRoots);
     }
 
-
     /**
      * Constructor.
      *
@@ -143,7 +140,6 @@ final class Join<L, R> implements Root<L> {
         this.leaves.addAll(leftRoots);
         this.leaves.addAll(rightRoots);
     }
-
 
     /**
      * Get the <code>FROM</code> clause be used in the query.
@@ -234,13 +230,11 @@ final class Join<L, R> implements Root<L> {
         return result.toString();
     }
 
-
     @NonNull
     @Override
     public Class<L> getEntityClass() {
         return left.getEntityClass();
     }
-
 
     @NonNull
     @Override
@@ -248,13 +242,11 @@ final class Join<L, R> implements Root<L> {
         return left.getAlias();
     }
 
-
     @NonNull
     @Override
     public <Y> Root<L> join(@NonNull Root<Y> root, @NonNull Property<L, Y> property) {
         return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
-
 
     @NonNull
     @Override
@@ -262,13 +254,11 @@ final class Join<L, R> implements Root<L> {
         return Collections.unmodifiableCollection(leaves);
     }
 
-
     @NonNull
     @Override
     public <T> Expression isNull(@NonNull SingleProperty<L, T> property) {
         return left.isNull(property);
     }
-
 
     @NonNull
     @Override
@@ -276,13 +266,11 @@ final class Join<L, R> implements Root<L> {
         return left.eq(property, value);
     }
 
-
     @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.eq(x, y);
     }
-
 
     @NonNull
     @Override
@@ -290,13 +278,11 @@ final class Join<L, R> implements Root<L> {
         return left.gt(property, value);
     }
 
-
     @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.gt(x, y);
     }
-
 
     @NonNull
     @Override
@@ -304,13 +290,11 @@ final class Join<L, R> implements Root<L> {
         return left.ge(property, value);
     }
 
-
     @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.ge(x, y);
     }
-
 
     @NonNull
     @Override
@@ -318,13 +302,11 @@ final class Join<L, R> implements Root<L> {
         return left.lt(property, value);
     }
 
-
     @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.lt(x, y);
     }
-
 
     @NonNull
     @Override
@@ -332,13 +314,11 @@ final class Join<L, R> implements Root<L> {
         return left.le(property, value);
     }
 
-
     @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.le(x, y);
     }
-
 
     @NonNull
     @Override
@@ -346,13 +326,11 @@ final class Join<L, R> implements Root<L> {
         return left.between(property, x, y);
     }
 
-
     @NonNull
     @Override
     public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull SingleProperty<L, T> x, @NonNull T y) {
         return left.between(property, x, y);
     }
-
 
     @NonNull
     @Override
@@ -360,13 +338,11 @@ final class Join<L, R> implements Root<L> {
         return left.between(property, x, y);
     }
 
-
     @NonNull
     @Override
     public <T> Expression between(@NonNull SingleProperty<L, T> property, @NonNull SingleProperty<L, T> x, @NonNull SingleProperty<L, T> y) {
         return left.between(property, x, y);
     }
-
 
     @NonNull
     @Override
@@ -374,13 +350,11 @@ final class Join<L, R> implements Root<L> {
         return left.like(property, value);
     }
 
-
     @NonNull
     @Override
     public Expression like(@NonNull SingleProperty<L, String> x, @NonNull SingleProperty<L, String> y) {
         return left.like(x, y);
     }
-
 
     @NonNull
     @Override
@@ -388,13 +362,11 @@ final class Join<L, R> implements Root<L> {
         return left.glob(property, value);
     }
 
-
     @NonNull
     @Override
     public Expression glob(@NonNull SingleProperty<L, String> x, @NonNull SingleProperty<L, String> y) {
         return left.glob(x, y);
     }
-
 
     /**
      * Get the join clauses of a join.
@@ -572,7 +544,6 @@ final class Join<L, R> implements Root<L> {
         throw new QueryException("Invalid join field \"" + property.fieldName + "\"");
     }
 
-
     /**
      * Get the <code>ON</code> expression for the direct join columns of a {@link JoinColumn}
      * annotated property.
@@ -592,7 +563,6 @@ final class Join<L, R> implements Root<L> {
                 escape(referenced.getAlias()) + "." + escape(annotation.referencedColumnName())
         );
     }
-
 
     /**
      * Get the "ON" expression for the join columns of a {@link JoinColumns} annotated property.
@@ -614,7 +584,6 @@ final class Join<L, R> implements Root<L> {
 
         return result;
     }
-
 
     /**
      * Get the "ON" expression for the direct join columns of a {@link JoinTable} annotated property.
@@ -644,7 +613,6 @@ final class Join<L, R> implements Root<L> {
         return result;
     }
 
-
     /**
      * Get the "ON" expression for the inverse join columns of a {@link JoinTable} annotated property.
      *
@@ -673,7 +641,6 @@ final class Join<L, R> implements Root<L> {
         return result;
     }
 
-
     /**
      * Given two column names, get an equality expression between them.
      *
@@ -689,7 +656,6 @@ final class Join<L, R> implements Root<L> {
 
         return PredicateImpl.eq(db, root, a, b);
     }
-
 
     /**
      * Get the alias to be used for the join table.

@@ -40,14 +40,12 @@ public final class KaolDB {
     /** Configuration */
     final Config config = new Config();
 
-
     /**
      * Private constructor for singleton.
      */
     private KaolDB() {
 
     }
-
 
     /**
      * Get instance.
@@ -61,7 +59,6 @@ public final class KaolDB {
         return instance;
     }
 
-
     /**
      * Set the framework in debug mode or not (default = <code>false</code>).
      *
@@ -70,7 +67,6 @@ public final class KaolDB {
     public void setDebugMode(boolean enabled) {
         config.setDebugMode(enabled);
     }
-
 
     /**
      * Set configuration.
@@ -112,8 +108,6 @@ public final class KaolDB {
             database.mapEntities();
         }
     }
-
-
 
     /**
      * Get entity manager for a specific database.

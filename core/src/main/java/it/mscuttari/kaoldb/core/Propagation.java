@@ -45,10 +45,8 @@ class Propagation {
 
     }
 
-
     private final Action onUpdate;
     private final Action onDelete;
-
 
     /**
      * Constructor.
@@ -60,7 +58,6 @@ class Propagation {
         this.onUpdate = onUpdate;
         this.onDelete = onDelete;
     }
-
 
     @NonNull
     @Override

@@ -62,7 +62,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      */
     private final Columns inverseJoinColumns;
 
-
     /**
      * Direct and inverse join columns.
      *
@@ -70,7 +69,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
      * @see #inverseJoinColumns
      */
     private final Columns joinColumns;
-
 
     /**
      * Constructor.
@@ -90,7 +88,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         this.inverseJoinColumns = new Columns(entity);
         this.joinColumns        = new Columns(entity);
     }
-
 
     /**
      * Start the mapping process.
@@ -125,7 +122,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
     }
 
-
     public void waitUntilMapped() {
         for (BaseColumnObject column : directJoinColumns) {
             column.waitUntilMapped();
@@ -136,13 +132,11 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
     }
 
-
     @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new ConcatIterator<>(directJoinColumns, inverseJoinColumns);
     }
-
 
     /**
      * Get the SQL query to create a join table.
@@ -180,7 +174,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         return result.toString();
     }
 
-
     /**
      * Get the columns SQL statement to be inserted in the table creation query.
      *
@@ -201,7 +194,6 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
 
         return empty ? null : result.toString();
     }
-
 
     /**
      * Get the foreign keys SQL constraints to be inserted in the create table query.

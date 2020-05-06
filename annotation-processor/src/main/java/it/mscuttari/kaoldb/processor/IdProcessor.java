@@ -52,7 +52,6 @@ public final class IdProcessor extends AbstractAnnotationProcessor {
         return true;
     }
 
-
     /**
      * Check field annotated with {@link Id} annotation.
      *

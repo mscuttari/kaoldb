@@ -39,7 +39,6 @@ class LiveQuery<T> extends MutableLiveData<List<T>> {
     /** The entities the query observes. If any of them gets an update the {@link #query} is executed */
     private final Collection<EntityObject<?>> observed;
 
-
     /**
      * Constructor.
      *
@@ -51,14 +50,12 @@ class LiveQuery<T> extends MutableLiveData<List<T>> {
         this.observed = observed;
     }
 
-
     /**
      * Execute the query in order to retrieve the latest data from the database.
      */
     public void refresh() {
         postValue(query.getResults());
     }
-
 
     /**
      * Get the observed entities.

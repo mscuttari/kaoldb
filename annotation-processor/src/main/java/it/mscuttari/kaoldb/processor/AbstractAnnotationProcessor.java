@@ -54,7 +54,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         return processingEnv.getElementUtils();
     }
 
-
     /**
      * Get type utils.
      *
@@ -63,7 +62,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final Types getTypeUtils() {
         return processingEnv.getTypeUtils();
     }
-
 
     /**
      * Get filer.
@@ -74,7 +72,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         return processingEnv.getFiler();
     }
 
-
     /**
      * Log error message.
      *
@@ -83,7 +80,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final void logError(String message) {
         logError(message, null);
     }
-
 
     /**
      * Log error message.
@@ -95,7 +91,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
     }
 
-
     /**
      * Log warning message.
      *
@@ -104,7 +99,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final void logWarning(String message) {
         logWarning(message, null);
     }
-
 
     /**
      * Log warning message.
@@ -115,7 +109,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
     protected final void logWarning(String message, Element element) {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, message, element);
     }
-
 
     /**
      * Get an element given its type.
@@ -131,7 +124,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         return getTypeUtils().asElement(typeMirror);
     }
 
-
     /**
      * Get the package within the element is declared
      *
@@ -144,7 +136,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
         return (PackageElement) element;
     }
-
 
     /**
      * Get superclass.
@@ -160,7 +151,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         TypeMirror typeMirror = ((TypeElement) element).getSuperclass();
         return getElement(typeMirror);
     }
-
 
     /**
      * Get the data type of a field that implements the {@link Collection} interface.
@@ -253,7 +243,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         throw new ProcessorException("Field doesn't implement the Collection interface", field);
     }
 
-
     /**
      * Check if a field is eligible for lazy loading.
      * <p>A field is considered eligible for lazy loading only if it is declared as a
@@ -290,7 +279,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
         return false;
     }
 
-
     /**
      * Get the class linked to a relationship
      *
@@ -321,7 +309,6 @@ public abstract class AbstractAnnotationProcessor extends AbstractProcessor {
 
         return getElement(field.asType());
     }
-
 
     /**
      * Get the element of a class (and eventually its superclasses) that is generating a column

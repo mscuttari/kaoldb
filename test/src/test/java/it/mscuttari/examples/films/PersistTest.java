@@ -46,12 +46,7 @@ public class PersistTest extends AbstractFilmTest {
 
     @Test
     public void persistPerson() {
-        Person person = new Person(
-                "Robert",
-                "Downey Jr.",
-                getCalendar(1965, Calendar.APRIL, 4),
-                new Country("USA")
-        );
+        Person person = new Person("Robert", "Downey Jr.", getCalendar(1965, Calendar.APRIL, 4), new Country("USA"));
 
         em.persist(person.country);
         em.persist(person);
@@ -88,20 +83,8 @@ public class PersistTest extends AbstractFilmTest {
 
     @Test
     public void persistFantasyFilm() {
-        Person director = new Person(
-                "David",
-                "Yates",
-                getCalendar(1963, Calendar.OCTOBER, 8),
-                new Country("UK")
-        );
-
-        FantasyFilm film = new FantasyFilm(
-                "Fantastic Beasts and Where to Find Them",
-                2016,
-                director,
-                133,
-                null
-        );
+        Person director = new Person("David", "Yates", getCalendar(1963, Calendar.OCTOBER, 8), new Country("UK"));
+        FantasyFilm film = new FantasyFilm("Fantastic Beasts and Where to Find Them", 2016, director, 133, null);
 
         em.persist(director.country);
         em.persist(director);
@@ -110,7 +93,6 @@ public class PersistTest extends AbstractFilmTest {
         em.persist(film);
 
         // Polymorphic query
-        /*
         QueryBuilder<Film> filmQb = em.getQueryBuilder(Film.class);
         Root<Film> filmRoot = filmQb.getRoot(Film.class);
 
@@ -121,7 +103,6 @@ public class PersistTest extends AbstractFilmTest {
 
         Film result = filmQb.build(filmRoot).getSingleResult();
         assertEquals(film, result);
-        */
 
         // Specific query
         QueryBuilder<FantasyFilm> fantasyFilmQb = em.getQueryBuilder(FantasyFilm.class);
@@ -138,20 +119,8 @@ public class PersistTest extends AbstractFilmTest {
 
     @Test
     public void persistThrillerFilm() {
-        Person director = new Person(
-                "Christopher",
-                "Nolan",
-                getCalendar(1970, Calendar.JULY, 30),
-                new Country("UK")
-        );
-
-        ThrillerFilm film = new ThrillerFilm(
-                "Memento",
-                2000,
-                director,
-                113,
-                null
-        );
+        Person director = new Person("Christopher", "Nolan", getCalendar(1970, Calendar.JULY, 30), new Country("UK"));
+        ThrillerFilm film = new ThrillerFilm("Memento", 2000, director, 113, null);
 
         em.persist(director.country);
         em.persist(director);

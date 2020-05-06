@@ -48,7 +48,6 @@ public final class SchemaAddColumn extends SchemaBaseAction {
     @Nullable private final String defaultValue;    // New column default value
     private final boolean primaryKey;               // Whether the new column should be a primary key
 
-
     /**
      * Constructor.
      *
@@ -83,7 +82,6 @@ public final class SchemaAddColumn extends SchemaBaseAction {
         this.defaultValue = defaultValue;
         this.primaryKey = primaryKey;
     }
-
 
     @Override
     void run(SQLiteDatabase db) {

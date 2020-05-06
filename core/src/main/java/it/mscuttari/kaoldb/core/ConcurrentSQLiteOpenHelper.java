@@ -36,7 +36,6 @@ final class ConcurrentSQLiteOpenHelper {
     private SQLiteDatabase db;
     private int dbConnections = 0;
 
-
     /**
      * Constructor.
      *
@@ -69,7 +68,6 @@ final class ConcurrentSQLiteOpenHelper {
         };
     }
 
-
     /**
      * Open the database.
      */
@@ -81,7 +79,6 @@ final class ConcurrentSQLiteOpenHelper {
         dbConnections++;
     }
 
-
     /**
      * Close the database.
      */
@@ -91,7 +88,6 @@ final class ConcurrentSQLiteOpenHelper {
             db = null;
         }
     }
-
 
     /**
      * Close the database independently from its current usage.
@@ -110,7 +106,6 @@ final class ConcurrentSQLiteOpenHelper {
         db = null;
     }
 
-
     /**
      * Begin transaction.
      *
@@ -126,7 +121,6 @@ final class ConcurrentSQLiteOpenHelper {
 
         db.beginTransaction();
     }
-
 
     /**
      * Set the current transaction as successful.
@@ -144,7 +138,6 @@ final class ConcurrentSQLiteOpenHelper {
         db.setTransactionSuccessful();
     }
 
-
     /**
      * End the current transaction.
      *
@@ -161,7 +154,6 @@ final class ConcurrentSQLiteOpenHelper {
         db.endTransaction();
     }
 
-
     /**
      * Perform a SELECT query.
      *
@@ -176,7 +168,6 @@ final class ConcurrentSQLiteOpenHelper {
 
         return db.rawQuery(sql, selectionArgs);
     }
-
 
     /**
      * Perform an insertion into the database.
@@ -201,7 +192,6 @@ final class ConcurrentSQLiteOpenHelper {
         }
     }
 
-
     /**
      * Perform an update on the existing data matching the selection clause.
      *
@@ -225,7 +215,6 @@ final class ConcurrentSQLiteOpenHelper {
                 close();
         }
     }
-
 
     /**
      * Delete the entries matching the selection clause.

@@ -55,7 +55,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
     /** Whether the query has been run or not */
     private boolean initialized = false;
 
-
     /**
      * Constructor.
      *
@@ -67,7 +66,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         this.query = checkNotNull(query);
     }
 
-
     /**
      * Get data container.
      *
@@ -77,7 +75,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data;
     }
 
-
     /**
      * Check if the data has been loaded at least once.
      * If not, it loads it by running the query.
@@ -86,7 +83,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         if (!initialized)
             initialize();
     }
-
 
     /**
      * Load the data by running the query.
@@ -99,13 +95,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
             data.addAll(query.getResults());
     }
 
-
     @Override
     public int hashCode() {
         checkInitialization();
         return data.hashCode();
     }
-
 
     @Override
     public boolean equals(Object obj) {
@@ -116,7 +110,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.equals(((LazyCollection) obj).data);
     }
 
-
     @NonNull
     @Override
     public String toString() {
@@ -124,13 +117,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.toString();
     }
 
-
     @Override
     public int size() {
         checkInitialization();
         return data.size();
     }
-
 
     @Override
     public boolean isEmpty() {
@@ -138,13 +129,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.isEmpty();
     }
 
-
     @Override
     public boolean contains(Object o) {
         checkInitialization();
         return data.contains(o);
     }
-
 
     @NonNull
     @Override
@@ -153,14 +142,12 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.iterator();
     }
 
-
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public void forEach(Consumer<? super T> action) {
         checkInitialization();
         data.forEach(action);
     }
-
 
     @NonNull
     @Override
@@ -169,7 +156,6 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.toArray();
     }
 
-
     @NonNull
     @Override
     public <T1> T1[] toArray(@NonNull T1[] a) {
@@ -177,13 +163,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.toArray(a);
     }
 
-
     @Override
     public boolean add(T t) {
         checkInitialization();
         return data.add(t);
     }
-
 
     @Override
     public boolean remove(Object o) {
@@ -191,13 +175,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.remove(o);
     }
 
-
     @Override
     public boolean containsAll(@NonNull Collection<?> c) {
         checkInitialization();
         return data.containsAll(c);
     }
-
 
     @Override
     public boolean addAll(@NonNull Collection<? extends T> c) {
@@ -205,13 +187,11 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.addAll(c);
     }
 
-
     @Override
     public boolean removeAll(@NonNull Collection<?> c) {
         checkInitialization();
         return data.retainAll(c);
     }
-
 
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
@@ -220,20 +200,17 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.removeIf(filter);
     }
 
-
     @Override
     public boolean retainAll(@NonNull Collection<?> c) {
         checkInitialization();
         return data.retainAll(c);
     }
 
-
     @Override
     public void clear() {
         checkInitialization();
         data.clear();
     }
-
 
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
@@ -242,14 +219,12 @@ abstract class LazyCollection<T, S extends Collection<T>> implements Collection<
         return data.spliterator();
     }
 
-
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public Stream<T> stream() {
         checkInitialization();
         return data.stream();
     }
-
 
     @RequiresApi(Build.VERSION_CODES.N)
     @Override

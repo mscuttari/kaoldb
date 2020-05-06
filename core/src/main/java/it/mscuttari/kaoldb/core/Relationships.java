@@ -28,13 +28,11 @@ class Relationships implements Iterable<Relationship> {
     /** Map the fields by their field name in order to quickly search for the mapped relationship */
     private final Map<String, Relationship> mapByFieldName = new ArrayMap<>();
 
-
     @NonNull
     @Override
     public synchronized Iterator<Relationship> iterator() {
         return new RelationshipsIterator(this);
     }
-
 
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
@@ -42,13 +40,11 @@ class Relationships implements Iterable<Relationship> {
         relationships.forEach(action);
     }
 
-
     @RequiresApi(Build.VERSION_CODES.N)
     @Override
     public synchronized Spliterator<Relationship> spliterator() {
         return relationships.spliterator();
     }
-
 
     /**
      * Add a relationship.
@@ -60,7 +56,6 @@ class Relationships implements Iterable<Relationship> {
         mapByFieldName.put(relationship.field.getName(), relationship);
         return relationships.add(relationship);
     }
-
 
     /**
      * Check if a field leads to a relationship.
@@ -74,7 +69,6 @@ class Relationships implements Iterable<Relationship> {
     public synchronized boolean contains(String fieldName) {
         return mapByFieldName.containsKey(fieldName);
     }
-
 
     /**
      * Get a relationship given the name of the field generating it.
@@ -92,7 +86,6 @@ class Relationships implements Iterable<Relationship> {
 
         throw new NoSuchElementException("Field \"" + fieldName + "\" doesn't have a relationship");
     }
-
 
     /**
      * Iterator for the {@link Relationships} container.
@@ -113,14 +106,12 @@ class Relationships implements Iterable<Relationship> {
             this.iterator = relationships.relationships.iterator();
         }
 
-
         @Override
         public boolean hasNext() {
             synchronized (relationships) {
                 return iterator.hasNext();
             }
         }
-
 
         @Override
         public Relationship next() {
@@ -130,7 +121,6 @@ class Relationships implements Iterable<Relationship> {
             }
         }
 
-
         @Override
         public void remove() {
             synchronized (relationships) {
@@ -138,7 +128,6 @@ class Relationships implements Iterable<Relationship> {
                 relationships.mapByFieldName.remove(current.field.getName());
             }
         }
-
 
         @RequiresApi(Build.VERSION_CODES.N)
         @Override

@@ -104,7 +104,6 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
         return true;
     }
 
-
     /**
      * Check an element annotated with {@link Entity}.
      *
@@ -151,7 +150,6 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
         }
     }
 
-
     /**
      * Check an element annotated with {@link DiscriminatorColumn}.
      *
@@ -186,7 +184,6 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
             logError("Class \"" + element.getSimpleName() + "\" is not an entity", element);
         }
     }
-
 
     /**
      * Check an element annotated with {@link DiscriminatorValue}.

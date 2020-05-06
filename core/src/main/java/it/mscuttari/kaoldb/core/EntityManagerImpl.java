@@ -61,7 +61,6 @@ class EntityManagerImpl implements EntityManager {
     /** Map between the observed entities and the queries to be executed when they are modified */
     private final Map<EntityObject<?>, Collection<WeakReference<LiveQuery<?>>>> observers = new ArrayMap<>();
 
-
     /**
      * Constructor.
      *
@@ -73,7 +72,6 @@ class EntityManagerImpl implements EntityManager {
         this.database = database;
         this.dbHelper = new ConcurrentSQLiteOpenHelper(context, database);
     }
-
 
     /**
      * Get singleton instance.
@@ -99,7 +97,6 @@ class EntityManagerImpl implements EntityManager {
         return entityManager;
     }
 
-
     @Override
     public boolean deleteDatabase() {
         dbHelper.forceClose();
@@ -114,14 +111,12 @@ class EntityManagerImpl implements EntityManager {
         return result;
     }
 
-
     @NonNull
     @Override
     public <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass) {
         database.waitUntilReady();
         return new QueryBuilderImpl<>(database, resultClass, this);
     }
-
 
     @NonNull
     @Override
@@ -135,7 +130,6 @@ class EntityManagerImpl implements EntityManager {
         return qb.build(root).getResults();
     }
 
-
     @NonNull
     @Override
     public <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass) {
@@ -148,12 +142,10 @@ class EntityManagerImpl implements EntityManager {
         return qb.build(root).getLiveResults();
     }
 
-
     @Override
     public synchronized void persist(Object obj) {
         persist(obj, null, null);
     }
-
 
     @Override
     public synchronized <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist) {
@@ -221,12 +213,10 @@ class EntityManagerImpl implements EntityManager {
         }
     }
 
-
     @Override
     public void update(Object obj) {
         update(obj, null, null);
     }
-
 
     @Override
     public <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate) {
@@ -310,12 +300,10 @@ class EntityManagerImpl implements EntityManager {
         }
     }
 
-
     @Override
     public void remove(Object obj) {
         remove(obj, null, null);
     }
-
 
     @Override
     public <T> void remove(T obj, PreActionListener<T> preRemove, PostActionListener<T> postRemove) {
@@ -393,7 +381,6 @@ class EntityManagerImpl implements EntityManager {
         }
     }
 
-
     /**
      * Get the application context.
      *
@@ -410,7 +397,6 @@ class EntityManagerImpl implements EntityManager {
 
         return context;
     }
-
 
     /**
      * Register a live query as an observer for the entities it covers.<br>

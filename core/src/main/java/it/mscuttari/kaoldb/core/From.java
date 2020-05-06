@@ -50,7 +50,6 @@ final class From<X> implements Root<X> {
         }
     };
 
-
     /**
      * Constructor.
      *
@@ -69,7 +68,6 @@ final class From<X> implements Root<X> {
         this.entity = db.getEntity(checkNotNull(entityClass));
         this.alias = checkNotNull(alias);
     }
-
 
     /**
      * Get string representation to be used in query.
@@ -162,13 +160,11 @@ final class From<X> implements Root<X> {
         }
     }
 
-
     @NonNull
     @Override
     public Class<X> getEntityClass() {
         return entity.clazz;
     }
-
 
     @NonNull
     @Override
@@ -176,20 +172,17 @@ final class From<X> implements Root<X> {
         return alias;
     }
 
-
     @NonNull
     @Override
     public <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property) {
         return new Join<>(db, Join.JoinType.INNER, this, root, property);
     }
 
-
     @NonNull
     @Override
     public Collection<Root<?>> getJoinedRoots() {
         return Collections.singletonList(this);
     }
-
 
     @NonNull
     @Override
@@ -198,7 +191,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.isNull(db, this, a);
     }
-
 
     @NonNull
     @Override
@@ -215,7 +207,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.eq(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public <T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -224,7 +215,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.eq(db, this, a, b);
     }
-
 
     @NonNull
     @Override
@@ -235,7 +225,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.gt(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public <T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -244,7 +233,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.gt(db, this, a, b);
     }
-
 
     @NonNull
     @Override
@@ -255,7 +243,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.ge(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public <T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -264,7 +251,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.ge(db, this, a, b);
     }
-
 
     @NonNull
     @Override
@@ -275,7 +261,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.lt(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public <T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -284,7 +269,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.lt(db, this, a, b);
     }
-
 
     @NonNull
     @Override
@@ -295,7 +279,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.le(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -304,7 +287,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.le(db, this, a, b);
     }
-
 
     @NonNull
     @Override
@@ -315,7 +297,6 @@ final class From<X> implements Root<X> {
         return gt.and(lt);
     }
 
-
     @NonNull
     @Override
     public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull T y) {
@@ -324,7 +305,6 @@ final class From<X> implements Root<X> {
 
         return gt.and(lt);
     }
-
 
     @NonNull
     @Override
@@ -335,7 +315,6 @@ final class From<X> implements Root<X> {
         return gt.and(lt);
     }
 
-
     @NonNull
     @Override
     public <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y) {
@@ -344,7 +323,6 @@ final class From<X> implements Root<X> {
 
         return gt.and(lt);
     }
-
 
     @NonNull
     @Override
@@ -355,7 +333,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.like(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public Expression like(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y) {
@@ -365,7 +342,6 @@ final class From<X> implements Root<X> {
         return PredicateImpl.like(db, this, a, b);
     }
 
-
     @NonNull
     @Override
     public Expression glob(@NonNull SingleProperty<X, String> property, @NonNull String value) {
@@ -374,7 +350,6 @@ final class From<X> implements Root<X> {
 
         return PredicateImpl.like(db, this, a, b);
     }
-
 
     @NonNull
     @Override

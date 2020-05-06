@@ -26,7 +26,6 @@ class StringUtils {
 
     }
 
-
     /**
      * Escape the string representation of an object.
      *
@@ -46,7 +45,6 @@ class StringUtils {
 
         return escape(String.valueOf(obj));
     }
-
 
     /**
      * Escape a string.
@@ -83,7 +81,6 @@ class StringUtils {
         return sb.toString();
     }
 
-
     /**
      * String wrapper class used to indicate that the contained string is already escaped.
      *
@@ -105,7 +102,6 @@ class StringUtils {
         }
 
     }
-
 
     /**
      * Convert a collection to a string representation where each element is separated by a given string.
@@ -145,7 +141,6 @@ class StringUtils {
 
         return sb.toString();
     }
-
 
     /**
      * Interface to be used to create a custom object-to-string converter.

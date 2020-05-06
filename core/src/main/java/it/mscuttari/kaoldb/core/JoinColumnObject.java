@@ -51,7 +51,6 @@ final class JoinColumnObject extends FieldColumnObject {
     /** Linked column */
     public BaseColumnObject linkedColumn;
 
-
     /**
      * Constructor.
      *
@@ -71,7 +70,6 @@ final class JoinColumnObject extends FieldColumnObject {
         loadName();
     }
 
-
     @Override
     protected void mapAsync() {
         loadCustomColumnDefinition();
@@ -84,7 +82,6 @@ final class JoinColumnObject extends FieldColumnObject {
         loadLinkedColumn();
     }
 
-
     /**
      * Determine the column name.
      */
@@ -93,7 +90,6 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> name = result);
     }
 
-
     /**
      * Determine the custom column definition.
      */
@@ -101,7 +97,6 @@ final class JoinColumnObject extends FieldColumnObject {
         String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
         doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
-
 
     /**
      * Determine the column type.
@@ -181,7 +176,6 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> type = column.type);
     }
 
-
     /**
      * Determine whether the column is nullable or not.
      */
@@ -209,7 +203,6 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> nullable = result);
     }
 
-
     /**
      * Determine whether the column is a primary key or not.
      */
@@ -217,7 +210,6 @@ final class JoinColumnObject extends FieldColumnObject {
         boolean result = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
         doAndNotifyAll(this, () -> primaryKey = result);
     }
-
 
     /**
      * Determine whether the column value should be unique or not.
@@ -227,7 +219,6 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> unique = result);
     }
 
-
     /**
      * Determine the default value.
      */
@@ -235,7 +226,6 @@ final class JoinColumnObject extends FieldColumnObject {
         String result = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
         doAndNotifyAll(this, () -> defaultValue = result);
     }
-
 
     /**
      * Determine the propagation property.
@@ -249,7 +239,6 @@ final class JoinColumnObject extends FieldColumnObject {
             propagation = new Propagation(CASCADE, RESTRICT);
         }
     }
-
 
     /**
      * Determine the linked column.
@@ -283,7 +272,6 @@ final class JoinColumnObject extends FieldColumnObject {
         linkedColumn = linkedEntity.columns.get(annotation.referencedColumnName());
     }
 
-
     @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {
         Object sourceObject = getValue(obj);
@@ -298,7 +286,6 @@ final class JoinColumnObject extends FieldColumnObject {
             insertIntoContentValues(cv, name, value);
         }
     }
-
 
     @Override
     public boolean hasRelationship() {

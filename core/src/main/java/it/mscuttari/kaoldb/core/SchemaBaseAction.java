@@ -33,7 +33,6 @@ abstract class SchemaBaseAction implements SchemaAction {
         LogUtils.d("[Schema change] " + sql);
     }
 
-
     /**
      * Get temporary table name that is not already used by other existing tables
      *
@@ -51,7 +50,6 @@ abstract class SchemaBaseAction implements SchemaAction {
 
         return name;
     }
-
 
     /**
      * Execute the change on the database.

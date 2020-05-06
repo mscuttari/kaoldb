@@ -32,7 +32,6 @@ public interface DatabaseDump {
      */
     int getVersion();
 
-
     /**
      * Get all table dumps.
      *
@@ -41,7 +40,6 @@ public interface DatabaseDump {
     @CheckResult
     @NonNull
     Collection<TableDump> getTables();
-
 
     /**
      * Get specific table dump.

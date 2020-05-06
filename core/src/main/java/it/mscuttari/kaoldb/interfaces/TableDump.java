@@ -32,7 +32,6 @@ public interface TableDump {
     @NonNull
     String getName();
 
-
     /**
      * Get the query to create the table.
      *
@@ -42,7 +41,6 @@ public interface TableDump {
     @NonNull
     String getSql();
 
-
     /**
      * Get all the column names.
      *
@@ -51,7 +49,6 @@ public interface TableDump {
     @CheckResult
     @NonNull
     List<String> getColumns();
-
 
     /**
      * Get row dumps.

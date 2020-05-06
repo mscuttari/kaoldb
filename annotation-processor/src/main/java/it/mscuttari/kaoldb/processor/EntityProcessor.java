@@ -182,7 +182,6 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
         return true;
     }
 
-
     /**
      * Check if an entity has at least one primary key.
      *

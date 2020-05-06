@@ -42,7 +42,6 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
     @NonNull private final String oldName;
     @NonNull private final String newName;
 
-
     /**
      * Constructor.
      *
@@ -73,7 +72,6 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         this.oldName = oldName;
         this.newName = newName;
     }
-
 
     @Override
     void run(SQLiteDatabase db) {

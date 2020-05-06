@@ -76,7 +76,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
     @Nullable
     public String defaultValue;
 
-
     /**
      * Constructor.
      *
@@ -90,13 +89,11 @@ abstract class BaseColumnObject implements ColumnsContainer {
         this.entity = entity;
     }
 
-
     @NonNull
     @Override
     public final String toString() {
         return name;
     }
-
 
     @Override
     public final boolean equals(Object obj) {
@@ -107,12 +104,10 @@ abstract class BaseColumnObject implements ColumnsContainer {
         return name.equals(columnObject.name);
     }
 
-
     @Override
     public final int hashCode() {
         return name.hashCode();
     }
-
 
     @NonNull
     @Override
@@ -120,18 +115,15 @@ abstract class BaseColumnObject implements ColumnsContainer {
         return new SingleColumnIterator(this);
     }
 
-
     @Override
     public final void map() {
         mappingSession.submit(this::mapAsync);
     }
 
-
     /**
      * Actions that are executed asynchronously in order to load the column properties.
      */
     protected abstract void mapAsync();
-
 
     @Override
     public final void waitUntilMapped() {
@@ -143,7 +135,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
         }
     }
 
-
     /**
      * Extract from an object the value associated to this column.
      *
@@ -153,7 +144,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
     @Nullable
     public abstract Object getValue(Object obj);
 
-
     /**
      * Set the object's field associated to this column to a given value.
      *
@@ -162,7 +152,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
      */
     public abstract void setValue(Object obj, Object value);
 
-
     /**
      * Check if the column leads to a relationship with another entity.
      *
@@ -170,7 +159,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
      *         <code>false</code> otherwise
      */
     public abstract boolean hasRelationship();
-
 
     /**
      * Check if the object returned by {@link #getValue(Object)} already exists in the database.
@@ -181,7 +169,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
      * @return <code>true</code> if the data already exits in the database; <code>false</code> otherwise
      */
     public abstract boolean isDataExisting(Object obj, EntityManager entityManager);
-
 
     /**
      * Extract the column value from a {@link Cursor}.
@@ -251,7 +238,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
         return value;
     }
 
-
     /**
      * Insert a value into {@link ContentValues}.
      *
@@ -308,7 +294,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
             }
         }
     }
-
 
     /**
      * Get the column SQL statement to be used in the create table query.
@@ -373,7 +358,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
         return result.toString();
     }
 
-
     /**
      * Get the database column type corresponding to a given Java class
      *
@@ -400,7 +384,6 @@ abstract class BaseColumnObject implements ColumnsContainer {
         }
     }
 
-
     /**
      * Fake iterator to be used to iterate on a single column.
      */
@@ -424,9 +407,11 @@ abstract class BaseColumnObject implements ColumnsContainer {
 
         @Override
         public BaseColumnObject next() {
-            BaseColumnObject result = column;
-            column = null;
-            return result;
+            try {
+                return column;
+            } finally {
+                column = null;
+            }
         }
 
     }

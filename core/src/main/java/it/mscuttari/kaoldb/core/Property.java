@@ -35,38 +35,44 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Maps the fields of an entity.
  *
- * @param <M>   entity class
- * @param <T>   data type
+ * @param <M> entity class
+ * @param <T> data type
  */
 public abstract class Property<M, T> {
 
     /** Current entity class */
-    @NonNull final Class<M> entityClass;
+    @NonNull
+    final Class<M> entityClass;
 
     /** The class where the field is declared */
-    @NonNull final Class<? super M> owningClass;
+    @NonNull
+    final Class<? super M> owningClass;
 
     /** The class of the entity involved by the property */
-    @NonNull final Class<T> dataType;
+    @NonNull
+    final Class<T> dataType;
 
     /** Field name (as specified in the entity class) */
-    @NonNull final String fieldName;
+    @NonNull
+    final String fieldName;
 
     /**
      * Column annotation class (used for a rapid column type lookup).
      * It is one of {@link Column}, {@link JoinColumn}, {@link JoinColumns} and {@link JoinTable}.
-     * It can als be null if the field doesn't have anyt column annotation (as in case of
-     * {@link OneToMany} annotation)
+     * It can also be <code>null</code> if the field doesn't have any column annotation (as in
+     * case of {@link OneToMany} annotation)
      */
-    @Nullable final Class<? extends Annotation> columnAnnotation;
+    @Nullable
+    final Class<? extends Annotation> columnAnnotation;
 
     /**
      * Relationship annotation class (used for a rapid relationship type lookup).
      * It is one of {@link OneToOne}, {@link OneToMany}, {@link ManyToOne} and {@link ManyToMany}.
-     * It can also be null if the field doesn't has any relationship with other entities.
+     * It can also be <code>null</code> if the field doesn't has any relationship with other
+     * entities.
      */
-    @Nullable final Class<? extends Annotation> relationshipAnnotation;
-
+    @Nullable
+    final Class<? extends Annotation> relationshipAnnotation;
 
     /**
      * Constructor.
@@ -79,9 +85,13 @@ public abstract class Property<M, T> {
              @NonNull Class<T> dataType,
              @NonNull Field field) {
 
-        this(entityClass, entityClass, dataType, field.getName(), getColumnAnnotation(field), getRelationshipAnnotation(field));
+        this(entityClass,
+                entityClass,
+                dataType,
+                field.getName(),
+                getColumnAnnotation(field),
+                getRelationshipAnnotation(field));
     }
-
 
     /**
      * Constructor.
@@ -108,7 +118,6 @@ public abstract class Property<M, T> {
         this.relationshipAnnotation = relationshipAnnotation;
     }
 
-
     /**
      * Get field the property is linked to.
      *
@@ -117,7 +126,6 @@ public abstract class Property<M, T> {
     Field getField() {
         return EntityObject.getField(entityClass, fieldName);
     }
-
 
     /**
      * Get the column annotation class of a field.
@@ -147,7 +155,6 @@ public abstract class Property<M, T> {
 
         return null;
     }
-
 
     /**
      * Get the relationship annotation class of a field.

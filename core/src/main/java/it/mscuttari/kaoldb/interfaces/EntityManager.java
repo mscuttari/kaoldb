@@ -35,7 +35,6 @@ public interface EntityManager {
      */
     boolean deleteDatabase();
 
-
     /**
      * Get a query builder.
      *
@@ -47,7 +46,6 @@ public interface EntityManager {
     @CheckResult
     @NonNull
     <T> QueryBuilder<T> getQueryBuilder(@NonNull Class<T> resultClass);
-
 
     /**
      * Get all the entity elements.
@@ -64,7 +62,6 @@ public interface EntityManager {
     @CheckResult
     @NonNull
     <T> List<T> getAll(@NonNull Class<T> entityClass);
-
 
     /**
      * Get all the entity elements.
@@ -83,14 +80,12 @@ public interface EntityManager {
     @NonNull
     <T> LiveData<List<T>> getAllLive(@NonNull Class<T> entityClass);
 
-
     /**
      * Persist an object in the database.
      *
      * @param obj   object to be persisted
      */
     void persist(Object obj);
-
 
     /**
      * Persist an object in the database while listening to the pre-persist and post-persist events.
@@ -102,14 +97,12 @@ public interface EntityManager {
      */
     <T> void persist(T obj, PreActionListener<T> prePersist, PostActionListener<T> postPersist);
 
-
     /**
      * Update an object in the database.
      *
      * @param obj   object to be updated
      */
     void update(Object obj);
-
 
     /**
      * Persist an object in the database while listening to the pre-update and post-update events.
@@ -121,14 +114,12 @@ public interface EntityManager {
      */
     <T> void update(T obj, PreActionListener<T> preUpdate, PostActionListener<T> postUpdate);
 
-
     /**
      * Remove an object from the database.
      *
      * @param obj   object to be removed
      */
     void remove(Object obj);
-
 
     /**
      * Remove an object from the database while listening to the pre-update and post-update events.

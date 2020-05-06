@@ -28,8 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinTable;
@@ -52,7 +50,7 @@ class DatabaseObject {
 
     /** Database version */
     private Integer version;
-
+    
     /** Schema migrator to be used for database version changes */
     private Class<? extends DatabaseSchemaMigrator> migrator;
 
@@ -66,11 +64,10 @@ class DatabaseObject {
     private boolean updating = false;
 
     /** Whether the mapping process has been started at least once (it may be still running) */
-    private final AtomicBoolean mappedOnce = new AtomicBoolean(false);
+    private boolean mappedOnce = false;
 
     /** Used to track the entities mapping. When 0, it means that all the entities have been mapped */
-    private final AtomicInteger mappingStatus = new AtomicInteger(0);
-
+    private int mappingStatus = 0;
 
     /**
      * Get database name.
@@ -85,7 +82,6 @@ class DatabaseObject {
 
         return name;
     }
-
 
     /**
      * Set database name.
@@ -105,7 +101,6 @@ class DatabaseObject {
         this.name = name.trim();
     }
 
-
     /**
      * Get database version.
      *
@@ -119,7 +114,6 @@ class DatabaseObject {
 
         return version;
     }
-
 
     /**
      * Set database version.
@@ -139,7 +133,6 @@ class DatabaseObject {
         this.version = version;
     }
 
-
     /**
      * Get database schema migrator.
      *
@@ -153,7 +146,6 @@ class DatabaseObject {
 
         return migrator;
     }
-
 
     /**
      * Set database schema migrator.
@@ -171,7 +163,6 @@ class DatabaseObject {
         LogUtils.d("[Database \"" + name + "\"] setting schema migrator " + migrator.getSimpleName());
         this.migrator = migrator;
     }
-
 
     /**
      * Add entity class.
@@ -192,7 +183,6 @@ class DatabaseObject {
         doAndNotifyAll(this, () -> classes.add(clazz));
     }
 
-
     /**
      * Check whether a class belongs to the database entities.
      *
@@ -202,7 +192,6 @@ class DatabaseObject {
     public synchronized boolean contains(Class<?> clazz) {
         return classes.contains(clazz);
     }
-
 
     /**
      * Get {@link EntityObject} corresponding to an entity class.
@@ -232,7 +221,6 @@ class DatabaseObject {
         return (EntityObject<T>) entities.get(clazz);
     }
 
-
     /**
      * Get an unmodifiable {@link Collection} of all the entity objects.
      *
@@ -246,17 +234,15 @@ class DatabaseObject {
         return Collections.unmodifiableCollection(entities.values());
     }
 
-
     /**
      * Check whether the entities have been mapped.
      *
      * @return <code>true</code> if the entities have been mapped at least once;
      *         <code>false</code> otherwise
      */
-    private synchronized boolean isMapped() {
-        return mappedOnce.get() && !isMapping();
+    private boolean isMapped() {
+        return mappedOnce && !isMapping();
     }
-
 
     /**
      * Check whether the mapping process is currently executing.
@@ -264,9 +250,8 @@ class DatabaseObject {
      * @return <code>true</code> if entities are being mapped; <code>false</code> otherwise
      */
     private boolean isMapping() {
-        return mappingStatus.get() != 0;
+        return mappingStatus != 0;
     }
-
 
     /**
      * Register the fact that an entity has been completely mapped.
@@ -275,12 +260,11 @@ class DatabaseObject {
      */
     public void entityMapped() {
         doAndNotifyAll(this, () -> {
-            if (mappingStatus.decrementAndGet() == 0) {
+            if (--mappingStatus == 0) {
                 LogUtils.d("[Database \"" + name + "\"] " + entities.size() + " entities mapped");
             }
         });
     }
-
 
     /**
      * Check whether the database is ready for use.
@@ -290,10 +274,9 @@ class DatabaseObject {
      *
      * @return <code>true</code> if the database is ready; <code>false</code> otherwise
      */
-    public synchronized boolean isReady() {
+    public boolean isReady() {
         return isMapped() && !updating;
     }
-
 
     /**
      * Block the calling thread until the database becomes ready.
@@ -301,7 +284,6 @@ class DatabaseObject {
     public void waitUntilReady() {
         waitWhile(this, () -> !isReady());
     }
-
 
     /**
      * Create an {@link EntityObject} for each class contained in {@link #classes}.
@@ -314,18 +296,17 @@ class DatabaseObject {
             LogUtils.w("[Database \"" + name + "\"] entities are already being mapped");
 
         } else {
-            mappingStatus.set(classes.size());
+            mappingStatus = classes.size();
 
             doAndNotifyAll(this, () -> {
                 for (Class<?> clazz : classes) {
                     entities.put(clazz, EntityObject.map(this, clazz));
                 }
 
-                mappedOnce.set(true);
+                mappedOnce = true;
             });
         }
     }
-
 
     /**
      * Create the database.
@@ -387,7 +368,6 @@ class DatabaseObject {
         }
     }
 
-
     /**
      * Upgrade the database.
      *
@@ -432,7 +412,6 @@ class DatabaseObject {
         LogUtils.i("[Database \"" + getName() + "\"] upgraded from version " + oldVersion + " to version " + newVersion);
     }
 
-
     /**
      * Downgrade the database.
      *
@@ -476,7 +455,6 @@ class DatabaseObject {
         LogUtils.i("[Database \"" + getName() + "\"] downgraded from version " + oldVersion + " to version " + newVersion);
     }
 
-
     /**
      * Get database dump.
      *
@@ -486,7 +464,6 @@ class DatabaseObject {
     public DatabaseDump getDump(SQLiteDatabase db) {
         return new DatabaseDumpImpl(db);
     }
-
 
     /**
      * Restore database dump.
@@ -507,7 +484,6 @@ class DatabaseObject {
             //db.rawQuery(table.get)
         }
     }
-
 
     /**
      * Delete all the database tables.

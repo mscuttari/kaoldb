@@ -44,7 +44,6 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
         super(entityClass, fieldType, field);
     }
 
-
     /**
      * Constructor.
      *

@@ -23,7 +23,6 @@ public class ProcessorException extends Exception {
     private String message;
     private Element element;
 
-
     /**
      * Constructor.
      *
@@ -35,12 +34,10 @@ public class ProcessorException extends Exception {
         this.element = element;
     }
 
-
     @Override
     public String getMessage() {
         return message;
     }
-
 
     public Element getElement() {
         return element;

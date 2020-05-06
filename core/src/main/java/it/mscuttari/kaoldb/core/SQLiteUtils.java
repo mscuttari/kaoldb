@@ -32,7 +32,6 @@ class SQLiteUtils {
 
     }
 
-
     /**
      * Get the tables of a database.
      *
@@ -50,7 +49,6 @@ class SQLiteUtils {
             return tables;
         }
     }
-
 
     /**
      * Get the columns of a table.
@@ -79,7 +77,6 @@ class SQLiteUtils {
             return columns;
         }
     }
-
 
     /**
      * Get the primary keys of a table.
@@ -111,7 +108,6 @@ class SQLiteUtils {
             return primaryKeys;
         }
     }
-
 
     /**
      * Get the statement to be used to create a column of a table.
@@ -158,8 +154,6 @@ class SQLiteUtils {
         }
     }
 
-
-
     /**
      * Check if a column is nullable.
      *
@@ -190,8 +184,6 @@ class SQLiteUtils {
             throw new IllegalArgumentException("Column \"" + column + "\" not found in table \"" + table + "\"");
         }
     }
-
-
 
     /**
      * Get column default value.
@@ -233,7 +225,6 @@ class SQLiteUtils {
             throw new IllegalArgumentException("Column \"" + column + "\" not found in table \"" + table + "\"");
         }
     }
-
 
     /**
      * Check if a column is a primary key.

@@ -145,7 +145,6 @@ class EntityObject<T> {
      */
     public Relationships relationships = new Relationships();
 
-
     /**
      * Constructor.
      *
@@ -159,7 +158,6 @@ class EntityObject<T> {
         Objenesis objenesis = new ObjenesisStd();
         this.instantiator = objenesis.getInstantiatorOf(clazz);
     }
-
 
     /**
      * Create the {@link EntityObject} linked to an entity class and start the mapping process.
@@ -189,7 +187,6 @@ class EntityObject<T> {
         return result;
     }
 
-
     @NonNull
     @Override
     public String toString() {
@@ -200,7 +197,6 @@ class EntityObject<T> {
                 "Primary keys: " + columns.getPrimaryKeys();
     }
 
-
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof EntityObject))
@@ -210,12 +206,10 @@ class EntityObject<T> {
         return clazz.equals(entityObject.clazz);
     }
 
-
     @Override
     public int hashCode() {
         return clazz.hashCode();
     }
-
 
     /**
      * Get the simple name of the class associated to this entity.
@@ -225,7 +219,6 @@ class EntityObject<T> {
     public String getName() {
         return clazz.getSimpleName();
     }
-
 
     /**
      * Determine the table name.
@@ -266,7 +259,6 @@ class EntityObject<T> {
         doAndNotifyAll(this, () -> tableName = result);
     }
 
-
     /**
      * Determine the parent entity and eventually add this entity to its children.
      */
@@ -300,7 +292,6 @@ class EntityObject<T> {
         });
     }
 
-
     /**
      * Add a child to the children list.
      *
@@ -313,7 +304,6 @@ class EntityObject<T> {
         });
     }
 
-
     /**
      * Block the calling thread until the parent has been determined.
      *
@@ -322,7 +312,6 @@ class EntityObject<T> {
     private void waitUntilParentLoaded() {
         waitWhile(this, () -> !parentLoaded.get());
     }
-
 
     /**
      * Get the parent entity.
@@ -336,7 +325,6 @@ class EntityObject<T> {
         return parent;
     }
 
-
     /**
      * Determine the discriminator value.
      */
@@ -345,7 +333,6 @@ class EntityObject<T> {
         Object value = annotation == null ? null : annotation.value();
         doAndNotifyAll(this, () -> discriminatorValue = value);
     }
-
 
     /**
      * Get the child with a specific {@link #discriminatorValue}.
@@ -369,7 +356,6 @@ class EntityObject<T> {
         throw new NoSuchElementException("Entity \"" + clazz.getSimpleName() + "\" has no child with discriminator value \"" + discriminator + "\"");
     }
 
-
     /**
      * Determine the relationships fields.
      *
@@ -390,7 +376,6 @@ class EntityObject<T> {
             }
         }
     }
-
 
     /**
      * Get the unique columns sets (both the unique columns specified in the
@@ -427,7 +412,6 @@ class EntityObject<T> {
 
         return result;
     }
-
 
     /**
      * Load entity columns.
@@ -537,7 +521,6 @@ class EntityObject<T> {
         LogUtils.d("[Entity \"" + getName() + "\"] all columns loaded");
     }
 
-
     /**
      * Get field of a class given its name.
      * <p>The returned field is already set as accessible using {@link Field#setAccessible(boolean)}.</p>
@@ -548,7 +531,6 @@ class EntityObject<T> {
     public Field getField(String fieldName) {
         return getField(clazz, fieldName);
     }
-
 
     /**
      * Get the field of a class given the field name.
@@ -575,7 +557,6 @@ class EntityObject<T> {
         }
     }
 
-
     /**
      * Create an instance of the entity class.
      *
@@ -584,7 +565,6 @@ class EntityObject<T> {
     public T newInstance() {
         return instantiator.newInstance();
     }
-
 
     /**
      * Convert cursor to POJO.
@@ -656,7 +636,6 @@ class EntityObject<T> {
         return result;
     }
 
-
     /**
      * Prepare the data to be saved in a particular entity table.
      *
@@ -687,7 +666,6 @@ class EntityObject<T> {
 
         return cv;
     }
-
 
     /**
      * Get the SQL query to create the entity table.
@@ -739,7 +717,6 @@ class EntityObject<T> {
         return result.toString();
     }
 
-
     /**
      * Get primary keys SQL statement to be inserted in the create table query.
      *
@@ -758,7 +735,6 @@ class EntityObject<T> {
                 implode(primaryKeys, column -> escape(column.name), ", ") +
                 ")";
     }
-
 
     /**
      * Get unique columns SQL statement to be inserted in the create table query.
@@ -796,7 +772,6 @@ class EntityObject<T> {
 
         return implode(uniqueSets, obj -> obj, ", ");
     }
-
 
     /**
      * Get the foreign keys SQL constraints to be inserted in the create table query.
@@ -836,7 +811,6 @@ class EntityObject<T> {
         return implode(constraints, obj -> obj, ", ");
     }
 
-
     /**
      * Get the inheritance SQL constraint to be inserted in the create table query.
      *
@@ -866,7 +840,6 @@ class EntityObject<T> {
                 "REFERENCES " + escape(parent.tableName) + " (" + columns + ") " +
                 propagation;
     }
-
 
     /**
      * Get the relationships SQL constraints to be inserted in the create table query.

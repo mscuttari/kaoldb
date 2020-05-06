@@ -55,11 +55,9 @@ final class ExpressionImpl implements ExpressionInt {
 
     }
 
-
     @NonNull  private final ExpressionType operation;
     @NonNull  private final Expression x;
     @Nullable private final Expression y;
-
 
     /**
      * Constructor.
@@ -77,7 +75,6 @@ final class ExpressionImpl implements ExpressionInt {
         this.y = operation.cardinality == 1 ? y : checkNotNull(y);
     }
 
-
     /**
      * Create <code>NOT</code> expression.
      *
@@ -87,7 +84,6 @@ final class ExpressionImpl implements ExpressionInt {
     public static Expression not(Expression x) {
         return new ExpressionImpl(ExpressionType.NOT, x, null);
     }
-
 
     /**
      * Create <code>AND</code> expression.
@@ -101,7 +97,6 @@ final class ExpressionImpl implements ExpressionInt {
         return new ExpressionImpl(ExpressionType.AND, x, y);
     }
 
-
     /**
      * Create <code>OR</code> expression.
      *
@@ -113,7 +108,6 @@ final class ExpressionImpl implements ExpressionInt {
     public static Expression or(Expression x, Expression y) {
         return new ExpressionImpl(ExpressionType.OR, x, y);
     }
-
 
     /**
      * Create <code>XOR</code> expression.
@@ -127,7 +121,6 @@ final class ExpressionImpl implements ExpressionInt {
         return x.xor(y);
     }
 
-
     /**
      * Create <code>NAND</code> expression.
      *
@@ -139,7 +132,6 @@ final class ExpressionImpl implements ExpressionInt {
     public static Expression nand(Expression x, Expression y) {
         return x.nand(y);
     }
-
 
     /**
      * Create <code>NOR</code> expression.
@@ -153,7 +145,6 @@ final class ExpressionImpl implements ExpressionInt {
         return x.nor(y);
     }
 
-
     /**
      * Create <code>XNOR</code> expression.
      *
@@ -165,7 +156,6 @@ final class ExpressionImpl implements ExpressionInt {
     public static Expression xnor(Expression x, Expression y) {
         return x.xnor(y);
     }
-
 
     /**
      * Get string representation to be used in SQL query.
@@ -188,13 +178,11 @@ final class ExpressionImpl implements ExpressionInt {
         throw new IllegalStateException("Unknown expression type: " + operation);
     }
 
-
     @NonNull
     @Override
     public Iterator<PredicateImpl> iterator() {
         return new PredicatesIterator(this);
     }
-
 
     @NonNull
     @Override
@@ -205,7 +193,6 @@ final class ExpressionImpl implements ExpressionInt {
 
         return new ExpressionImpl(ExpressionType.NOT, this, null);
     }
-
 
     @NonNull
     @Override
@@ -219,7 +206,6 @@ final class ExpressionImpl implements ExpressionInt {
         return result;
     }
 
-
     @NonNull
     @Override
     public Expression or(@NonNull Expression... expressions) {
@@ -231,7 +217,6 @@ final class ExpressionImpl implements ExpressionInt {
 
         return result;
     }
-
 
     @NonNull
     @Override
@@ -245,7 +230,6 @@ final class ExpressionImpl implements ExpressionInt {
         return result;
     }
 
-
     @NonNull
     @Override
     public Expression nand(@NonNull Expression... expressions) {
@@ -257,7 +241,6 @@ final class ExpressionImpl implements ExpressionInt {
 
         return result;
     }
-
 
     @NonNull
     @Override
@@ -271,7 +254,6 @@ final class ExpressionImpl implements ExpressionInt {
         return result;
     }
 
-
     @NonNull
     @Override
     public Expression xnor(@NonNull Expression... expressions) {
@@ -283,7 +265,6 @@ final class ExpressionImpl implements ExpressionInt {
 
         return result;
     }
-
 
     /**
      * Iterator to be used to get the leaves of the expressions binary tree.

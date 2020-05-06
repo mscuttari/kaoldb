@@ -29,12 +29,7 @@ public class UpdateTest extends AbstractFilmTest {
 
     @Test
     public void updatePerson() {
-        Person person = new Person(
-                "Robert",
-                "Downey Jr.",
-                getCalendar(1965, Calendar.APRIL, 4),
-                new Country("USA")
-        );
+        Person person = new Person("Robert", "Downey Jr.", getCalendar(1965, Calendar.APRIL, 4), new Country("USA"));
 
         em.persist(person.country);
         em.persist(person);

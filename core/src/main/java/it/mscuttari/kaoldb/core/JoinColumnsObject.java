@@ -40,7 +40,6 @@ final class JoinColumnsObject extends Columns {
     /** Foreign keys constraints */
     public final Propagation propagation;
 
-
     /**
      * Constructor.
      *
@@ -74,7 +73,6 @@ final class JoinColumnsObject extends Columns {
             add(new JoinColumnObject(db, entity, field, joinColumnAnnotation));
         }
     }
-
 
     @Override
     public void map() {

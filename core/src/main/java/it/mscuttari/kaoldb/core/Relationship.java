@@ -76,7 +76,6 @@ class Relationship {
     /** Field that owns the relationship */
     @NonNull public final Field mappingField;
 
-
     /**
      * Constructor.
      *
@@ -126,7 +125,6 @@ class Relationship {
             LogUtils.w("[Relationship \"" + field.getName() + "\"] declared type " + field.getType().getSimpleName() + " is incompatible with lazy loading");
         }
     }
-
 
     /**
      * Get the data type of a field that implements the {@link Collection} interface.
@@ -223,7 +221,6 @@ class Relationship {
         throw new MappingException("Field doesn't implement the Collection interface");
     }
 
-
     /**
      * Get the raw class (thus without any diamond operator) of a Type.
      *
@@ -238,7 +235,6 @@ class Relationship {
         }
     }
 
-
     /**
      * Get the class that owns the relationship.
      *
@@ -248,7 +244,6 @@ class Relationship {
         return owning ? local : linked;
     }
 
-
     /**
      * Get the class that doesn't own the relationship.
      *
@@ -257,7 +252,6 @@ class Relationship {
     public Class<?> getNonOwningClass() {
         return owning ? linked : local;
     }
-
 
     /**
      * Determine whether the lazy initialization can be done, according to declared field class.<br>

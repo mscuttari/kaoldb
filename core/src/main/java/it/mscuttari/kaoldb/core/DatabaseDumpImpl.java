@@ -37,7 +37,6 @@ class DatabaseDumpImpl implements DatabaseDump {
     /** Map between table names and dumps */
     private final Map<String, TableDump> tables;
 
-
     /**
      * Constructor.
      *
@@ -54,7 +53,6 @@ class DatabaseDumpImpl implements DatabaseDump {
         }
     }
 
-
     @NonNull
     @Override
     public String toString() {
@@ -67,12 +65,10 @@ class DatabaseDumpImpl implements DatabaseDump {
                 "}";
     }
 
-
     @Override
     public int getVersion() {
         return version;
     }
-
 
     @NonNull
     @Override
@@ -85,7 +81,6 @@ class DatabaseDumpImpl implements DatabaseDump {
 
         return table;
     }
-
 
     @NonNull
     @Override

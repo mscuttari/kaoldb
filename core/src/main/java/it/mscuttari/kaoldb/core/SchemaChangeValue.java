@@ -42,7 +42,6 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction {
     @NonNull private final String column;
     @NonNull private final SchemaChangeValueListener<T> listener;
 
-
     /**
      * Constructor.
      *
@@ -68,7 +67,6 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction {
         this.column = column;
         this.listener = listener;
     }
-
 
     @Override
     void run(SQLiteDatabase db) {
@@ -122,7 +120,6 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction {
             }
         }
     }
-
 
     public interface SchemaChangeValueListener<T> {
 

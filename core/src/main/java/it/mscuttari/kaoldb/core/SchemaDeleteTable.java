@@ -29,7 +29,6 @@ public final class SchemaDeleteTable extends SchemaBaseAction {
 
     @NonNull private final String table;
 
-
     /**
      * Constructor.
      *
@@ -43,7 +42,6 @@ public final class SchemaDeleteTable extends SchemaBaseAction {
 
         this.table = table;
     }
-
 
     @Override
     void run(SQLiteDatabase db) {

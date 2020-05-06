@@ -36,7 +36,6 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
     /** Discriminator column annotation */
     private final DiscriminatorColumn annotation;
 
-
     /**
      * Constructor to create a column that is not linked to a field.
      *
@@ -57,7 +56,6 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
         this.name = annotation.name();
     }
 
-
     @Override
     protected void mapAsync() {
         loadCustomColumnDefinition();
@@ -68,14 +66,12 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
         loadDefaultValue();
     }
 
-
     /**
      * Determine the custom column definition.
      */
     private void loadCustomColumnDefinition() {
         doAndNotifyAll(this, () -> customColumnDefinition = null);
     }
-
 
     /**
      * Determine the column type.
@@ -92,14 +88,12 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
         });
     }
 
-
     /**
      * Determine whether the column is nullable or not.
      */
     private void loadNullableProperty() {
         doAndNotifyAll(this, () -> nullable = false);
     }
-
 
     /**
      * Determine whether the column is a primary key or not.
@@ -108,14 +102,12 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
         doAndNotifyAll(this, () -> primaryKey = false);
     }
 
-
     /**
      * Determine whether the column value should be unique or not.
      */
     private void loadUniqueProperty() {
         doAndNotifyAll(this, () -> unique = false);
     }
-
 
     /**
      * Determine the default value.<br>
@@ -124,7 +116,6 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
     private void loadDefaultValue() {
         doAndNotifyAll(this, () -> defaultValue = null);
     }
-
 
     @Nullable
     @Override
@@ -141,24 +132,20 @@ public final class DiscriminatorColumnObject extends BaseColumnObject {
         throw new IllegalStateException("Discriminator value not found for class " + obj.getClass().getSimpleName());
     }
 
-
     @Override
     public void setValue(Object obj, Object value) {
         // Nothing to be done (there is no real field to bet set)
     }
-
 
     @Override
     public boolean hasRelationship() {
         return false;
     }
 
-
     @Override
     public boolean isDataExisting(Object obj, EntityManager entityManager) {
         return true;
     }
-
 
     @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {

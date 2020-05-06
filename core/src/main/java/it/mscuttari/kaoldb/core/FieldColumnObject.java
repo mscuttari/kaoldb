@@ -38,7 +38,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
     @NonNull
     public final Field field;
 
-
     /**
      * Constructor.
      *
@@ -54,7 +53,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
 
         this.field = field;
     }
-
 
     @Nullable
     @Override
@@ -72,7 +70,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
         }
     }
 
-
     @Override
     public final void setValue(Object obj, Object value) {
         field.setAccessible(true);
@@ -83,7 +80,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
             throw new PojoException(e);
         }
     }
-
 
     @Override
     public boolean isDataExisting(Object obj, EntityManager entityManager) {
@@ -129,7 +125,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
         return queryResult != null;
     }
 
-
     /**
      * Check if the data class can be stored in the database as if it is a primitive type.
      *
@@ -159,7 +154,6 @@ public abstract class FieldColumnObject extends BaseColumnObject {
                 Date.class.isAssignableFrom(clazz) ||
                 Calendar.class.isAssignableFrom(clazz);
     }
-
 
     /**
      * Get the default name for a column.

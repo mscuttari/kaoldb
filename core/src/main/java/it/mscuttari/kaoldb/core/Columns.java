@@ -52,7 +52,6 @@ class Columns implements ColumnsContainer {
     /** Primary keys of the table (subset of {@link #columns}) */
     private final Collection<FieldColumnObject> primaryKeys = new ArraySet<>();
 
-
     /**
      * Default constructor.
      *
@@ -61,7 +60,6 @@ class Columns implements ColumnsContainer {
     public Columns(@NonNull EntityObject<?> entity) {
         this(entity, null);
     }
-
 
     /**
      * Constructor.<br>
@@ -76,20 +74,17 @@ class Columns implements ColumnsContainer {
             addAll(columns);
     }
 
-
     @NonNull
     @Override
     public String toString() {
         return columns.toString();
     }
 
-
     @NonNull
     @Override
     public Iterator<BaseColumnObject> iterator() {
         return new ColumnsIterator(columns);
     }
-
 
     @Override
     public void map() {
@@ -106,7 +101,6 @@ class Columns implements ColumnsContainer {
         }
     }
 
-
     @Override
     public void waitUntilMapped() {
         for (ColumnsContainer container : columns) {
@@ -114,14 +108,12 @@ class Columns implements ColumnsContainer {
         }
     }
 
-
     @Override
     public synchronized void addToContentValues(@NonNull ContentValues cv, Object obj) {
         for (BaseColumnObject column : this) {
             column.addToContentValues(cv, obj);
         }
     }
-
 
     /**
      * Get an unmodifiable version of {@link #columns}.
@@ -131,7 +123,6 @@ class Columns implements ColumnsContainer {
     public final synchronized Collection<ColumnsContainer> getColumnsContainers() {
         return Collections.unmodifiableCollection(columns);
     }
-
 
     /**
      * Get the column given its name.
@@ -143,7 +134,6 @@ class Columns implements ColumnsContainer {
         return namesMap.get(columnName);
     }
 
-
     /**
      * Get an unmodifiable version of {@link #primaryKeys}.
      *
@@ -152,7 +142,6 @@ class Columns implements ColumnsContainer {
     public final synchronized Collection<FieldColumnObject> getPrimaryKeys() {
         return Collections.unmodifiableCollection(primaryKeys);
     }
-
 
     /**
      * Check if a column is already mapped.
@@ -164,7 +153,6 @@ class Columns implements ColumnsContainer {
         return namesMap.containsKey(columnName);
     }
 
-
     /**
      * Check if a column is already mapped.
      *
@@ -174,7 +162,6 @@ class Columns implements ColumnsContainer {
     public final synchronized boolean contains(BaseColumnObject o) {
         return namesMap.containsValue(o);
     }
-
 
     /**
      * Add the columns contained by a column container.
@@ -212,7 +199,6 @@ class Columns implements ColumnsContainer {
         }
     }
 
-
     /**
      * Get the columns linked to a field and add them to the columns set.
      *
@@ -227,7 +213,6 @@ class Columns implements ColumnsContainer {
     public synchronized boolean add(DatabaseObject db, EntityObject<?> entity, Field field) {
         return addAll(entityFieldToColumns(db, entity, field));
     }
-
 
     /**
      * Add columns.
@@ -244,7 +229,6 @@ class Columns implements ColumnsContainer {
         return result;
     }
 
-
     /**
      * Add columns.
      *
@@ -255,7 +239,6 @@ class Columns implements ColumnsContainer {
         return addAll(columns.columns);
     }
 
-
     /**
      * Delete all the columns.
      */
@@ -264,7 +247,6 @@ class Columns implements ColumnsContainer {
         namesMap.clear();
         primaryKeys.clear();
     }
-
 
     /**
      * Check that the column to be added are not already mapped.
@@ -278,7 +260,6 @@ class Columns implements ColumnsContainer {
                 throw new InvalidConfigException("Column " + column.name + " already defined");
         }
     }
-
 
     /**
      * Convert column field to single or multiple column objects.
@@ -320,7 +301,6 @@ class Columns implements ColumnsContainer {
         return result;
     }
 
-
     /**
      * Get the columns SQL statement to be inserted in the table creation query.
      * <p>Example: <code>"column 1" INTEGER UNIQUE, "column 2" TEXT, "column 3" REAL NOT NULL</code></p>
@@ -343,7 +323,6 @@ class Columns implements ColumnsContainer {
         return empty ? null : result.toString();
     }
 
-
     /**
      * Iterator to be used to navigate the columns tree and get only the leaves, which indeed are
      * the real columns.
@@ -352,7 +331,6 @@ class Columns implements ColumnsContainer {
 
         private final Stack<Iterator<? extends ColumnsContainer>> stack = new Stack<>();
         private BaseColumnObject next;
-
 
         /**
          * Constructor.
@@ -364,23 +342,22 @@ class Columns implements ColumnsContainer {
             this.next = fetchNext();
         }
 
-
         @Override
         public boolean hasNext() {
             return next != null;
         }
-
 
         @Override
         public BaseColumnObject next() {
             if (next == null)
                 throw new NoSuchElementException();
 
-            BaseColumnObject next = this.next;
-            this.next = fetchNext();
-            return next;
+            try {
+                return next;
+            } finally {
+                next = fetchNext();
+            }
         }
-
 
         /**
          * Prefetch the next element.

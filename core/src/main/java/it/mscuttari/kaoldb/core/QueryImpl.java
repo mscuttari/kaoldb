@@ -53,7 +53,6 @@ class QueryImpl<M> implements Query<M> {
     @NonNull private final String alias;
     @NonNull private final String sql;
 
-
     /**
      * Constructor.
      *
@@ -76,7 +75,6 @@ class QueryImpl<M> implements Query<M> {
         this.sql = sql;
     }
 
-
     /**
      * Get SQL query.
      *
@@ -87,7 +85,6 @@ class QueryImpl<M> implements Query<M> {
     public String toString() {
         return sql;
     }
-
 
     @NonNull
     @Override
@@ -133,7 +130,6 @@ class QueryImpl<M> implements Query<M> {
         }
     }
 
-
     @Override
     public M getSingleResult() {
         List<M> resultList = getResults();
@@ -144,7 +140,6 @@ class QueryImpl<M> implements Query<M> {
 
         return resultList.get(0);
     }
-
 
     @NonNull
     @Override
@@ -223,7 +218,6 @@ class QueryImpl<M> implements Query<M> {
         return liveQuery;
     }
 
-
     /**
      * Get the queries to be used to eagerly load data of fields with
      * {@link OneToOne} or {@link ManyToOne} annotations.
@@ -284,7 +278,6 @@ class QueryImpl<M> implements Query<M> {
 
         return concurrentSession;
     }
-
 
     /**
      * Create lazy collections for {@link OneToMany} and {@link ManyToMany} annotated fields.

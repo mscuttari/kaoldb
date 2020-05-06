@@ -37,7 +37,6 @@ class RowDumpImpl implements RowDump {
     /** Map between column names and column values */
     private final ArrayMap<String, Object> values;
 
-
     /**
      * Dump a row of a table.
      *
@@ -72,7 +71,6 @@ class RowDumpImpl implements RowDump {
         }
     }
 
-
     @NonNull
     @Override
     public String toString() {
@@ -85,13 +83,11 @@ class RowDumpImpl implements RowDump {
                 "}";
     }
 
-
     @NonNull
     @Override
     public Collection<String> getColumns() {
         return Collections.unmodifiableCollection(values.keySet());
     }
-
 
     @SuppressWarnings("unchecked")
     @CheckResult

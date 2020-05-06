@@ -44,7 +44,6 @@ public interface QueryBuilder<T> {
     @NonNull
     <M> Root<M> getRoot(@NonNull Class<M> entityClass);
 
-
     /**
      * Set the <code>FROM</code> clause for the query to be built.
      *
@@ -54,7 +53,6 @@ public interface QueryBuilder<T> {
     @NonNull
     QueryBuilder<T> from(Root<?> from);
 
-
     /**
      * Set the <code>WHERE</code> clause for the query to be built.
      *
@@ -63,7 +61,6 @@ public interface QueryBuilder<T> {
      */
     @NonNull
     QueryBuilder<T> where(Expression where);
-
 
     /**
      * Create the query.

@@ -53,7 +53,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         loadName();
     }
 
-
     @Override
     public void mapAsync() {
         loadCustomColumnDefinition();
@@ -64,7 +63,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         loadDefaultValue();
     }
 
-
     /**
      * Determine the column name.
      */
@@ -73,7 +71,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
         doAndNotifyAll(this, () -> name = result);
     }
-
 
     /**
      * Determine the custom column definition.
@@ -84,7 +81,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
 
-
     /**
      * Determine the column type.
      */
@@ -92,7 +88,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         Class<?> result = field.getType();
         doAndNotifyAll(this, () -> type = result);
     }
-
 
     /**
      * Determine whether the column is nullable or not.
@@ -103,7 +98,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> nullable = result);
     }
 
-
     /**
      * Determine whether the column is a primary key or not.
      */
@@ -111,7 +105,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         boolean result = field.isAnnotationPresent(Id.class);
         doAndNotifyAll(this, () -> primaryKey = result);
     }
-
 
     /**
      * Determine whether the column value should be unique or not.
@@ -121,7 +114,6 @@ final class SimpleColumnObject extends FieldColumnObject {
         boolean result = annotation.unique();
         doAndNotifyAll(this, () -> unique = result);
     }
-
 
     /**
      * Determine the default value.<br>
@@ -168,13 +160,11 @@ final class SimpleColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> defaultValue = result);
     }
 
-
     @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {
         Object value = getValue(obj);
         insertIntoContentValues(cv, name, value);
     }
-
 
     @Override
     public boolean hasRelationship() {

@@ -38,7 +38,6 @@ public interface Expression {
     @NonNull
     Expression not();
 
-
     /**
      * Create <code>AND</code> expression.
      *
@@ -48,7 +47,6 @@ public interface Expression {
     @CheckResult
     @NonNull
     Expression and(@NonNull Expression... expressions);
-
 
     /**
      * Create <code>OR</code> expression.
@@ -60,7 +58,6 @@ public interface Expression {
     @NonNull
     Expression or(@NonNull Expression... expressions);
 
-
     /**
      * Create <code>XOR</code> expression.
      *
@@ -70,7 +67,6 @@ public interface Expression {
     @CheckResult
     @NonNull
     Expression xor(@NonNull Expression... expressions);
-
 
     /**
      * Create <code>NAND</code> expression.
@@ -82,7 +78,6 @@ public interface Expression {
     @NonNull
     Expression nand(@NonNull Expression... expressions);
 
-
     /**
      * Create <code>NOR</code> expression.
      *
@@ -92,7 +87,6 @@ public interface Expression {
     @CheckResult
     @NonNull
     Expression nor(@NonNull Expression... expressions);
-
 
     /**
      * Create <code>XNOR</code> expression.

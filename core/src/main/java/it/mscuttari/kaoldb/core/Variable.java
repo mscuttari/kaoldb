@@ -42,7 +42,6 @@ class Variable<T> {
     /** Immediate value */
     private final T value;
 
-
     /**
      * Constructor for property based variable.
      *
@@ -55,7 +54,6 @@ class Variable<T> {
         this.value = null;
     }
 
-
     /**
      * Constructor for immediate based variable.
      *
@@ -67,7 +65,6 @@ class Variable<T> {
         this.value = value;
     }
 
-
     /**
      * Get table alias.
      *
@@ -76,7 +73,6 @@ class Variable<T> {
     public String getTableAlias() {
         return tableAlias;
     }
-
 
     /**
      * Check if the variable has a property or raw data.
@@ -87,7 +83,6 @@ class Variable<T> {
         return property != null;
     }
 
-
     /**
      * Get the property.
      * <p>Returns <code>null</code> if {@link #hasProperty()} is <code>false</code>.</p>
@@ -97,7 +92,6 @@ class Variable<T> {
     public Property<?, T> getProperty() {
         return property;
     }
-
 
     /**
      * Get the raw data.

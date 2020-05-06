@@ -42,7 +42,6 @@ public interface Root<X> {
     @NonNull
     Class<X> getEntityClass();
 
-
     /**
      * Get the root alias to be used in the queries.
      *
@@ -51,7 +50,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     String getAlias();
-
 
     /**
      * Get join root.
@@ -69,7 +67,6 @@ public interface Root<X> {
     @NonNull
     <Y> Root<X> join(@NonNull Root<Y> root, @NonNull Property<X, Y> property);
 
-
     /**
      * Get all the roots that are directly joined together by the user.
      *
@@ -82,7 +79,6 @@ public interface Root<X> {
     @NonNull
     Collection<Root<?>> getJoinedRoots();
 
-
     /**
      * Get <code>IS NULL</code> expression for a property.
      *
@@ -92,7 +88,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression isNull(@NonNull SingleProperty<X, T> property);
-
 
     /**
      * Get <code>EQUALS</code> expression between a property and a value.
@@ -107,7 +102,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression eq(@NonNull SingleProperty<X, T> property, @Nullable T value);
 
-
     /**
      * Get <code>EQUALS</code> expression between two properties.
      *
@@ -120,7 +114,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression eq(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
 
     /**
      * Get <code>GREATER THAN</code> expression between a property and a value.
@@ -135,7 +128,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression gt(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
-
     /**
      * Get <code>GREATER THAN</code> expression between two properties.
      *
@@ -148,7 +140,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression gt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
 
     /**
      * Get <code>GREATER OR EQUALS THAN</code> expression between a property and a value.
@@ -163,7 +154,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression ge(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
-
     /**
      * Get <code>GREATER OR EQUALS THAN</code> expression between two properties.
      *
@@ -176,7 +166,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression ge(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
 
     /**
      * Get <code>LESS THAN</code> expression between a property and a value.
@@ -191,7 +180,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression lt(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
-
     /**
      * Get <code>LESS THAN</code> expression between two properties.
      *
@@ -204,7 +192,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression lt(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
 
     /**
      * Get <code>LESS OR EQUALS THAN</code> expression between a property and a value.
@@ -219,7 +206,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression le(@NonNull SingleProperty<X, T> property, @NonNull T value);
 
-
     /**
      * Get <code>LESS OR EQUALS THAN</code> expression between two properties.
      *
@@ -232,7 +218,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression le(@NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
-
 
     /**
      * Get <code>BETWEEN</code> expression for a property using two values as comparison.
@@ -248,7 +233,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull T y);
 
-
     /**
      * Get <code>BETWEEN</code> expression for a property using a property and a value as comparison.
      *
@@ -262,7 +246,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull T y);
-
 
     /**
      * Get <code>BETWEEN</code> expression for a property using a value and a property as comparison.
@@ -278,7 +261,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull T x, @NonNull SingleProperty<X, T> y);
 
-
     /**
      * Get <code>BETWEEN</code> expression for a property using two properties as comparison.
      *
@@ -293,7 +275,6 @@ public interface Root<X> {
     @NonNull
     <T> Expression between(@NonNull SingleProperty<X, T> property, @NonNull SingleProperty<X, T> x, @NonNull SingleProperty<X, T> y);
 
-
     /**
      * Get <code>LIKE</code> expression between a property and a value.
      *
@@ -305,7 +286,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     Expression like(@NonNull SingleProperty<X, String> property, @NonNull String value);
-
 
     /**
      * Get <code>LIKE</code> expression between two properties.
@@ -319,7 +299,6 @@ public interface Root<X> {
     @NonNull
     Expression like(@NonNull SingleProperty<X, String> x, @NonNull SingleProperty<X, String> y);
 
-
     /**
      * Get <code>GLOB</code> expression between a property and a value.
      *
@@ -331,7 +310,6 @@ public interface Root<X> {
     @CheckResult
     @NonNull
     Expression glob(@NonNull SingleProperty<X, String> property, @NonNull String value);
-
 
     /**
      * Get <code>GLOB</code> expression between two properties.

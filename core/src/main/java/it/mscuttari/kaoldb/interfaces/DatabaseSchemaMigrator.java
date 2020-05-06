@@ -49,7 +49,6 @@ public interface DatabaseSchemaMigrator {
      */
     List<SchemaAction> onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception;
 
-
     /**
      * Called in case of database version downgrade.
      *

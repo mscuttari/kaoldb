@@ -40,7 +40,6 @@ class Config {
     /** Whether the debug messages should be enabled or not */
     private boolean debug = BuildConfig.DEBUG;
 
-
     /**
      * Get an unmodifiable {@link Map} between database name and {@link DatabaseObject}.
      *
@@ -49,7 +48,6 @@ class Config {
     public Map<String, DatabaseObject> getDatabaseMapping() {
         return Collections.unmodifiableMap(mapping);
     }
-
 
     /**
      * Get an unmodifiable {@link Collection} of database names.
@@ -60,7 +58,6 @@ class Config {
         return Collections.unmodifiableCollection(mapping.keySet());
     }
 
-
     /**
      * Check if debug mode is enabled.
      *
@@ -69,7 +66,6 @@ class Config {
     public boolean isDebugEnabled() {
         return debug;
     }
-
 
     /**
      * Set whether the debug mode should be enabled or not.
@@ -91,7 +87,6 @@ class Config {
         }
     }
 
-
     /**
      * Parse the XML configuration file.
      *
@@ -112,7 +107,6 @@ class Config {
         }
     }
 
-
     /**
      * Iterate through databases list.
      *
@@ -132,7 +126,6 @@ class Config {
             eventType = xml.next();
         }
     }
-
 
     /**
      * Parse a single database section and add the database to the databases list.

@@ -31,7 +31,6 @@ public final class SchemaCreateTable extends SchemaBaseAction {
     @NonNull private final String primaryKeyName;
     @NonNull private final Class<?> primaryKeyType;
 
-
     /**
      * Constructor.
      *
@@ -57,7 +56,6 @@ public final class SchemaCreateTable extends SchemaBaseAction {
         this.primaryKeyName = primaryKeyName;
         this.primaryKeyType = primaryKeyType;
     }
-
 
     @Override
     void run(SQLiteDatabase db) {

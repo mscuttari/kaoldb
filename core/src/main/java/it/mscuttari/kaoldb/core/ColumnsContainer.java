@@ -41,14 +41,12 @@ interface ColumnsContainer extends Iterable<BaseColumnObject> {
      */
     void map();
 
-
     /**
      * Block the calling thread until all the columns properties have been loaded.
      *
      * @see #map()
      */
     void waitUntilMapped();
-
 
     /**
      * Add the columns to a {@link ContentValues} data set.

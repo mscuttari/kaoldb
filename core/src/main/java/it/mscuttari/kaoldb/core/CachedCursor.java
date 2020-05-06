@@ -54,7 +54,6 @@ class CachedCursor implements Cursor {
     /** Map between columns name and index */
     private final Map<String, Integer> columnIndexMap;
 
-
     /**
      * Constructor.
      *
@@ -74,78 +73,65 @@ class CachedCursor implements Cursor {
         this.columnIndexMap = Collections.unmodifiableMap(columnIndexMap);
     }
 
-
     @Override
     public int getCount() {
         return c.getCount();
     }
-
 
     @Override
     public int getPosition() {
         return c.getPosition();
     }
 
-
     @Override
     public boolean move(int offset) {
         return c.move(offset);
     }
-
 
     @Override
     public boolean moveToPosition(int position) {
         return c.moveToPosition(position);
     }
 
-
     @Override
     public boolean moveToFirst() {
         return c.moveToFirst();
     }
-
 
     @Override
     public boolean moveToLast() {
         return c.moveToLast();
     }
 
-
     @Override
     public boolean moveToNext() {
         return c.moveToNext();
     }
-
 
     @Override
     public boolean moveToPrevious() {
         return c.moveToPrevious();
     }
 
-
     @Override
     public boolean isFirst() {
         return c.isFirst();
     }
-
 
     @Override
     public boolean isLast() {
         return c.isLast();
     }
 
-
     @Override
     public boolean isBeforeFirst() {
         return c.isBeforeFirst();
     }
 
-
     @Override
     public boolean isAfterLast() {
         return c.isAfterLast();
     }
-
 
     @Override
     public int getColumnIndex(String columnName) {
@@ -157,7 +143,6 @@ class CachedCursor implements Cursor {
         return -1;
     }
 
-
     @Override
     public int getColumnIndexOrThrow(String columnName) throws IllegalArgumentException {
         Integer result = columnIndexMap.get(columnName);
@@ -168,138 +153,115 @@ class CachedCursor implements Cursor {
         throw new IllegalArgumentException("Column \"" + columnName + "\" not found");
     }
 
-
     @Override
     public String getColumnName(int columnIndex) {
         return c.getColumnName(columnIndex);
     }
-
 
     @Override
     public String[] getColumnNames() {
         return c.getColumnNames();
     }
 
-
     @Override
     public int getColumnCount() {
         return c.getColumnCount();
     }
-
 
     @Override
     public byte[] getBlob(int columnIndex) {
         return c.getBlob(columnIndex);
     }
 
-
     @Override
     public String getString(int columnIndex) {
         return c.getString(columnIndex);
     }
-
 
     @Override
     public void copyStringToBuffer(int columnIndex, CharArrayBuffer buffer) {
         c.copyStringToBuffer(columnIndex, buffer);
     }
 
-
     @Override
     public short getShort(int columnIndex) {
         return c.getShort(columnIndex);
     }
-
 
     @Override
     public int getInt(int columnIndex) {
         return c.getInt(columnIndex);
     }
 
-
     @Override
     public long getLong(int columnIndex) {
         return c.getLong(columnIndex);
     }
-
 
     @Override
     public float getFloat(int columnIndex) {
         return c.getFloat(columnIndex);
     }
 
-
     @Override
     public double getDouble(int columnIndex) {
         return c.getDouble(columnIndex);
     }
-
 
     @Override
     public int getType(int columnIndex) {
         return c.getType(columnIndex);
     }
 
-
     @Override
     public boolean isNull(int columnIndex) {
         return c.isNull(columnIndex);
     }
-
 
     @Override
     public void deactivate() {
         c.deactivate();
     }
 
-
     @Override
     public boolean requery() {
         return c.requery();
     }
-
 
     @Override
     public void close() {
         c.close();
     }
 
-
     @Override
     public boolean isClosed() {
         return c.isClosed();
     }
-
 
     @Override
     public void registerContentObserver(ContentObserver observer) {
         c.registerContentObserver(observer);
     }
 
-
     @Override
     public void unregisterContentObserver(ContentObserver observer) {
         c.unregisterContentObserver(observer);
     }
-
 
     @Override
     public void registerDataSetObserver(DataSetObserver observer) {
         c.registerDataSetObserver(observer);
     }
 
-
     @Override
     public void unregisterDataSetObserver(DataSetObserver observer) {
         c.unregisterDataSetObserver(observer);
     }
 
-
     @Override
     public void setNotificationUri(ContentResolver cr, Uri uri) {
         c.setNotificationUri(cr, uri);
     }
-
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)
     @Override
@@ -307,12 +269,10 @@ class CachedCursor implements Cursor {
         return c.getNotificationUri();
     }
 
-
     @Override
     public boolean getWantsAllOnMoveCalls() {
         return c.getWantsAllOnMoveCalls();
     }
-
 
     @RequiresApi(Build.VERSION_CODES.M)
     @Override
@@ -320,12 +280,10 @@ class CachedCursor implements Cursor {
         c.setExtras(extras);
     }
 
-
     @Override
     public Bundle getExtras() {
         return c.getExtras();
     }
-
 
     @Override
     public Bundle respond(Bundle extras) {

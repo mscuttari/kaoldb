@@ -58,7 +58,6 @@ class ConcurrentSession<T> implements Iterable<T> {
     /** Whether the current tasks set computation has finished */
     private final AtomicBoolean finished = new AtomicBoolean(true);
 
-
     static {
         executorService = new ThreadPoolExecutor(
                 Runtime.getRuntime().availableProcessors(),
@@ -68,7 +67,6 @@ class ConcurrentSession<T> implements Iterable<T> {
                 new SynchronousQueue<>()
         );
     }
-
 
     /**
      * Start a single task in parallel.
@@ -80,7 +78,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         session.submit(task);
     }
 
-
     /**
      * Start a single task in parallel
      *
@@ -91,7 +88,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         ConcurrentSession<T> session = new ConcurrentSession<>();
         session.submit(task);
     }
-
 
     /**
      * Submits a {@link Runnable} task for execution and returns a {@link Future}
@@ -105,7 +101,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         tasks.add(future);
     }
 
-
     /**
      * Submits a value-returning task for execution and returns a {@link Future}
      * representing the pending results of the task.
@@ -117,7 +112,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         Future<T> future = executorService.submit(task);
         tasks.add(future);
     }
-
 
     /**
      * Wait for all the tasks to be completed (or for one to fail).
@@ -139,7 +133,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         doAndNotifyAll(finished, () -> finished.set(true));
     }
 
-
     /**
      * {@link #waitForAll()} must be called before trying to iterate on the results.
      */
@@ -149,7 +142,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         waitWhile(finished, () -> !finished.get());
         return results.iterator();
     }
-
 
     /**
      * Wait while a condition is satisfied.
@@ -174,7 +166,6 @@ class ConcurrentSession<T> implements Iterable<T> {
         }
     }
 
-
     /**
      * Execute an action and notify all the threads waiting on the lock.
      *
@@ -191,7 +182,6 @@ class ConcurrentSession<T> implements Iterable<T> {
             }
         }
     }
-
 
     public interface SynchCondition {
         boolean check();

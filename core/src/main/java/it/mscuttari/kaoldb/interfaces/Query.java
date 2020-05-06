@@ -45,7 +45,6 @@ public interface Query<M> {
     @NonNull
     List<M> getResults();
 
-
     /**
      * Run the query and get the results list.
      *
@@ -59,7 +58,6 @@ public interface Query<M> {
     @CheckResult
     @NonNull
     LiveData<List<M>> getLiveResults();
-
 
     /**
      * Run the query and get the first query result object.

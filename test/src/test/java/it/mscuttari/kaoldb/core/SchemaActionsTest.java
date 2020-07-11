@@ -1,7 +1,6 @@
 package it.mscuttari.kaoldb.core;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -11,7 +10,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,7 +33,6 @@ public class SchemaActionsTest extends AbstractTest {
     private static final String DB_NAME = "db_actions_test";
     private SQLiteDatabase db;
 
-
     /**
      * Create the database and get a writable instance.
      */
@@ -46,13 +43,19 @@ public class SchemaActionsTest extends AbstractTest {
         SQLiteOpenHelper dbHelper = new SQLiteOpenHelper(context, DB_NAME, null, 1) {
             @Override
             public void onCreate(SQLiteDatabase db) {
+                db.execSQL("CREATE TABLE table_0(id INTEGER PRIMARY KEY)");
+
                 db.execSQL("CREATE TABLE table_1(" +
                         "id INTEGER PRIMARY KEY," +
                         "col_1 INTEGER NOT NULL DEFAULT '1'," +
-                        "col_2 TEXT)");
+                        "col_2 TEXT," +
+                        "fk_ext INTEGER," +
+                        "fk_int INTEGER," +
+                        "FOREIGN KEY (fk_ext) REFERENCES table_0(id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED," +
+                        "FOREIGN KEY (fk_int) REFERENCES table_1(col_1) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED)");
 
-                db.execSQL("INSERT INTO table_1 (id, col_1, col_2) VALUES(1, 1, 'Test1')");
-                db.execSQL("INSERT INTO table_1 (id, col_1, col_2) VALUES(2, 2, NULL)");
+                db.execSQL("INSERT INTO table_1 (id, col_1, col_2, fk_ext, fk_int) VALUES(1, 1, 'Test1', NULL, NULL)");
+                db.execSQL("INSERT INTO table_1 (id, col_1, col_2, fk_ext, fk_int) VALUES(2, 2, NULL, NULL, NULL)");
             }
 
             @Override

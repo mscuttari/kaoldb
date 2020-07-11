@@ -33,7 +33,6 @@ class StringUtils {
      * @return escaped string (<code>null</code> if <code>obj</code> is <code>null</code>)
      */
     @CheckResult
-    @Nullable
     public static String escape(Object obj) {
         if (obj == null) {
             return null;
@@ -55,7 +54,6 @@ class StringUtils {
      * @return escaped string (<code>null</code> if <code>str</code> is <code>null</code>)
      */
     @CheckResult
-    @Nullable
     public static String escape(String str) {
         if (str == null) {
             return null;

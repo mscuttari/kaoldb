@@ -25,6 +25,7 @@ import java.util.List;
 
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTableColumns;
+import static it.mscuttari.kaoldb.core.SQLiteUtils.getTableForeignKeys;
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getTablePrimaryKeys;
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
 import static it.mscuttari.kaoldb.core.StringUtils.implode;
@@ -101,6 +102,24 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         newColumnsStatements.add("PRIMARY KEY(" +
                 implode(primaryKeys, obj -> obj.equals(oldName) ? escape(newName) : escape(obj), ",") +
                 ")");
+
+        // Foreign key constraints
+        for (SQLiteUtils.ForeignKeys constraint : getTableForeignKeys(db, table)) {
+            List<String> sourceColumns = new ArrayList<>();
+            List<String> destinationColumns = new ArrayList<>();
+
+            for (String sourceColumn : constraint.sourceColumns) {
+                sourceColumns.add(oldName.equals(sourceColumn) ? newName : sourceColumn);
+            }
+
+            for (String destinationColumn : constraint.destinationColumns) {
+                destinationColumns.add(table.equals(constraint.destinationTable) && oldName.equals(destinationColumn) ?
+                        newName : destinationColumn);
+            }
+
+            SQLiteUtils.ForeignKeys newConstraint = new SQLiteUtils.ForeignKeys(table, sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
+            newColumnsStatements.add(newConstraint.toString());
+        }
 
         // Backup old table
         String tempTable = getTemporaryTableName(db);

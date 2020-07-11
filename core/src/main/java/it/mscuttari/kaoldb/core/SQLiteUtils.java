@@ -19,7 +19,6 @@ package it.mscuttari.kaoldb.core;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import static it.mscuttari.kaoldb.core.StringUtils.escape;
-import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 class SQLiteUtils {
 
@@ -122,7 +120,7 @@ class SQLiteUtils {
      *
      * @return foreign keys constraints
      */
-    public static Collection<ForeignKeys> getTableForeignKeys(SQLiteDatabase db, String table) {
+    public static Collection<ForeignKey> getTableForeignKeys(SQLiteDatabase db, String table) {
         try (Cursor c = db.rawQuery("PRAGMA foreign_key_list(" + table + ")", null)) {
             int idIndex = c.getColumnIndex("id");
             int tableIndex = c.getColumnIndex("table");
@@ -131,7 +129,7 @@ class SQLiteUtils {
             int onUpdateIndex = c.getColumnIndex("on_update");
             int onDeleteIndex = c.getColumnIndex("on_delete");
 
-            Map<Integer, ForeignKeys> constraints = new HashMap<>();
+            Map<Integer, ForeignKey> constraints = new HashMap<>();
 
             for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
                 int id = c.getInt(idIndex);
@@ -142,12 +140,12 @@ class SQLiteUtils {
                 String onDelete = c.getString(onDeleteIndex);
 
                 if (constraints.containsKey(id)) {
-                    ForeignKeys constraint = constraints.get(id);
+                    ForeignKey constraint = constraints.get(id);
                     constraint.sourceColumns.add(sourceColumn);
                     constraint.destinationColumns.add(destinationColumn);
 
                 } else {
-                    ForeignKeys constraint = new ForeignKeys(table, sourceColumn, destinationTable, destinationColumn, onUpdate, onDelete);
+                    ForeignKey constraint = new ForeignKey(table, sourceColumn, destinationTable, destinationColumn, onUpdate, onDelete);
                     constraints.put(id, constraint);
                 }
             }
@@ -301,70 +299,6 @@ class SQLiteUtils {
             }
 
             throw new IllegalArgumentException("Column \"" + column + "\" not found in table \"" + table + "\"");
-        }
-    }
-
-    /**
-     * Represents a foreign key constraint.
-     */
-    public static class ForeignKeys {
-
-        @NonNull public final String sourceTable;
-        @NonNull public final List<String> sourceColumns;
-        @NonNull public final String destinationTable;
-        @NonNull public final List<String> destinationColumns;
-        @NonNull public final String onUpdate;
-        @NonNull public final String onDelete;
-
-        public ForeignKeys(@NonNull String sourceTable,
-                           @NonNull String sourceColumn,
-                           @NonNull String destinationTable,
-                           @NonNull String destinationColumn,
-                           @NonNull String onUpdate,
-                           @NonNull String onDelete) {
-
-            this.sourceTable = sourceTable;
-            this.sourceColumns = new ArrayList<>();
-            this.sourceColumns.add(sourceColumn);
-            this.destinationTable = destinationTable;
-            this.destinationColumns = new ArrayList<>();
-            this.destinationColumns.add(destinationColumn);
-            this.onUpdate = onUpdate;
-            this.onDelete = onDelete;
-        }
-
-        public ForeignKeys(@NonNull String sourceTable,
-                           @NonNull List<String> sourceColumns,
-                           @NonNull String destinationTable,
-                           @NonNull List<String> destinationColumns,
-                           @NonNull String onUpdate,
-                           @NonNull String onDelete) {
-
-            if (sourceColumns.size() == 0) {
-                throw new IllegalArgumentException("No source columns specified");
-            }
-
-            if (sourceColumns.size() != destinationColumns.size()) {
-                throw new IllegalArgumentException("Size mismatch in foreign key constraint");
-            }
-
-            this.sourceTable = sourceTable;
-            this.sourceColumns = new ArrayList<>(sourceColumns);
-            this.destinationTable = destinationTable;
-            this.destinationColumns = new ArrayList<>(destinationColumns);
-            this.onUpdate = onUpdate;
-            this.onDelete = onDelete;
-        }
-
-        @NonNull
-        @Override
-        public String toString() {
-            return "FOREIGN KEY (" + implode(sourceColumns, StringUtils::escape, ", ")
-                    + ") REFERENCES " + escape(destinationTable) +
-                    "(" + implode(destinationColumns, StringUtils::escape, ", ") + ")" +
-                    " ON UPDATE " + onUpdate +
-                    " ON DELETE " + onDelete +
-                    " DEFERRABLE INITIALLY DEFERRED";
         }
     }
 

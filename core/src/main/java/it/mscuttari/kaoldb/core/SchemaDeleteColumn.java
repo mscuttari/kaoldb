@@ -21,6 +21,7 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static it.mscuttari.kaoldb.core.SQLiteUtils.getColumnStatement;
@@ -31,47 +32,39 @@ import static it.mscuttari.kaoldb.core.StringUtils.escape;
 import static it.mscuttari.kaoldb.core.StringUtils.implode;
 
 /**
- * Database schema changer: rename the column of a table.
+ * Database schema changer: delete a column from a table.
  *
- * SQLite doesn't support the renaming of existing columns. So, in order to achieve that, the table
- * is renamed and a new one, with the column renamed, is created. Then, the data is copied and the
+ * SQLite doesn't support the removal of existing columns. So, in order to achieve that, the table
+ * is renamed and a new one, with the column removed, is created. Then, the data is copied and the
  * older table is deleted.
  */
-public final class SchemaRenameColumn extends SchemaBaseAction {
+public final class SchemaDeleteColumn extends SchemaBaseAction {
 
     @NonNull private final String table;
-    @NonNull private final String oldName;
-    @NonNull private final String newName;
+    @NonNull private final String column;
 
     /**
      * Constructor.
      *
      * @param table     table name
-     * @param oldName   column to be renamed
-     * @param newName   new column name to be assigned
+     * @param column    name of the column to be dropped
      *
-     * @throws IllegalArgumentException if <code>table</code>, <code>oldName</code> or
-     *                                  <code>newName</code> are empty
+     *
+     * @throws IllegalArgumentException if <code>table</code> or <code>column</code> are empty
      */
-    public SchemaRenameColumn(@NonNull String table,
-                              @NonNull String oldName,
-                              @NonNull String newName) {
+    public SchemaDeleteColumn(@NonNull String table,
+                              @NonNull String column) {
 
         if (table.isEmpty()) {
             throw new IllegalArgumentException("Table name can't be empty");
         }
 
-        if (oldName.isEmpty()) {
-            throw new IllegalArgumentException("Old column name can't be empty");
-        }
-
-        if (newName.isEmpty()) {
-            throw new IllegalArgumentException("New column name can't be empty");
+        if (column.isEmpty()) {
+            throw new IllegalArgumentException("Column name can't be empty");
         }
 
         this.table = table;
-        this.oldName = oldName;
-        this.newName = newName;
+        this.column = column;
     }
 
     @Override
@@ -87,11 +80,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         for (String column : columns) {
             String columnStatement = getColumnStatement(db, table, column);
 
-            if (column.equals(oldName)) {
-                // Note that the statement contains the escaped column name
-                newColumnsStatements.add(columnStatement.replaceFirst(escape(oldName), escape(newName)));
-
-            } else {
+            if (!column.equals(this.column)) {
                 newColumnsStatements.add(columnStatement);
             }
         }
@@ -99,8 +88,17 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         // List the primary keys of the new table in a similar way to the columns statements preparation
         List<String> primaryKeys = getTablePrimaryKeys(db, table);
 
+        {
+            Iterator<String> iterator = primaryKeys.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().equals(column)) {
+                    iterator.remove();
+                }
+            }
+        }
+
         newColumnsStatements.add("PRIMARY KEY(" +
-                implode(primaryKeys, obj -> obj.equals(oldName) ? escape(newName) : escape(obj), ",") +
+                implode(primaryKeys, StringUtils::escape, ",") +
                 ")");
 
         // Foreign key constraints
@@ -108,17 +106,20 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
             List<String> sourceColumns = new ArrayList<>();
             List<String> destinationColumns = new ArrayList<>();
 
-            for (String sourceColumn : constraint.sourceColumns) {
-                sourceColumns.add(oldName.equals(sourceColumn) ? newName : sourceColumn);
+            for (int i = 0; i < constraint.sourceColumns.size(); i++) {
+                String source = constraint.sourceColumns.get(i);
+                String destination = constraint.destinationColumns.get(i);
+
+                if (!column.equals(source) && !(table.equals(constraint.destinationTable) && column.equals(destination))) {
+                    sourceColumns.add(source);
+                    destinationColumns.add(destination);
+                }
             }
 
-            for (String destinationColumn : constraint.destinationColumns) {
-                destinationColumns.add(table.equals(constraint.destinationTable) && oldName.equals(destinationColumn) ?
-                        newName : destinationColumn);
+            if (!sourceColumns.isEmpty()) {
+                ForeignKey newConstraint = new ForeignKey(table, sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
+                newColumnsStatements.add(newConstraint.toString());
             }
-
-            ForeignKey newConstraint = new ForeignKey(table, sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
-            newColumnsStatements.add(newConstraint.toString());
         }
 
         // Backup old table
@@ -126,7 +127,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         SchemaBaseAction renamer = new SchemaRenameTable(table, tempTable);
         renamer.run(db);
 
-        // Create new table with new column name
+        // Create new table without the column
         String newTableSql = "CREATE TABLE " + escape(table) + "(" +
                 implode(newColumnsStatements, obj -> obj, ",") +
                 ")";
@@ -135,11 +136,19 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         db.execSQL(newTableSql);
 
         // Copy data from the old table
-        String oldColumns = implode(columns, StringUtils::escape, ",");
-        String newColumns = implode(columns, column -> column.equals(oldName) ? escape(newName) : escape(column), ",");
+        {
+            Iterator<String> iterator = columns.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().equals(column)) {
+                    iterator.remove();
+                }
+            }
+        }
+
+        String newColumns = implode(columns, StringUtils::escape, ",");
 
         String dataCopySql = "INSERT INTO " + escape(table) + "(" + newColumns + ") " +
-                "SELECT " + oldColumns + " FROM " + escape(tempTable);
+                "SELECT " + newColumns + " FROM " + escape(tempTable);
 
         log(dataCopySql);
         db.execSQL(dataCopySql);

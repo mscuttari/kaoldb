@@ -304,6 +304,16 @@ public class SchemaActionsTest extends AbstractTest {
         assertFalse(after.contains("col_1"));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteColumn_emptyTable() {
+        new SchemaDeleteColumn("", "col_1");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteColumn_emptyColumn() {
+        new SchemaDeleteColumn("table_1", "");
+    }
+
     @Test
     public void renameTable() {
         SchemaBaseAction action = new SchemaRenameTable("table_1", "table_1_renamed");

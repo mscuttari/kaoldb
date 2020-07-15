@@ -33,12 +33,10 @@ public class StringUtilsTest extends AbstractTest {
         assertEquals("\"\"\"Test\"", StringUtils.escape("\"Test"));
     }
 
-
     @Test
     public void escape_nullString() {
         assertNull(StringUtils.escape(null));
     }
-
 
     @Test
     public void escape_bypass() {
@@ -46,18 +44,15 @@ public class StringUtilsTest extends AbstractTest {
         assertEquals("\"Test\"", StringUtils.escape(escapedString));
     }
 
-
     @Test
     public void escape_object() {
         assertEquals("\"1\"", StringUtils.escape(1));
     }
 
-
     @Test
     public void escape_nullObject() {
         assertNull(StringUtils.escape((Object) null));
     }
-
 
     @Test
     public void implode() {
@@ -70,7 +65,6 @@ public class StringUtilsTest extends AbstractTest {
         assertEquals("1, 2, 3", result);
     }
 
-
     @Test
     public void implode_emptyData() {
         Collection<Integer> data = Collections.emptyList();
@@ -78,13 +72,11 @@ public class StringUtilsTest extends AbstractTest {
         assertEquals("", result);
     }
 
-
     @Test
     public void implode_nullData() {
         String result = StringUtils.implode(null, Object::toString, ", ");
         assertEquals("", result);
     }
-
 
     @Test
     public void implode_nullStringConverter() {
@@ -96,7 +88,6 @@ public class StringUtilsTest extends AbstractTest {
         String result = StringUtils.implode(data, null, ", ");
         assertEquals("1, 2, 3", result);
     }
-
 
     @Test
     public void implode_nullSeparator() {

@@ -127,9 +127,8 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
         renamer.run(db);
 
         // Create new table with new column name
-        String newTableSql = "CREATE TABLE " + escape(table) + "(" +
-                implode(newColumnsStatements, obj -> obj, ",") +
-                ")";
+        String newTableSql = "CREATE TABLE " + escape(table) +
+                "(" + implode(newColumnsStatements, obj -> obj, ",") + ")";
 
         log(newTableSql);
         db.execSQL(newTableSql);

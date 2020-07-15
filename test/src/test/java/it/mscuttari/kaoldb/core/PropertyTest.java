@@ -38,13 +38,11 @@ import static org.junit.Assert.assertNull;
 
 public class PropertyTest extends AbstractTest {
 
-
     @Test
     public void columnAnnotation_column() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("id"));
         assertEquals(Column.class, property.columnAnnotation);
     }
-
 
     @Test
     public void columnAnnotation_joinColumn() throws Exception {
@@ -52,13 +50,11 @@ public class PropertyTest extends AbstractTest {
         assertEquals(JoinColumn.class, property.columnAnnotation);
     }
 
-
     @Test
     public void columnAnnotation_joinColumns() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("b"));
         assertEquals(JoinColumns.class, property.columnAnnotation);
     }
-
 
     @Test
     public void columnAnnotation_joinTable() throws Exception {
@@ -66,13 +62,11 @@ public class PropertyTest extends AbstractTest {
         assertEquals(JoinTable.class, property.columnAnnotation);
     }
 
-
     @Test
     public void singleProperty_columnAnnotation_noColumn() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("noAnnotations"));
         assertNull(property.columnAnnotation);
     }
-
 
     @Test
     public void relationshipAnnotation_oneToOne() throws Exception {
@@ -80,13 +74,11 @@ public class PropertyTest extends AbstractTest {
         assertEquals(OneToOne.class, property.relationshipAnnotation);
     }
 
-
     @Test
     public void relationshipAnnotation_oneToMany() throws Exception {
         Property<EntityB, Long> property = new CollectionProperty<>(EntityB.class, Long.class, EntityB.class.getField("a"));
         assertEquals(OneToMany.class, property.relationshipAnnotation);
     }
-
 
     @Test
     public void relationshipAnnotation_manyToOne() throws Exception {
@@ -94,20 +86,17 @@ public class PropertyTest extends AbstractTest {
         assertEquals(ManyToOne.class, property.relationshipAnnotation);
     }
 
-
     @Test
     public void relationshipAnnotation_manyToMany() throws Exception {
         Property<EntityA, Long> property = new CollectionProperty<>(EntityA.class, Long.class, EntityA.class.getField("d"));
         assertEquals(ManyToMany.class, property.relationshipAnnotation);
     }
 
-
     @Test
     public void relationshipAnnotation_none() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("id"));
         assertNull(property.relationshipAnnotation);
     }
-
 
     @Entity
     @Table(name = "table_a")
@@ -157,7 +146,6 @@ public class PropertyTest extends AbstractTest {
         public String noAnnotations;
 
     }
-
 
     @Entity
     @Table(name = "table_b")

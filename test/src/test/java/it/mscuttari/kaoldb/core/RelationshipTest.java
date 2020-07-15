@@ -45,7 +45,6 @@ public class RelationshipTest extends AbstractTest {
     private EntityObject<EntityA> entityA;
     private EntityObject<EntityB> entityB;
 
-
     @Before
     public void setUp() {
         db = new DatabaseObject();
@@ -57,34 +56,29 @@ public class RelationshipTest extends AbstractTest {
         entityB = db.getEntity(EntityB.class);
     }
 
-
     @Test
     public void oneToOne_mapping_field() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.field, entityA.getField("oneToOne"));
+        assertEquals(entityA.getField("oneToOne"), relationship.field);
     }
-
 
     @Test
     public void oneToOne_mapping_type() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.type, ONE_TO_ONE);
+        assertEquals(ONE_TO_ONE, relationship.type);
     }
-
 
     @Test
     public void oneToOne_mapping_localClass() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.local, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.local);
     }
-
 
     @Test
     public void oneToOne_mapping_linkedClass() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.linked, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.linked);
     }
-
 
     @Test
     public void oneToOne_mapping_owning() {
@@ -92,55 +86,47 @@ public class RelationshipTest extends AbstractTest {
         assertTrue(relationship.owning);
     }
 
-
     @Test
     public void oneToOne_mapping_mappingField() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.mappingField, entityA.getField("oneToOne"));
+        assertEquals(entityA.getField("oneToOne"), relationship.mappingField);
     }
-
 
     @Test
     public void oneToOne_mapping_owningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, relationship.getOwningClass());
     }
-
 
     @Test
     public void oneToOne_mapping_nonOwningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("oneToOne"));
-        assertEquals(relationship.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, relationship.getNonOwningClass());
     }
-
 
     @Test
     public void oneToOne_nonMapping_field() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.field, entityB.getField("oneToOne"));
+        assertEquals(entityB.getField("oneToOne"), relationship.field);
     }
-
 
     @Test
     public void oneToOne_nonMapping_type() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.type, ONE_TO_ONE);
+        assertEquals(ONE_TO_ONE, relationship.type);
     }
-
 
     @Test
     public void oneToOne_nonMapping_localClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.local, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.local);
     }
-
 
     @Test
     public void oneToOne_nonMapping_linkedClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.linked, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.linked);
     }
-
 
     @Test
     public void oneToOne_nonMapping_owning() {
@@ -148,55 +134,47 @@ public class RelationshipTest extends AbstractTest {
         assertFalse(relationship.owning);
     }
 
-
     @Test
     public void oneToOne_nonMapping_mappingField() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.mappingField, entityA.getField("oneToOne"));
+        assertEquals(entityA.getField("oneToOne"), relationship.mappingField);
     }
-
 
     @Test
     public void oneToOne_nonMapping_owningClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, relationship.getOwningClass());
     }
-
 
     @Test
     public void oneToOne_nonMapping_nonOwningClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToOne"));
-        assertEquals(relationship.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, relationship.getNonOwningClass());
     }
-
 
     @Test
     public void manyToOne_field() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.field, entityA.getField("manyToOne"));
+        assertEquals(entityA.getField("manyToOne"), relationship.field);
     }
-
 
     @Test
     public void manyToOne_type() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.type, MANY_TO_ONE);
+        assertEquals(MANY_TO_ONE, relationship.type);
     }
-
 
     @Test
     public void manyToOne_localClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.local, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.local);
     }
-
 
     @Test
     public void manyToOne_linkedClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.linked, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.linked);
     }
-
 
     @Test
     public void manyToOne_owning() {
@@ -204,55 +182,47 @@ public class RelationshipTest extends AbstractTest {
         assertTrue(relationship.owning);
     }
 
-
     @Test
     public void manyToOne_mappingField() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.mappingField, entityA.getField("manyToOne"));
+        assertEquals(entityA.getField("manyToOne"), relationship.mappingField);
     }
-
 
     @Test
     public void manyToOne_owningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, relationship.getOwningClass());
     }
-
 
     @Test
     public void manToOne_nonOwningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToOne"));
-        assertEquals(relationship.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, relationship.getNonOwningClass());
     }
-
 
     @Test
     public void oneToMany_field() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(relationship.field, entityB.getField("oneToMany"));
+        assertEquals(entityB.getField("oneToMany"), relationship.field);
     }
-
 
     @Test
     public void oneToMany_type() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(relationship.type, ONE_TO_MANY);
+        assertEquals(ONE_TO_MANY, relationship.type);
     }
-
 
     @Test
     public void oneToMany_localClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(relationship.local, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.local);
     }
-
 
     @Test
     public void oneToMany_linkedClass() {
         Relationship relationship = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(relationship.linked, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.linked);
     }
-
 
     @Test
     public void oneToMany_owning() {
@@ -260,55 +230,47 @@ public class RelationshipTest extends AbstractTest {
         assertFalse(oneToOne.owning);
     }
 
-
     @Test
     public void oneToMany_mappingField() {
         Relationship oneToOne = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(oneToOne.mappingField, entityA.getField("manyToOne"));
+        assertEquals(entityA.getField("manyToOne"), oneToOne.mappingField);
     }
-
 
     @Test
     public void oneToMany_owningClass() {
         Relationship oneToOne = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(oneToOne.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, oneToOne.getOwningClass());
     }
-
 
     @Test
     public void oneToMany_nonOwningClass() {
         Relationship oneToOne = new Relationship(db, entityB.getField("oneToMany"));
-        assertEquals(oneToOne.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, oneToOne.getNonOwningClass());
     }
-
 
     @Test
     public void manyToMany_mapping_field() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.field, entityA.getField("manyToMany"));
+        assertEquals(entityA.getField("manyToMany"), relationship.field);
     }
-
 
     @Test
     public void manyToMany_mapping_type() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.type, MANY_TO_MANY);
+        assertEquals(MANY_TO_MANY, relationship.type);
     }
-
 
     @Test
     public void manyToMany_mapping_localClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.local, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.local);
     }
-
 
     @Test
     public void manyToMany_mapping_linkedClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.linked, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.linked);
     }
-
 
     @Test
     public void manyToMany_mapping_owning() {
@@ -316,55 +278,47 @@ public class RelationshipTest extends AbstractTest {
         assertTrue(relationship.owning);
     }
 
-
     @Test
     public void manyToMany_mapping_mappingField() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.mappingField, entityA.getField("manyToMany"));
+        assertEquals(entityA.getField("manyToMany"), relationship.mappingField);
     }
-
 
     @Test
     public void manyToMany_mapping_owningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, relationship.getOwningClass());
     }
-
 
     @Test
     public void manyToMany_mapping_nonOwningClass() {
         Relationship relationship = new Relationship(db, entityA.getField("manyToMany"));
-        assertEquals(relationship.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, relationship.getNonOwningClass());
     }
-
 
     @Test
     public void manyToMany_nonMapping_field() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.field, entityB.getField("manyToMany"));
+        assertEquals(entityB.getField("manyToMany"), relationship.field);
     }
-
 
     @Test
     public void manyToMany_nonMapping_type() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.type, MANY_TO_MANY);
+        assertEquals(MANY_TO_MANY, relationship.type);
     }
-
 
     @Test
     public void manyToMany_nonMapping_localClass() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.local, entityB.clazz);
+        assertEquals(entityB.clazz, relationship.local);
     }
-
 
     @Test
     public void manyToMany_nonMapping_linkedClass() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.linked, entityA.clazz);
+        assertEquals(entityA.clazz, relationship.linked);
     }
-
 
     @Test
     public void manyToMany_nonMapping_owning() {
@@ -372,27 +326,23 @@ public class RelationshipTest extends AbstractTest {
         assertFalse(relationship.owning);
     }
 
-
     @Test
     public void manyToMany_nonMapping_mappingField() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.mappingField, entityA.getField("manyToMany"));
+        assertEquals(entityA.getField("manyToMany"), relationship.mappingField);
     }
-
 
     @Test
     public void manyToMany_nonMapping_owningClass() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.getOwningClass(), entityA.clazz);
+        assertEquals(entityA.clazz, relationship.getOwningClass());
     }
-
 
     @Test
     public void manyToMany_nonMapping_nonOwningClass() {
         Relationship relationship = new Relationship(db, entityB.getField("manyToMany"));
-        assertEquals(relationship.getNonOwningClass(), entityB.clazz);
+        assertEquals(entityB.clazz, relationship.getNonOwningClass());
     }
-
 
     @Entity
     @Table(name = "table_a")

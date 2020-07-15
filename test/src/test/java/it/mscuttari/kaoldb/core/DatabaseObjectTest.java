@@ -38,74 +38,62 @@ public class DatabaseObjectTest extends AbstractTest {
         db = new DatabaseObject();
     }
 
-
     @Test(expected = IllegalStateException.class)
     public void getNameNotSet() {
         db.getName();
     }
-
 
     @Test(expected = IllegalArgumentException.class)
     public void setNullName() {
         db.setName(null);
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void setEmptyName() {
         db.setName("");
     }
 
-
     @Test
     public void setName() {
         db.setName("Name");
-        assertEquals(db.getName(), "Name");
+        assertEquals("Name", db.getName());
     }
-
 
     @Test(expected = IllegalStateException.class)
     public void getVersionNotSet() {
         db.getVersion();
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void setNullVersion() {
         db.setVersion(null);
     }
-
 
     @Test(expected = IllegalArgumentException.class)
     public void setVersionLessThanZero() {
         db.setVersion(-1);
     }
 
-
     @Test
     public void setVersion() {
         db.setVersion(0);
-        assertEquals(db.getVersion(), 0);
+        assertEquals(0, db.getVersion());
     }
-
 
     @Test(expected = IllegalStateException.class)
     public void getSchemaMigratorNotSet() {
         db.getSchemaMigrator();
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void setNullSchemaMigrator() {
         db.setSchemaMigrator(null);
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void setAbstractSchemaMigrator() {
         db.setSchemaMigrator(SchemaMigratorAbstractStub.class);
     }
-
 
     @Test
     public void setSchemaMigrator() {
@@ -113,18 +101,15 @@ public class DatabaseObjectTest extends AbstractTest {
         assertEquals(db.getSchemaMigrator(), GenericDbMigrator.class);
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void addNonEntityClass() {
         db.addEntityClass(NotAnEntity.class);
     }
 
-
     @Test
     public void addNullEntityClass() {
         db.addEntityClass(null);
     }
-
 
     @Test
     public void addEntityClass() {
@@ -132,12 +117,10 @@ public class DatabaseObjectTest extends AbstractTest {
         assertTrue(db.contains(EntityA.class));
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void getNonExistingEntity() {
         db.getEntity(EntityA.class);
     }
-
 
     @Test
     public void mapEntities() {
@@ -151,7 +134,6 @@ public class DatabaseObjectTest extends AbstractTest {
         assertNotNull(db.getEntity(EntityA.class));
         assertNotNull(db.getEntity(EntityB.class));
     }
-
 
     private static abstract class SchemaMigratorAbstractStub implements DatabaseSchemaMigrator {
 

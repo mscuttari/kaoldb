@@ -33,7 +33,6 @@ public class ConcatIteratorTest extends AbstractTest {
     private List<Integer> list2;
     private Iterator<Integer> iterator;
 
-
     @Before
     public void setUp() {
         list1 = new ArrayList<>();
@@ -41,21 +40,19 @@ public class ConcatIteratorTest extends AbstractTest {
         iterator = new ConcatIterator<>(list1, list2);
     }
 
-
     @Test(expected = NoSuchElementException.class)
     public void bothEmpty() {
         assertFalse(iterator.hasNext());
         iterator.next();
     }
 
-
     @Test
     public void firstEmpty() {
         list2.add(1);
         list2.add(2);
 
-        assertEquals(iterator.next().intValue(), 1);
-        assertEquals(iterator.next().intValue(), 2);
+        assertEquals(1, iterator.next().intValue());
+        assertEquals(2, iterator.next().intValue());
     }
 
 

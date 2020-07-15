@@ -24,6 +24,7 @@ import static it.mscuttari.kaoldb.core.StringUtils.escape;
 
 /**
  * Database schema changer: create a new table.
+ * TODO: multiple primary keys, foreign keys, etc; or: SchemaAddForeignKey
  */
 public final class SchemaCreateTable extends SchemaBaseAction {
 

@@ -52,4 +52,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.robolectric/robolectric
     testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.3.1'
+
+    // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
 }

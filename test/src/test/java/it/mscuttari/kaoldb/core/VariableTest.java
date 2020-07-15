@@ -37,14 +37,12 @@ public class VariableTest extends AbstractTest {
         assertEquals("alias", variable.getTableAlias());
     }
 
-
     @Test
     public void withProperty_hasProperty() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("id"));
         Variable<Long> variable = new Variable<>("alias", property);
         assertTrue(variable.hasProperty());
     }
-
 
     @Test
     public void withProperty_checkProperty() throws Exception {
@@ -53,7 +51,6 @@ public class VariableTest extends AbstractTest {
         assertEquals(property, variable.getProperty());
     }
 
-
     @Test
     public void withProperty_nullRawData() throws Exception {
         Property<EntityA, Long> property = new SingleProperty<>(EntityA.class, Long.class, EntityA.class.getField("id"));
@@ -61,13 +58,11 @@ public class VariableTest extends AbstractTest {
         assertNull(variable.getRawData());
     }
 
-
     @Test
     public void withRawData_nullTableAlias() {
         Variable<Integer> variable = new Variable<>(0);
         assertNull(variable.getTableAlias());
     }
-
 
     @Test
     public void withRawData_hasNoProperty() {
@@ -75,20 +70,17 @@ public class VariableTest extends AbstractTest {
         assertFalse(variable.hasProperty());
     }
 
-
     @Test
     public void withRawData_nullProperty() {
         Variable<Integer> variable = new Variable<>(0);
         assertNull(variable.getProperty());
     }
 
-
     @Test
     public void withRawData_checkRawData() {
         Variable<Integer> variable = new Variable<>(0);
         assertEquals((Integer) 0, variable.getRawData());
     }
-
 
     @Entity
     @Table(name = "table_a")

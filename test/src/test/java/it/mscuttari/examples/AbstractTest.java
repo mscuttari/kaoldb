@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config;
 import java.util.Calendar;
 
 import it.mscuttari.R;
-import it.mscuttari.kaoldb.core.KaolDB;
+import it.mscuttari.kaoldb.KaolDB;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 
 import static org.junit.Assert.assertTrue;

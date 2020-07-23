@@ -16,7 +16,6 @@
 
 package it.mscuttari.kaoldb.processor;
 
-import java.util.Collection;
 import java.util.Set;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -24,13 +23,11 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 
 import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;

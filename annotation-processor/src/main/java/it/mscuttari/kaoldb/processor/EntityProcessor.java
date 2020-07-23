@@ -39,8 +39,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
 import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
-import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -59,8 +57,8 @@ public final class EntityProcessor extends AbstractAnnotationProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        ClassName singlePropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "SingleProperty");
-        ClassName collectionPropertyClass = ClassName.get("it.mscuttari.kaoldb.core", "CollectionProperty");
+        ClassName singlePropertyClass = ClassName.get("it.mscuttari.kaoldb.query", "SingleProperty");
+        ClassName collectionPropertyClass = ClassName.get("it.mscuttari.kaoldb.query", "CollectionProperty");
 
         for (Element entity : roundEnv.getElementsAnnotatedWith(Entity.class)) {
             try {

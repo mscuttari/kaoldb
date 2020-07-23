@@ -14,24 +14,10 @@
  * limitations under the License.
  */
 
-package it.mscuttari.examples.database;
+package it.mscuttari.kaoldb.query;
 
-import java.util.List;
+import it.mscuttari.kaoldb.interfaces.Expression;
 
-import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
-import it.mscuttari.kaoldb.interfaces.DatabaseDump;
-import it.mscuttari.kaoldb.interfaces.SchemaAction;
-
-public class FilmDbMigrator implements DatabaseSchemaMigrator {
-
-    @Override
-    public List<SchemaAction> onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-        return null;
-    }
-
-    @Override
-    public List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-        return null;
-    }
+interface ExpressionInt extends Expression, Iterable<PredicateImpl> {
 
 }

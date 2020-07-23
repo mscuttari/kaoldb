@@ -1,0 +1,39 @@
+apply plugin: 'com.android.library'
+
+description = 'Annotations and public interfaces for KaolDB'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+
+    api project(path: ':annotations')
+
+    // https://mvnrepository.com/artifact/androidx.annotation/annotation
+    implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
+
+    // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
+    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-alpha06'
+
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
+}

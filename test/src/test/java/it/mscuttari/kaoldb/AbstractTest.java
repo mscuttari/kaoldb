@@ -14,24 +14,14 @@
  * limitations under the License.
  */
 
-package it.mscuttari.examples.database;
+package it.mscuttari.kaoldb;
 
-import java.util.List;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
-import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
-import it.mscuttari.kaoldb.interfaces.DatabaseDump;
-import it.mscuttari.kaoldb.interfaces.SchemaAction;
-
-public class FilmDbMigrator implements DatabaseSchemaMigrator {
-
-    @Override
-    public List<SchemaAction> onUpgrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-        return null;
-    }
-
-    @Override
-    public List<SchemaAction> onDowngrade(int oldVersion, int newVersion, DatabaseDump dump) throws Exception {
-        return null;
-    }
+@Config(manifest = Config.NONE)
+@RunWith(RobolectricTestRunner.class)
+public abstract class AbstractTest {
 
 }

@@ -37,6 +37,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
     // KaolDB internals
+    api project(path: ':annotations')
     api project(path: ':api')
     implementation project(path: ':implementation')
 

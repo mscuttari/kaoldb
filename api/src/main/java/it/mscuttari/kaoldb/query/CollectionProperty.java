@@ -41,7 +41,7 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
                               @NonNull Class<T> fieldType,
                               @NonNull Field field) {
 
-        super(entityClass, fieldType, field);
+        super(entityClass, fieldType, field, new String[]{});
     }
 
     /**
@@ -61,7 +61,7 @@ public final class CollectionProperty<M, T> extends Property<M, T> {
                               @Nullable Class<? extends Annotation> columnAnnotation,
                               @Nullable Class<? extends Annotation> relationshipAnnotation) {
 
-        super(entityClass, fieldParentClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation);
+        super(entityClass, fieldParentClass, fieldType, fieldName, columnAnnotation, relationshipAnnotation, new String[]{});
     }
 
 }

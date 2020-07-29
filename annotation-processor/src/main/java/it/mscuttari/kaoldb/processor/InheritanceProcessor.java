@@ -101,7 +101,7 @@ public final class InheritanceProcessor extends AbstractAnnotationProcessor {
             logError(e.getMessage(), e.getElement());
         }
 
-        return true;
+        return false;
     }
 
     /**

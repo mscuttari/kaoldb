@@ -53,7 +53,7 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
         "it.mscuttari.kaoldb.annotations.JoinColumns",
         "it.mscuttari.kaoldb.annotations.JoinTable"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public final class ColumnProcessor extends AbstractAnnotationProcessor {
 
     @Override

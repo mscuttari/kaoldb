@@ -14,6 +14,8 @@
 
 it.mscuttari.kaoldb.processor.ColumnProcessor
 it.mscuttari.kaoldb.processor.EntityProcessor
+it.mscuttari.kaoldb.processor.PropertiesCreator
 it.mscuttari.kaoldb.processor.IdProcessor
 it.mscuttari.kaoldb.processor.InheritanceProcessor
 it.mscuttari.kaoldb.processor.RelationshipProcessor
+it.mscuttari.kaoldb.processor.PrimaryKeyExistenceChecker

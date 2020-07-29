@@ -32,55 +32,31 @@ import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 
 /**
- * Checks that the {@link Id} annotation is applied only on fields that directly represent columns.
+ * Checks that the fields annotated with {@link Id} respect the following constraints:
+ * <ul>
+ *     <li>It is not annotated with {@link JoinTable}</li>
+ *     <li>It is annotated with {@link Column}, {@link JoinColumn} or {@link JoinColumns}
+ *     annotations</li>
+ * </ul>
  */
 @SupportedAnnotationTypes("it.mscuttari.kaoldb.annotations.Id")
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public final class IdProcessor extends AbstractAnnotationProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        try {
-            for (Element field : roundEnv.getElementsAnnotatedWith(Id.class)) {
-                checkField(field);
-            }
+        roundEnv.getElementsAnnotatedWith(Id.class).stream()
+                .filter(field -> field.getAnnotation(JoinTable.class) != null)
+                .forEach(field -> logError("Field annotated with @Id can't have @JoinTable annotation", field));
 
-        } catch (ProcessorException e) {
-            logError(e.getMessage(), e.getElement());
-        }
+        roundEnv.getElementsAnnotatedWith(Id.class).stream()
+                .filter(field ->
+                        field.getAnnotation(Column.class) == null &&
+                        field.getAnnotation(JoinColumn.class) == null &&
+                        field.getAnnotation(JoinColumns.class) == null)
+                .forEach(field -> logError("Field annotated with @Id must be annotated with @Column, @JoinColumn or @JoinColumns", field));
 
-        return true;
-    }
-
-    /**
-     * Check field annotated with {@link Id} annotation.
-     *
-     * <p>
-     * It ensures the following constraints are respected:
-     * <ul>
-     *     <li>The field is not annotated with {@link JoinTable}</li>
-     *     <li>The field is annotated with {@link Column}, {@link JoinColumn} or
-     *     {@link JoinColumns} annotations</li>
-     * </ul>
-     * </p>
-     *
-     * @param   field       field element
-     * @throws  ProcessorException if some constraints are not respected
-     */
-    private void checkField(Element field) throws ProcessorException {
-        JoinTable joinTableAnnotation = field.getAnnotation(JoinTable.class);
-
-        if (joinTableAnnotation != null) {
-            throw new ProcessorException("Field annotated with @Id can't have @JoinTable annotation", field);
-        }
-
-        Column columnAnnotation = field.getAnnotation(Column.class);
-        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
-        JoinColumns joinColumnsAnnotation = field.getAnnotation(JoinColumns.class);
-
-        if (columnAnnotation == null && joinColumnAnnotation == null && joinColumnsAnnotation == null) {
-            throw new ProcessorException("Field annotated with @Id must be annotated with @Column, @JoinColumn or @JoinColumns", field);
-        }
+        return false;
     }
 
 }

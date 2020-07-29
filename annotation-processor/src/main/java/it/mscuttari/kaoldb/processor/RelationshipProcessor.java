@@ -54,7 +54,7 @@ import it.mscuttari.kaoldb.annotations.OneToOne;
         "it.mscuttari.kaoldb.annotations.ManyToOne",
         "it.mscuttari.kaoldb.annotations.ManyToMany"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public final class RelationshipProcessor extends AbstractAnnotationProcessor {
 
     @Override

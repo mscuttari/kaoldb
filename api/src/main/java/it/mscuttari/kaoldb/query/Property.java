@@ -74,6 +74,8 @@ public abstract class Property<M, T> {
     @Nullable
     final Class<? extends Annotation> relationshipAnnotation;
 
+    final String[] columns;
+
     /**
      * Constructor.
      *
@@ -83,14 +85,16 @@ public abstract class Property<M, T> {
      */
     Property(@NonNull Class<M> entityClass,
              @NonNull Class<T> dataType,
-             @NonNull Field field) {
+             @NonNull Field field,
+             @NonNull String[] columns) {
 
         this(entityClass,
                 entityClass,
                 dataType,
                 field.getName(),
                 getColumnAnnotation(field),
-                getRelationshipAnnotation(field));
+                getRelationshipAnnotation(field),
+                columns);
     }
 
     /**
@@ -108,7 +112,8 @@ public abstract class Property<M, T> {
                     @NonNull Class<T> dataType,
                     @NonNull String fieldName,
                     @Nullable Class<? extends Annotation> columnAnnotation,
-                    @Nullable Class<? extends Annotation> relationshipAnnotation) {
+                    @Nullable Class<? extends Annotation> relationshipAnnotation,
+                    @NonNull String[] columns) {
 
         this.entityClass            = checkNotNull(entityClass);
         this.owningClass            = checkNotNull(owningClass);
@@ -116,6 +121,7 @@ public abstract class Property<M, T> {
         this.fieldName              = checkNotNull(fieldName);
         this.columnAnnotation       = columnAnnotation;
         this.relationshipAnnotation = relationshipAnnotation;
+        this.columns                = checkNotNull(columns);
     }
 
     /**

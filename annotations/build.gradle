@@ -21,5 +21,3 @@ description = 'Annotations for KaolDB'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
-
-apply from: rootProject.file('release-bintray.gradle')

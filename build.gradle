@@ -45,24 +45,3 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-
-task preBuild {
-    def bintrayUserKey = 'bintray.user'
-    def defaultBintrayUser = 'user'
-
-    def bintrayApiKeyKey = 'bintray.apikey'
-    def defaultBintrayApiKey = 'api_key'
-
-    Properties properties = new Properties()
-    File propertiesFile = project.file('local.properties')
-
-    if (!propertiesFile.exists()) {
-        // Create a default properties file
-        properties.setProperty(bintrayUserKey, defaultBintrayUser)
-        properties.setProperty(bintrayApiKeyKey, defaultBintrayApiKey)
-
-        Writer writer = new FileWriter(propertiesFile, false)
-        properties.store(writer, "Change these variables according to your need. Don't commit this file to source control.")
-        writer.close()
-    }
-}

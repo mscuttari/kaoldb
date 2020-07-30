@@ -19,7 +19,7 @@
  **/
 ext {
     bintrayRepo = 'KaolDB'
-    libraryVersion = '1.0.0-beta.14'
+    libraryVersion = '1.0.0'
 
     publishedGroupId = 'it.mscuttari.kaoldb'
     libraryName = 'KaolDB'
@@ -47,3 +47,6 @@ apply from: rootProject.file('jcenter/maven-install.gradle')
 
 // Publish on Bintray
 apply from: rootProject.file('jcenter/bintray.gradle')
+
+bintray.user = System.getenv("bintrayUser")
+bintray.key = System.getenv("bintrayApiKey")

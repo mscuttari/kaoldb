@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class MappingException extends KaolDBException {
+public final class MappingException extends KaolDBException {
 
     public MappingException() {
 

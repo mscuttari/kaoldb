@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class ConcurrenceException extends KaolDBException {
+public final class ConcurrenceException extends KaolDBException {
 
     public ConcurrenceException() {
 

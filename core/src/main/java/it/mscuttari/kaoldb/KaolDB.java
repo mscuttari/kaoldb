@@ -24,6 +24,7 @@ import java.util.Map;
 import androidx.annotation.NonNull;
 import androidx.annotation.XmlRes;
 
+import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.mapping.DatabaseObject;
 import it.mscuttari.kaoldb.query.EntityManagerImpl;
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
@@ -87,7 +88,7 @@ public final class KaolDB {
         try {
             xml = context.getResources().getXml(resId);
         } catch (Exception e) {
-            throw new KaolDBException("Can't load the configuration file", e);
+            throw new ConfigParseException("Can't load the configuration file", e);
         }
 
         // Parse configuration file
@@ -127,7 +128,7 @@ public final class KaolDB {
         context = context.getApplicationContext();
 
         if (databaseName.isEmpty()) {
-            throw new KaolDBException("Empty database name");
+            throw new MappingException("Empty database name");
         }
 
         Map<String, DatabaseObject> mapping = config.getDatabaseMapping();

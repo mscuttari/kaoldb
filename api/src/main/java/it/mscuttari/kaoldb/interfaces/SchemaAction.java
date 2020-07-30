@@ -16,6 +16,15 @@
 
 package it.mscuttari.kaoldb.interfaces;
 
+import android.database.sqlite.SQLiteDatabase;
+
 public interface SchemaAction {
+
+    /**
+     * Execute the change on the database.
+     *
+     * @param db    writable database
+     */
+    void run(SQLiteDatabase db);
 
 }

@@ -29,6 +29,7 @@ import it.mscuttari.kaoldb.dump.DatabaseDumpImpl;
 import it.mscuttari.kaoldb.dump.RowDumpImpl;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.RowDump;
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.StringUtils.escape;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
@@ -38,7 +39,7 @@ import static it.mscuttari.kaoldb.StringUtils.implode;
  * Database schema changer: for each row, change the value of a column
  * according to a user provided behaviour.
  */
-public final class SchemaChangeValue<T> extends SchemaBaseAction {
+public final class SchemaChangeValue<T> extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;
     @NonNull private final String column;
@@ -71,7 +72,7 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         DatabaseDump dbDump = new DatabaseDumpImpl(db);
         List<String> primaryKeys = getTablePrimaryKeys(db, table);
 

@@ -32,8 +32,6 @@ import java.util.Map;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.LogUtils;
-import it.mscuttari.kaoldb.schema.SchemaActionRunner;
-import it.mscuttari.kaoldb.schema.SchemaBaseAction;
 import it.mscuttari.kaoldb.dump.DatabaseDumpImpl;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
 import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
@@ -394,7 +392,7 @@ public class DatabaseObject {
 
                 if (actions != null) {
                     for (SchemaAction action : actions) {
-                        new SchemaActionRunner((SchemaBaseAction) action).run(db);
+                        action.run(db);
                     }
                 }
             }
@@ -437,7 +435,7 @@ public class DatabaseObject {
 
                 if (actions != null) {
                     for (SchemaAction action : actions) {
-                        new SchemaActionRunner((SchemaBaseAction) action).run(db);
+                        action.run(db);
                     }
                 }
             }

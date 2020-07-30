@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class QueryException extends KaolDBException {
+public final class QueryException extends KaolDBException {
 
     public QueryException() {
 

@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class DumpException extends KaolDBException {
+public final class DumpException extends KaolDBException {
 
     public DumpException() {
 

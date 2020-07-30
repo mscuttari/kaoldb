@@ -20,12 +20,14 @@ import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
 
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
+
 import static it.mscuttari.kaoldb.StringUtils.escape;
 
 /**
  * Database schema changer: rename a table.
  */
-public final class SchemaRenameTable extends SchemaBaseAction {
+public final class SchemaRenameTable extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String oldName;
     @NonNull private final String newName;
@@ -54,7 +56,7 @@ public final class SchemaRenameTable extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         String sql = "ALTER TABLE " + escape(oldName) + " RENAME TO " + escape(newName);
         log(sql);
         db.execSQL(sql);

@@ -59,3 +59,4 @@ dependencies {
 }
 
 apply from: rootProject.file('release-bintray.gradle')
+bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload', ':implementation:bintrayUpload')

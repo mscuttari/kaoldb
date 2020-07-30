@@ -23,7 +23,7 @@ import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTables;
 
-public abstract class SchemaBaseAction implements SchemaAction {
+abstract class SchemaBaseAction implements SchemaAction {
 
     /**
      * Log the SQL statement that should be executed.
@@ -51,12 +51,5 @@ public abstract class SchemaBaseAction implements SchemaAction {
 
         return name;
     }
-
-    /**
-     * Execute the change on the database.
-     *
-     * @param db    writable database
-     */
-    abstract void run(SQLiteDatabase db);
 
 }

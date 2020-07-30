@@ -19,6 +19,7 @@
  **/
 ext {
     bintrayRepo = 'KaolDB'
+    libraryVersion = '1.0.0-beta.13'
 
     publishedGroupId = 'it.mscuttari.kaoldb'
     libraryName = 'KaolDB'
@@ -30,8 +31,7 @@ ext {
 
     siteUrl = 'https://github.com/mscuttari/KaolDB'
     gitUrl = 'https://github.com/mscuttari/KaolDB.git'
-
-    libraryVersion = '1.0.0-beta.12'
+    githubRepository= 'mscuttari/kaoldb'
 
     developerId = 'mscuttari'
     developerName = 'Michele Scuttari'
@@ -42,8 +42,8 @@ ext {
     allLicenses = ["Apache-2.0"]
 }
 
-// Set up the Android Maven publication.
+// Set up the Android Maven publication
 apply from: rootProject.file('jcenter/maven-install.gradle')
 
-// Publish on Bintray.
+// Publish on Bintray
 apply from: rootProject.file('jcenter/bintray.gradle')

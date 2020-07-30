@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class KaolDBException extends RuntimeException {
+public abstract class KaolDBException extends RuntimeException {
 
     public KaolDBException() {
 

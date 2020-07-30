@@ -26,6 +26,7 @@ import java.util.List;
 import it.mscuttari.kaoldb.dump.ForeignKey;
 import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.StringUtils;
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
@@ -41,7 +42,7 @@ import static it.mscuttari.kaoldb.StringUtils.implode;
  * is renamed and a new one, with the column renamed, is created. Then, the data is copied and the
  * older table is deleted.
  */
-public final class SchemaRenameColumn extends SchemaBaseAction {
+public final class SchemaRenameColumn extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;
     @NonNull private final String oldName;
@@ -79,7 +80,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         List<String> columns = getTableColumns(db, table);
 
         // Prepare the statements to be used to create the new table.

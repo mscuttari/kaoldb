@@ -20,12 +20,14 @@ import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
 
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
+
 import static it.mscuttari.kaoldb.StringUtils.escape;
 
 /**
  * Database schema changer: delete a table.
  */
-public final class SchemaDeleteTable extends SchemaBaseAction {
+public final class SchemaDeleteTable extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;
 
@@ -44,7 +46,7 @@ public final class SchemaDeleteTable extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         String sql = "DROP TABLE " + escape(table);
         log(sql);
         db.execSQL(sql);

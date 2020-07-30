@@ -20,6 +20,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
 
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 import it.mscuttari.kaoldb.mapping.BaseColumnObject;
 
 import static it.mscuttari.kaoldb.StringUtils.escape;
@@ -28,7 +29,7 @@ import static it.mscuttari.kaoldb.StringUtils.escape;
  * Database schema changer: create a new table.
  * TODO: multiple primary keys, foreign keys, etc; or: SchemaAddForeignKey
  */
-public final class SchemaCreateTable extends SchemaBaseAction {
+public final class SchemaCreateTable extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;
     @NonNull private final String primaryKeyName;
@@ -61,7 +62,7 @@ public final class SchemaCreateTable extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         String sql = "CREATE TABLE " + escape(table) + "(" +
                 primaryKeyName + " " + BaseColumnObject.classToDbType(primaryKeyType) + " PRIMARY KEY" +
                 ")";

@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class InvalidConfigException extends KaolDBException {
+public final class InvalidConfigException extends KaolDBException {
 
     public InvalidConfigException() {
 

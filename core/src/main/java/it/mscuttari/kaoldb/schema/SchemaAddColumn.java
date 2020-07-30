@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.mscuttari.kaoldb.interfaces.SchemaAction;
 import it.mscuttari.kaoldb.mapping.BaseColumnObject;
 import it.mscuttari.kaoldb.StringUtils;
 
@@ -42,7 +43,7 @@ import static it.mscuttari.kaoldb.StringUtils.implode;
  * renamed and a new one, containing the new column, is created. Then, the data is copied and the
  * older table is deleted.
  */
-public final class SchemaAddColumn extends SchemaBaseAction {
+public final class SchemaAddColumn extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;            // Table name
     @NonNull private final String name;             // New column name
@@ -87,7 +88,7 @@ public final class SchemaAddColumn extends SchemaBaseAction {
     }
 
     @Override
-    void run(SQLiteDatabase db) {
+    public void run(SQLiteDatabase db) {
         String columnStatement = escape(name) + " " + BaseColumnObject.classToDbType(type);
 
         if (!nullable) {

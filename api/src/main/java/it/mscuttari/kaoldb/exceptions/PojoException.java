@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class PojoException extends KaolDBException {
+public final class PojoException extends KaolDBException {
 
     public PojoException() {
 

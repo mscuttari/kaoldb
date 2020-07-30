@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class DatabaseManagementException extends KaolDBException {
+public final class DatabaseManagementException extends KaolDBException {
 
     public DatabaseManagementException() {
 

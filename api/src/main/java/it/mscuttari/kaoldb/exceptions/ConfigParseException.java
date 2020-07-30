@@ -16,7 +16,7 @@
 
 package it.mscuttari.kaoldb.exceptions;
 
-public class ConfigParseException extends KaolDBException {
+public final class ConfigParseException extends KaolDBException {
 
     public ConfigParseException() {
 

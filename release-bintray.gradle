@@ -19,7 +19,7 @@
  **/
 ext {
     bintrayRepo = 'KaolDB'
-    libraryVersion = '1.0.0-beta.13'
+    libraryVersion = '1.0.0-beta.14'
 
     publishedGroupId = 'it.mscuttari.kaoldb'
     libraryName = 'KaolDB'

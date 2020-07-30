@@ -15,8 +15,9 @@
  */
 
 apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
 
-description = 'Core implementation of KaolDB'
+description = 'Private implementation of KaolDB'
 
 android {
     compileSdkVersion 28
@@ -35,13 +36,14 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
 
+    implementation project(path: ':annotations')
     implementation project(path: ':api')
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
     implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-alpha05'
+    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-alpha06'
 
     // https://mvnrepository.com/artifact/com.android.support/support-v4
     implementation group: 'com.android.support', name: 'support-v4', version: '28.0.0'

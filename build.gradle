@@ -45,3 +45,12 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+task preBuild {
+    File propertiesFile = project.file('local.properties')
+
+    if (!propertiesFile.exists()) {
+        Writer writer = new FileWriter(propertiesFile, false)
+        writer.close()
+    }
+}

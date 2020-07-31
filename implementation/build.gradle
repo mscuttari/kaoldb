@@ -23,7 +23,7 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 14
         targetSdkVersion 28
     }
 
@@ -53,9 +53,14 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.objenesis/objenesis
     // Version 2.6 is required for pre Oreo compatibility
-    implementation group: 'org.objenesis', name: 'objenesis', version: '3.1'
+    implementation group: 'org.objenesis', name: 'objenesis-tck-android', version: '3.1'
 
+    // https://mvnrepository.com/artifact/junit/junit
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/org.robolectric/robolectric
+    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.3.1'
+
+    // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
 }
-
-apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload')

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databases>
+    <database name="films" version="1" migrator="it.mscuttari.kaoldb.examples.films.migrators.Migrator">
+        <class>it.mscuttari.kaoldb.examples.films.models.ActionFilm</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.Country</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.FantasyFilm</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.Film</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.Genre</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.Person</class>
+        <class>it.mscuttari.kaoldb.examples.films.models.ThrillerFilm</class>
+    </database>
+</databases>

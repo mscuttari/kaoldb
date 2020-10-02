@@ -23,11 +23,17 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
+        multiDexEnabled true
+
         minSdkVersion 14
         targetSdkVersion 28
     }
 
     compileOptions {
+        // Enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
+
+        // Set Java compatibility to Java 8
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -46,6 +52,9 @@ dependencies {
     api project(path: ':api')
     implementation project(path: ':implementation')
 
+    implementation 'com.android.support:multidex:1.0.3'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
+
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
     implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
 
@@ -54,11 +63,14 @@ dependencies {
 
     testAnnotationProcessor project(':annotation-processor')
 
-    // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
-    testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
+    // https://mvnrepository.com/artifact/junit/junit
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 
     // https://mvnrepository.com/artifact/org.robolectric/robolectric
     testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.3.1'
+
+    // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
 
     // https://mvnrepository.com/artifact/androidx.test/core
     testImplementation group: 'androidx.test', name: 'core', version: '1.2.0'

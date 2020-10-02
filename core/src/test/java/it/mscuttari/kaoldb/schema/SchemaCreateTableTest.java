@@ -20,6 +20,9 @@ import android.database.sqlite.SQLiteDatabase;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTables;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -36,18 +39,26 @@ public class SchemaCreateTableTest extends SchemaAbstractTest {
     @Test
     public void createTable() {
         assertThat(getTables(db), not(hasItem("table_new_1")));
-        new SchemaCreateTable("table_1", "id", Integer.class).run(db);
+
+        Collection<Column> columns = new ArrayList<>();
+        columns.add(new Column("id", Integer.class, null, true, false, false));
+        new SchemaCreateTable("table_1", columns, null).run(db);
+
         assertTrue(getTables(db).contains("table_1"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void createTable_emptyTable() {
-        new SchemaCreateTable("", "id", Integer.class).run(db);
+        Collection<Column> columns = new ArrayList<>();
+        columns.add(new Column("id", Integer.class, null, true, false, false));
+        new SchemaCreateTable("", columns, null).run(db);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createTable_emptyPrimaryKey() {
-        new SchemaCreateTable("table_1", "", Integer.class).run(db);
+    public void createTable_noPrimaryKey() {
+        Collection<Column> columns = new ArrayList<>();
+        columns.add(new Column("id", Integer.class, null, false, false, false));
+        new SchemaCreateTable("table_1", columns, null).run(db);
     }
 
 }

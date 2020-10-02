@@ -22,8 +22,11 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
+        multiDexEnabled true
+
         minSdkVersion 14
         targetSdkVersion 28
+
         versionCode 1
         versionName "1.0"
 
@@ -39,6 +42,10 @@ android {
     }
 
     compileOptions {
+        // Enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
+
+        // Set Java compatibility to Java 8
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -48,6 +55,9 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
 
     implementation project(path: ':annotations')
+
+    implementation 'com.android.support:multidex:1.0.3'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
     implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'

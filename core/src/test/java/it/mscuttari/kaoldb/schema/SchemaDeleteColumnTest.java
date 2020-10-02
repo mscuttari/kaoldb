@@ -22,6 +22,7 @@ import android.database.sqlite.SQLiteDatabase;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
 import static org.junit.Assert.assertEquals;
@@ -43,14 +44,14 @@ public class SchemaDeleteColumnTest extends SchemaAbstractTest {
 
     @Test
     public void deleteColumn() {
-        Collection<String> before = getTableColumns(db, "table_1");
+        Collection<String> before = getTableColumns(db, "table_1").stream().map(column -> column.name).collect(Collectors.toList());
         assertTrue(before.contains("col_1"));
 
         // Delete the column
         new SchemaDeleteColumn("table_1", "col_1").run(db);
 
         // Check that the column has been deleted
-        Collection<String> after = getTableColumns(db, "table_1");
+        Collection<String> after = getTableColumns(db, "table_1").stream().map(column -> column.name).collect(Collectors.toList());
         assertFalse(after.contains("col_1"));
     }
 

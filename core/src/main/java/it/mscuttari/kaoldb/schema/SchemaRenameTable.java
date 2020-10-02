@@ -26,6 +26,8 @@ import static it.mscuttari.kaoldb.StringUtils.escape;
 
 /**
  * Database schema changer: rename a table.
+ *
+ * Note that foreign keys referencing the renamed table are automatically updated by the database.
  */
 public final class SchemaRenameTable extends SchemaBaseAction implements SchemaAction {
 

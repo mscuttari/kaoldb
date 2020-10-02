@@ -21,19 +21,17 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import it.mscuttari.kaoldb.dump.ForeignKey;
-import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.StringUtils;
+import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getColumnStatement;
+import static it.mscuttari.kaoldb.StringUtils.escape;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableForeignKeys;
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
-import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 
 /**
  * Database schema changer: rename the column of a table.
@@ -81,65 +79,62 @@ public final class SchemaRenameColumn extends SchemaBaseAction implements Schema
 
     @Override
     public void run(SQLiteDatabase db) {
-        List<String> columns = getTableColumns(db, table);
+        // Disable foreign key checks
+        db.execSQL("PRAGMA foreign_keys=OFF");
 
-        // Prepare the statements to be used to create the new table.
-        // The statements of the old table are copied and only the column name is replaced with
-        // the new one in case of name match.
+        List<Column> columns = getTableColumns(db, table);
 
-        List<String> newColumnsStatements = new ArrayList<>(columns.size());
+        // Create the new table
 
-        for (String column : columns) {
-            String columnStatement = getColumnStatement(db, table, column);
-
-            if (column.equals(oldName)) {
-                // Note that the statement contains the escaped column name
-                newColumnsStatements.add(columnStatement.replaceFirst(escape(oldName), StringUtils.escape(newName)));
-
-            } else {
-                newColumnsStatements.add(columnStatement);
-            }
-        }
-
-        // List the primary keys of the new table in a similar way to the columns statements preparation
-        List<String> primaryKeys = getTablePrimaryKeys(db, table);
-
-        newColumnsStatements.add("PRIMARY KEY(" +
-                StringUtils.implode(primaryKeys, obj -> obj.equals(oldName) ? escape(newName) : escape(obj), ",") +
-                ")");
+        List<Column> newColumns = columns
+                .stream()
+                .map(column -> {
+                    if (column.name.equals(oldName)) {
+                        return new Column(newName, column.type, column.defaultValue, column.primaryKey, column.nullable, column.unique);
+                    } else {
+                        return column;
+                    }
+                })
+                .collect(Collectors.toList());
 
         // Foreign key constraints
-        for (ForeignKey constraint : getTableForeignKeys(db, table)) {
-            List<String> sourceColumns = new ArrayList<>();
-            List<String> destinationColumns = new ArrayList<>();
+        Collection<ForeignKey> newForeignKeys = getTableForeignKeys(db, table)
+                .stream()
+                .map(constraint -> {
+                    List<String> sourceColumns = new ArrayList<>();
+                    List<String> destinationColumns = new ArrayList<>();
 
-            for (String sourceColumn : constraint.sourceColumns) {
-                sourceColumns.add(oldName.equals(sourceColumn) ? newName : sourceColumn);
-            }
+                    for (String sourceColumn : constraint.sourceColumns) {
+                        sourceColumns.add(oldName.equals(sourceColumn) ? newName : sourceColumn);
+                    }
 
-            for (String destinationColumn : constraint.destinationColumns) {
-                destinationColumns.add(table.equals(constraint.destinationTable) && oldName.equals(destinationColumn) ?
-                        newName : destinationColumn);
-            }
+                    for (String destinationColumn : constraint.destinationColumns) {
+                        if (table.equals(constraint.destinationTable) && oldName.equals(destinationColumn)) {
+                            // Internal reference
+                            destinationColumns.add(newName);
+                        } else {
+                            // External reference
+                            destinationColumns.add(destinationColumn);
+                        }
+                    }
 
-            ForeignKey newConstraint = new ForeignKey(table, sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
-            newColumnsStatements.add(newConstraint.toString());
-        }
+                    return new ForeignKey(table, sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
+                })
+                .collect(Collectors.toList());
 
-        // Create new table with new column name
         String newTable = getTemporaryTableName(db);
-        String newTableSql = "CREATE TABLE " + escape(newTable) +
-                "(" + implode(newColumnsStatements, obj -> obj, ",") + ")";
-
-        log(newTableSql);
-        db.execSQL(newTableSql);
+        new SchemaCreateTable(newTable, newColumns, newForeignKeys).run(db);
 
         // Copy data from the old table
-        String oldColumns = implode(columns, StringUtils::escape, ",");
-        String newColumns = implode(columns, column -> column.equals(oldName) ? StringUtils.escape(newName) : StringUtils.escape(column), ",");
-
-        String dataCopySql = "INSERT INTO " + escape(newTable) + "(" + newColumns + ") " +
-                "SELECT " + oldColumns + " FROM " + StringUtils.escape(table);
+        String dataCopySql = "INSERT INTO " + escape(newTable) + "(" +
+                newColumns.stream()
+                        .map(column -> escape(column.name))
+                        .collect(Collectors.joining(", ")) +
+                ") SELECT " +
+                columns.stream()
+                        .map(column -> escape(column.name))
+                        .collect(Collectors.joining(", ")) +
+                " FROM " + StringUtils.escape(table);
 
         log(dataCopySql);
         db.execSQL(dataCopySql);
@@ -149,18 +144,64 @@ public final class SchemaRenameColumn extends SchemaBaseAction implements Schema
         new SchemaRenameTable(newTable, table).run(db);
 
         // Fix foreign keys of other tables
+        fixOtherTablesForeignKeys(db);
+
+        // Enable foreign key checks
+        db.execSQL("PRAGMA foreign_keys=ON");
+    }
+
+    /**
+     * Fix the foreign key constraints of other tables referencing the renamed column.
+     *
+     * @param db    writable database
+     */
+    private void fixOtherTablesForeignKeys(SQLiteDatabase db) {
         for (String table : SQLiteUtils.getTables(db)) {
             if (table.equals(this.table)) {
-                // Already covered earlier
+                // Already covered
                 continue;
             }
 
-            for (ForeignKey foreignKey : SQLiteUtils.getTableForeignKeys(db, table)) {
+            for (ForeignKey foreignKey : getTableForeignKeys(db, table)) {
                 if (foreignKey.destinationTable.equals(this.table) && foreignKey.destinationColumns.contains(oldName)) {
-                    // TODO: fix foreign key
+                    List<Column> columns = getTableColumns(db, table);
+
+                    Collection<ForeignKey> newForeignKeys = getTableForeignKeys(db, table)
+                            .stream()
+                            .map(constraint -> {
+                                List<String> destinationColumns = new ArrayList<>();
+
+                                for (String destinationColumn : constraint.destinationColumns) {
+                                    if (table.equals(constraint.destinationTable) && oldName.equals(destinationColumn)) {
+                                        destinationColumns.add(newName);
+                                    } else {
+                                        destinationColumns.add(destinationColumn);
+                                    }
+                                }
+
+                                return new ForeignKey(table, constraint.sourceColumns, constraint.destinationTable, destinationColumns, constraint.onUpdate, constraint.onDelete);
+                            })
+                            .collect(Collectors.toList());
+
+                    String newTable = getTemporaryTableName(db);
+                    new SchemaCreateTable(newTable, columns, newForeignKeys).run(db);
+
+                    // Copy data from the old table
+                    String columnsList = columns.stream()
+                            .map(column -> escape(column.name))
+                            .collect(Collectors.joining(", "));
+
+                    String dataCopySql = "INSERT INTO " + escape(newTable) + "(" + columnsList + ") " +
+                            "SELECT " + columnsList + " FROM " + StringUtils.escape(table);
+
+                    log(dataCopySql);
+                    db.execSQL(dataCopySql);
+
+                    // Delete the old table and rename the new one
+                    new SchemaDeleteTable(table).run(db);
+                    new SchemaRenameTable(newTable, table).run(db);
                 }
             }
         }
     }
-
 }

@@ -23,17 +23,17 @@ import androidx.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import it.mscuttari.kaoldb.dump.ForeignKey;
-import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.StringUtils;
+import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
+import static it.mscuttari.kaoldb.StringUtils.escape;
+import static it.mscuttari.kaoldb.StringUtils.implode;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableForeignKeys;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
-import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 
 /**
  * Database schema changer: delete a column from a table.
@@ -72,7 +72,7 @@ public final class SchemaDeleteColumn extends SchemaBaseAction implements Schema
 
     @Override
     public void run(SQLiteDatabase db) {
-        List<String> columns = SQLiteUtils.getTableColumns(db, table);
+        List<String> columns = SQLiteUtils.getTableColumns(db, table).stream().map(column -> column.name).collect(Collectors.toList());
 
         // Prepare the statements to be used to create the new table.
         // The statements of the old table are copied and only the column name is replaced with

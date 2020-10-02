@@ -31,8 +31,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-// TODO: check all
-public class SchemaAddColumnTest extends SchemaAbstractTest {
+public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
 
     @Override
     protected void createDb(SQLiteDatabase db) {
@@ -50,7 +49,7 @@ public class SchemaAddColumnTest extends SchemaAbstractTest {
         // Check that the column doesn't exist
         assertTrue(getTableColumns(db, "table_1").stream().noneMatch(c -> c.name.equals("col_add_1")));
 
-        Column column = new Column("col_add_1", String.class, null, false, true, false);
+        Column column = new Column("col_add_1", String.class, null, true, true, false);
         new SchemaAddColumn("table_1", column).run(db);
 
         // Check that the column now exists
@@ -59,7 +58,7 @@ public class SchemaAddColumnTest extends SchemaAbstractTest {
 
     @Test
     public void dataPersistence() {
-        Column column = new Column("col_add_1", String.class, null, false, true, false);
+        Column column = new Column("col_add_1", String.class, null, true, true, false);
         new SchemaAddColumn("table_1", column).run(db);
 
         TableDump tableDump = new TableDumpImpl(db, "table_1");
@@ -76,7 +75,7 @@ public class SchemaAddColumnTest extends SchemaAbstractTest {
 
     @Test
     public void defaultValue() {
-        Column column = new Column("col_add_1", String.class, "Default", false, false, false);
+        Column column = new Column("col_add_1", String.class, "Default", true, false, false);
         new SchemaAddColumn("table_1", column).run(db);
 
         TableDump tableDump = new TableDumpImpl(db, "table_1");
@@ -89,7 +88,7 @@ public class SchemaAddColumnTest extends SchemaAbstractTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void emptyTable() {
-        Column column = new Column("col_add_1", Integer.class, null, true, false, false);
+        Column column = new Column("col_add_1", String.class, null, true, false, false);
         new SchemaAddColumn("", column).run(db);
     }
 

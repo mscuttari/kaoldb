@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.mscuttari.kaoldb.schema.Column;
+import it.mscuttari.kaoldb.schema.ForeignKey;
+
 import static it.mscuttari.kaoldb.StringUtils.escape;
 
 public class SQLiteUtils {
@@ -63,18 +66,69 @@ public class SQLiteUtils {
      *
      * @throws IllegalArgumentException if the table doesn't exist
      */
-    public static List<String> getTableColumns(SQLiteDatabase db, String table) {
+    public static Collection<Column> getTableColumns(SQLiteDatabase db, String table) {
         try (Cursor c = db.rawQuery("PRAGMA table_info(" + escape(table) + ")", null)) {
-            int nameIndex = c.getColumnIndex("name");
-
             if (c.getCount() == 0) {
                 throw new IllegalArgumentException("Table \"" + table + "\" not found");
             }
 
-            List<String> columns = new ArrayList<>(c.getCount());
+            int nameIndex = c.getColumnIndex("name");
+            int typeIndex = c.getColumnIndex("type");
+            int notNullIndex = c.getColumnIndex("notnull");
+            int defaultValueIndex = c.getColumnIndex("dflt_value");
+            int primaryKeyIndex = c.getColumnIndex("pk");
+
+            List<Column> columns = new ArrayList<>(c.getCount());
 
             for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-                columns.add(c.getString(nameIndex));
+                String name = c.getString(nameIndex);
+
+                String type = c.getString(typeIndex);
+                Class<?> clazz;
+
+                switch (type) {
+                    case "INTEGER":
+                        clazz = Integer.class;
+                        break;
+
+                    case "REAL":
+                        clazz = Float.class;
+                        break;
+
+                    case "TEXT":
+                        clazz = String.class;
+                        break;
+
+                    default:
+                        clazz = byte[].class;
+                        break;
+                }
+
+                boolean nullable = c.getInt(notNullIndex) != 1;
+                String defaultValue = c.isNull(defaultValueIndex) ? null : c.getString(defaultValueIndex);
+                boolean primaryKey = c.getInt(primaryKeyIndex) == 1;
+                boolean unique = false;
+
+                // TODO: decouple the unique property management + fix (doesn't work)
+                /*
+                try (Cursor c2 = db.rawQuery("PRAGMA index_list(" + table + ")", null)) {
+                    for (c2.moveToFirst(); !c2.isAfterLast() && !unique; c2.moveToNext()) {
+                        System.out.println("Count: " + c2.getColumnCount());
+                        System.out.println(DatabaseUtils.dumpCursorToString(c2));
+                        if (c2.getInt(c.getColumnIndex("unique")) == 1) {
+                            try (Cursor c3 = db.rawQuery("PRAGMA PRAGMA index_info(" + c2.getString(c.getColumnIndex("name")) + ")", null)) {
+                                for (c3.moveToFirst(); !c3.isAfterLast(); c3.moveToNext()) {
+                                    if (c3.getString(c3.getColumnIndex("name")).equals(name)) {
+                                        unique = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                */
+
+                columns.add(new Column(name, clazz, defaultValue, primaryKey, nullable, unique));
             }
 
             return columns;
@@ -116,7 +170,7 @@ public class SQLiteUtils {
      * Get the foreign key constraints of a table.
      *
      * @param db    readable database
-     * @param table table whose foreign keys contraints has to be retrieved
+     * @param table table whose foreign keys constraints has to be retrieved
      *
      * @return foreign keys constraints
      */

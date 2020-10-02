@@ -24,11 +24,12 @@ import androidx.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import it.mscuttari.kaoldb.query.CachedCursor;
 import it.mscuttari.kaoldb.StringUtils;
 import it.mscuttari.kaoldb.interfaces.RowDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
+import it.mscuttari.kaoldb.query.CachedCursor;
 
 public class TableDumpImpl implements TableDump {
 
@@ -60,7 +61,10 @@ public class TableDumpImpl implements TableDump {
         }
 
         // Get columns
-        columns = SQLiteUtils.getTableColumns(db, tableName);
+        columns = SQLiteUtils.getTableColumns(db, tableName)
+                .stream()
+                .map(column -> column.name)
+                .collect(Collectors.toList());
 
         // Dump the rows
         try (Cursor cRows = new CachedCursor(db.rawQuery("SELECT * FROM " + tableName, null))) {

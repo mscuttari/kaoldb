@@ -32,8 +32,8 @@ import it.mscuttari.kaoldb.interfaces.RowDump;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
 import static it.mscuttari.kaoldb.StringUtils.implode;
+import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
 
 /**
  * Database schema changer: for each row, change the value of a column
@@ -87,18 +87,18 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction implements Sche
                 Object value = listener.change(dbDump, rowDump, rowDump.getColumnValue(column));
 
                 if (value instanceof Enum) {
-                    cv.put(column, ((Enum) value).name());
+                    cv.put(column, ((Enum<?>) value).name());
 
-                } else if (value instanceof Integer || value.getClass().equals(int.class)) {
+                } else if (value instanceof Integer) {
                     cv.put(column, (int) value);
 
-                } else if (value instanceof Long || value.getClass().equals(long.class)) {
+                } else if (value instanceof Long) {
                     cv.put(column, (long) value);
 
-                } else if (value instanceof Float || value.getClass().equals(float.class)) {
+                } else if (value instanceof Float) {
                     cv.put(column, (float) value);
 
-                } else if (value instanceof Double || value.getClass().equals(double.class)) {
+                } else if (value instanceof Double) {
                     cv.put(column, (double) value);
 
                 } else if (value instanceof String) {

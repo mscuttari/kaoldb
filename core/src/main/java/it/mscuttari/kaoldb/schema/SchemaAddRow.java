@@ -11,7 +11,7 @@ import it.mscuttari.kaoldb.mapping.BaseColumnObject;
 /**
  * Database schema changer: add a row to a table.
  */
-public final class SchemaAddRow implements SchemaAction {
+public final class SchemaAddRow extends SchemaBaseAction implements SchemaAction {
 
     @NonNull private final String table;
     @NonNull private final String[] columns;

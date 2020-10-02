@@ -22,8 +22,7 @@ import android.database.sqlite.SQLiteDatabase;
 import org.junit.Test;
 
 import java.util.Collection;
-
-import it.mscuttari.kaoldb.dump.ForeignKey;
+import java.util.stream.Collectors;
 
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableForeignKeys;
@@ -55,7 +54,7 @@ public class SchemaRenameColumnTest extends SchemaAbstractTest {
 
     @Test
     public void renameColumn() {
-        Collection<String> before = getTableColumns(db, "table_1");
+        Collection<String> before = getTableColumns(db, "table_1").stream().map(column -> column.name).collect(Collectors.toList());
         assertTrue(before.contains("col_1"));
         assertFalse(before.contains("col_1_renamed"));
 
@@ -63,7 +62,7 @@ public class SchemaRenameColumnTest extends SchemaAbstractTest {
         new SchemaRenameColumn("table_1", "col_1", "col_1_renamed").run(db);
 
         // Check that the column has been renamed
-        Collection<String> after = getTableColumns(db, "table_1");
+        Collection<String> after = getTableColumns(db, "table_1").stream().map(column -> column.name).collect(Collectors.toList());
         assertFalse(after.contains("col_1"));
         assertTrue(after.contains("col_1_renamed"));
     }

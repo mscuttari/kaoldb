@@ -21,18 +21,14 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
-import it.mscuttari.kaoldb.mapping.BaseColumnObject;
-import it.mscuttari.kaoldb.StringUtils;
 
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getColumnStatement;
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
-import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
+import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableColumns;
+import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableForeignKeys;
 
 /**
  * Database schema changer: add a new column to a table.
@@ -45,12 +41,8 @@ import static it.mscuttari.kaoldb.StringUtils.implode;
  */
 public final class SchemaAddColumn extends SchemaBaseAction implements SchemaAction {
 
-    @NonNull private final String table;            // Table name
-    @NonNull private final String name;             // New column name
-    @NonNull private final Class<?> type;           // New column type
-    private final boolean nullable;                 // Whether the new column should be nullable
-    @Nullable private final String defaultValue;    // New column default value
-    private final boolean primaryKey;               // Whether the new column should be a primary key
+    @NonNull private final String table;
+    @NonNull private final Column column;
 
     /**
      * Constructor.
@@ -58,18 +50,20 @@ public final class SchemaAddColumn extends SchemaBaseAction implements SchemaAct
      * @param table         table name
      * @param name          new column: name
      * @param type          new column: type
-     * @param nullable      new column: nullable property
      * @param defaultValue  new column: default value
      * @param primaryKey    new column: primary key property
+     * @param nullable      new column: nullable property
+     * @param unique        new column: unique property
      *
-     * @throws IllegalArgumentException if <code>table</code> or <code>name</code> are empty
+     * @throws IllegalArgumentException if <code>table</code> is empty
      */
     public SchemaAddColumn(@NonNull String table,
                            @NonNull String name,
                            @NonNull Class<?> type,
-                           boolean nullable,
                            @Nullable String defaultValue,
-                           boolean primaryKey) {
+                           boolean primaryKey,
+                           boolean nullable,
+                           boolean unique) {
 
         if (table.isEmpty()) {
             throw new IllegalArgumentException("Table name can't be empty");
@@ -80,29 +74,15 @@ public final class SchemaAddColumn extends SchemaBaseAction implements SchemaAct
         }
 
         this.table = table;
-        this.name = name;
-        this.type = type;
-        this.nullable = nullable;
-        this.defaultValue = defaultValue;
-        this.primaryKey = primaryKey;
+        this.column = new Column(name, type, defaultValue, primaryKey, nullable, unique);
     }
 
     @Override
     public void run(SQLiteDatabase db) {
-        String columnStatement = escape(name) + " " + BaseColumnObject.classToDbType(type);
-
-        if (!nullable) {
-            columnStatement += " NOT NULL";
-        }
-
-        if (defaultValue != null && !defaultValue.isEmpty()) {
-            columnStatement += " DEFAULT " + escape(defaultValue);
-        }
-
-        if (!primaryKey) {
+        if (!column.primaryKey) {
             // The column can be directly added to the existing ones
 
-            String sql = "ALTER TABLE " + escape(table) + " ADD " + columnStatement;
+            String sql = "ALTER TABLE " + escape(table) + " ADD " + column.getSQL();
             log(sql);
             db.execSQL(sql);
 
@@ -110,51 +90,36 @@ public final class SchemaAddColumn extends SchemaBaseAction implements SchemaAct
             // It is not possible to add a primary key once the table has been created.
             // Therefore, the table must be recreated.
 
-            List<String> oldColumns = getTableColumns(db, table);
-            List<String> columns = getTableColumns(db, table);
-            List<String> primaryKeys = getTablePrimaryKeys(db, table);
-            List<String> columnsStatements = new ArrayList<>(columns.size() + 1);
+            // Disable foreign key checks
+            db.execSQL("PRAGMA foreign_keys=OFF");
 
-            for (String column : columns) {
-                columnsStatements.add(getColumnStatement(db, table, column));
-            }
+            Collection<Column> oldColumns = getTableColumns(db, table);
+            Collection<Column> newColumns = getTableColumns(db, table);
+            newColumns.add(column);
 
-            columns.add(name);
-            columnsStatements.add(columnStatement);
+            Collection<ForeignKey> foreignKeys = getTableForeignKeys(db, table);
 
-            // Set the primary keys
-            primaryKeys.add(name);
-            columnsStatements.add(
-                    "PRIMARY KEY(" +
-                    implode(primaryKeys, StringUtils::escape, ",") +
-                    ")"
-            );
-
-            // Backup old table
+            // Create new table containing the new column
             String tempTable = getTemporaryTableName(db);
-            SchemaBaseAction renamer = new SchemaRenameTable(table, tempTable);
-            renamer.run(db);
-
-            // Create the new table containing the new column
-            String newTableSql = "CREATE TABLE " + escape(table) + "(" +
-                    implode(columnsStatements, statement -> statement, ",") +
-                    ")";
-
-            log(newTableSql);
-            db.execSQL(newTableSql);
+            new SchemaCreateTable(tempTable, newColumns, foreignKeys).run(db);
 
             // Copy data from the old table
-            String dataCopySql = "INSERT INTO " + escape(table) +
-                    "(" + implode(oldColumns, StringUtils::escape, ",") + ") " +
-                    "SELECT " + implode(oldColumns, StringUtils::escape, ",") +
-                    " FROM " + escape(tempTable);
+            String columnsList = oldColumns.stream()
+                    .map(column -> escape(column.name))
+                    .collect(Collectors.joining(", "));
+
+            String dataCopySql = "INSERT INTO " + escape(tempTable) + "(" + columnsList + ") " +
+                    "SELECT " + columnsList + " FROM " + escape(table);
 
             log(dataCopySql);
             db.execSQL(dataCopySql);
 
-            // Delete the old table
-            SchemaBaseAction deleter = new SchemaDeleteTable(tempTable);
-            deleter.run(db);
+            // Delete the old table and rename the temporary one
+            new SchemaDeleteTable(table).run(db);
+            new SchemaRenameTable(tempTable, table).run(db);
+
+            // Enable foreign key checks
+            db.execSQL("PRAGMA foreign_keys=ON");
         }
     }
 

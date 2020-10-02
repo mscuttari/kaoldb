@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package it.mscuttari.kaoldb.dump;
+package it.mscuttari.kaoldb.schema;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
@@ -23,16 +23,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import it.mscuttari.kaoldb.StringUtils;
-
-import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
+import java.util.stream.Collectors;
 
 /**
  * Represents a foreign key constraint.
  */
-public class ForeignKey {
+public final class ForeignKey {
 
     @NonNull public final String sourceTable;
     @NonNull public final List<String> sourceColumns;
@@ -122,9 +118,17 @@ public class ForeignKey {
     @NonNull
     @Override
     public String toString() {
-        return "FOREIGN KEY (" + implode(sourceColumns, StringUtils::escape, ", ")
+        String localColumns = sourceColumns.stream()
+                .map(ForeignKey::escape)
+                .collect(Collectors.joining(", "));
+
+        String referencedColumns = destinationColumns.stream()
+                .map(ForeignKey::escape)
+                .collect(Collectors.joining(", "));
+
+        return "FOREIGN KEY (" + localColumns
                 + ") REFERENCES " + escape(destinationTable) +
-                "(" + implode(destinationColumns, StringUtils::escape, ", ") + ")" +
+                "(" + referencedColumns + ")" +
                 " ON UPDATE " + onUpdate +
                 " ON DELETE " + onDelete +
                 " DEFERRABLE INITIALLY DEFERRED";
@@ -175,6 +179,32 @@ public class ForeignKey {
         destinationColumns.add(destinationColumn);
 
         return new ForeignKey(sourceTable, sourceColumns, destinationTable, destinationColumns, onUpdate, onDelete);
+    }
+
+    @CheckResult
+    private static String escape(String str) {
+        if (str == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append('"');
+
+        int length = str.length();
+        for (int i = 0; i < length; i++) {
+            char c = str.charAt(i);
+
+            if (c == '"') {
+                sb.append('"');
+            }
+
+            sb.append(c);
+        }
+
+        sb.append('"');
+
+        return sb.toString();
     }
 
 }

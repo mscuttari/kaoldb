@@ -19,13 +19,13 @@ package it.mscuttari.kaoldb.mapping;
 import android.content.ContentValues;
 import android.database.Cursor;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import it.mscuttari.kaoldb.ConcurrentSession;
 import it.mscuttari.kaoldb.exceptions.MappingException;
@@ -261,30 +261,30 @@ public abstract class BaseColumnObject implements ColumnsContainer {
      * @param column    column name
      * @param value     value
      */
-    static void insertIntoContentValues(ContentValues cv, String column, Object value) {
+    public static void insertIntoContentValues(ContentValues cv, String column, Object value) {
         if (value == null) {
             cv.putNull(column);
 
         } else {
             if (value instanceof Enum) {
-                cv.put(column, ((Enum) value).name());
+                cv.put(column, ((Enum<?>) value).name());
 
-            } else if (value instanceof Integer || value.getClass().equals(int.class)) {
+            } else if (value instanceof Integer) {
                 cv.put(column, (int) value);
 
-            } else if (value instanceof Long || value.getClass().equals(long.class)) {
+            } else if (value instanceof Long) {
                 cv.put(column, (long) value);
 
-            } else if (value instanceof Float || value.getClass().equals(float.class)) {
+            } else if (value instanceof Float) {
                 cv.put(column, (float) value);
 
-            } else if (value instanceof Double || value.getClass().equals(double.class)) {
+            } else if (value instanceof Double) {
                 cv.put(column, (double) value);
 
             } else if (value instanceof String) {
                 cv.put(column, (String) value);
 
-            } else if (value instanceof Boolean || value.getClass().equals(boolean.class)) {
+            } else if (value instanceof Boolean) {
                 cv.put(column, ((boolean) value) ? 1 : 0);
 
             } else if (value instanceof Date) {

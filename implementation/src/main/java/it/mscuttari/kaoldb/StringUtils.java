@@ -18,7 +18,6 @@ package it.mscuttari.kaoldb;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class StringUtils {
 
@@ -99,61 +98,6 @@ public class StringUtils {
             return value;
         }
 
-    }
-
-    /**
-     * Convert a collection to a string representation where each element is separated by a given string.
-     * <p>A custom object-to-string converter, implementing {@link StringConverter}, can be specified
-     * in order to get a define a temporary {@link Object#toString()} method. If not specified, the
-     * default {@link Object#toString()} implementation of each object is used.<br>
-     * If the separator is set to <code>null</code>, a comma is placed between the elements.</p>
-     *
-     * @param objs      objects
-     * @param converter converter to be used to get the string representation of each object
-     * @param separator separator to be used between the elements
-     * @param <T>       objects type
-     *
-     * @return string representation
-     */
-    @CheckResult
-    public static <T> String implode(Iterable<T> objs,
-                                     @Nullable StringConverter<T> converter,
-                                     @Nullable String separator) {
-
-        if (objs == null)
-            return "";
-
-        if (converter == null)
-            converter = Object::toString;
-
-        if (separator == null)
-            separator = ",";
-
-        StringBuilder sb = new StringBuilder();
-        String sep = "";
-
-        for (T obj : objs) {
-            sb.append(sep).append(converter.convert(obj));
-            sep = separator;
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Interface to be used to create a custom object-to-string converter.
-     *
-     * @param <T> object type
-     */
-    public interface StringConverter<T> {
-
-        /**
-         * Called then an object has to be converted to string.
-         *
-         * @param obj   object to be converted
-         * @return string conversion
-         */
-        String convert(T obj);
     }
 
 }

@@ -49,8 +49,7 @@ public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
         // Check that the column doesn't exist
         assertTrue(getTableColumns(db, "table_1").stream().noneMatch(c -> c.name.equals("col_add_1")));
 
-        Column column = new Column("col_add_1", String.class, null, true, true, false);
-        new SchemaAddColumn("table_1", column).run(db);
+        new SchemaAddColumn("table_1", "col_add_1", String.class, null, true, true, false).run(db);
 
         // Check that the column now exists
         assertTrue(getTableColumns(db, "table_1").stream().anyMatch(c -> c.name.equals("col_add_1")));
@@ -58,8 +57,7 @@ public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
 
     @Test
     public void dataPersistence() {
-        Column column = new Column("col_add_1", String.class, null, true, true, false);
-        new SchemaAddColumn("table_1", column).run(db);
+        new SchemaAddColumn("table_1", "col_add_1", String.class, null, true, true, false).run(db);
 
         TableDump tableDump = new TableDumpImpl(db, "table_1");
         List<RowDump> tableRows = tableDump.getRows();
@@ -75,8 +73,7 @@ public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
 
     @Test
     public void defaultValue() {
-        Column column = new Column("col_add_1", String.class, "Default", true, false, false);
-        new SchemaAddColumn("table_1", column).run(db);
+        new SchemaAddColumn("table_1", "col_add_1", String.class, "Default", true, false, false).run(db);
 
         TableDump tableDump = new TableDumpImpl(db, "table_1");
         List<RowDump> tableRows = tableDump.getRows();
@@ -88,8 +85,7 @@ public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void emptyTable() {
-        Column column = new Column("col_add_1", String.class, null, true, false, false);
-        new SchemaAddColumn("", column).run(db);
+        new SchemaAddColumn("", "col_add_1", String.class, null, true, false, false).run(db);
     }
 
 }

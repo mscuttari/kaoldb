@@ -26,11 +26,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import it.mscuttari.kaoldb.exceptions.DumpException;
 import it.mscuttari.kaoldb.interfaces.RowDump;
-
-import static it.mscuttari.kaoldb.StringUtils.implode;
 
 public class RowDumpImpl implements RowDump {
 
@@ -75,11 +74,10 @@ public class RowDumpImpl implements RowDump {
     @Override
     public String toString() {
         return "{" +
-                implode(
-                        values.keySet(),
-                        obj -> obj + ": " + values.get(obj),
-                        ", "
-                ) +
+                values.keySet()
+                        .stream()
+                        .map(column -> column + ": " + values.get(column))
+                        .collect(Collectors.joining(", ")) +
                 "}";
     }
 

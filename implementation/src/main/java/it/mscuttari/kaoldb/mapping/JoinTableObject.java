@@ -16,24 +16,24 @@
 
 package it.mscuttari.kaoldb.mapping;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import java.util.stream.Collectors;
 
 import it.mscuttari.kaoldb.ConcatIterator;
-import it.mscuttari.kaoldb.annotations.JoinColumn;
-import it.mscuttari.kaoldb.annotations.JoinTable;
 import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.StringUtils;
+import it.mscuttari.kaoldb.annotations.JoinColumn;
+import it.mscuttari.kaoldb.annotations.JoinTable;
 
 import static it.mscuttari.kaoldb.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 import static it.mscuttari.kaoldb.mapping.Propagation.Action.CASCADE;
 
 /**
@@ -223,9 +223,9 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
         }
 
         constraints.add(
-                "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
+                "FOREIGN KEY (" + local.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
                 "REFERENCES " + escape(directJoinEntity.tableName) + " (" +
-                implode(referenced, StringUtils::escape, ", ") + ") " +
+                referenced.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
                 propagation
         );
 
@@ -241,14 +241,13 @@ final class JoinTableObject implements Iterable<BaseColumnObject> {
             referenced.add(joinColumn.linkedColumn.name);
         }
 
-        constraints.add(
-                "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
-                "REFERENCES " + escape(inverseJoinEntity.tableName) + " (" +
-                implode(referenced, StringUtils::escape, ", ") + ") " +
-                propagation
+        constraints.add("FOREIGN KEY (" + local.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
+                        "REFERENCES " + escape(inverseJoinEntity.tableName) +" (" +
+                        referenced.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
+                        propagation
         );
 
-        return implode(constraints, obj -> obj, ", ");
+        return constraints.stream().collect(Collectors.joining(", "));
     }
 
 }

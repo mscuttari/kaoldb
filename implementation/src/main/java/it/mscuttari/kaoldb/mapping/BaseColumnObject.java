@@ -219,7 +219,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
             if (type.isEnum()) {
-                Enum enumClass = Enum.class.cast(type);
+                Enum<?> enumClass = Enum.class.cast(type);
 
                 if (enumClass == null)
                     throw new PojoException("Enum class \"" + type.getSimpleName() + "\" not found");

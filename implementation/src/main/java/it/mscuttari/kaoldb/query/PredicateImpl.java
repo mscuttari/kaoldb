@@ -18,14 +18,15 @@ package it.mscuttari.kaoldb.query;
 
 import android.util.Pair;
 
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import androidx.annotation.IntRange;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -33,17 +34,16 @@ import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.mapping.BaseColumnObject;
-import it.mscuttari.kaoldb.mapping.DatabaseObject;
-import it.mscuttari.kaoldb.mapping.EntityObject;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Root;
+import it.mscuttari.kaoldb.mapping.BaseColumnObject;
+import it.mscuttari.kaoldb.mapping.DatabaseObject;
+import it.mscuttari.kaoldb.mapping.EntityObject;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static it.mscuttari.kaoldb.query.ExpressionImpl.ExpressionType.AND;
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
+import static it.mscuttari.kaoldb.query.ExpressionImpl.ExpressionType.AND;
 
 /**
  * Predicate implementation
@@ -344,11 +344,10 @@ final class PredicateImpl<T> implements ExpressionInt {
     private String processUnaryPredicate() {
         if (operation == PredicateType.IS_NULL) {
             if (x.hasProperty()) {
-                return implode(
-                        getPropertyColumns(x.getProperty(), x.getTableAlias()),
-                        obj -> obj + " " + operation,
-                        " " + AND + " "
-                );
+                return getPropertyColumns(x.getProperty(), x.getTableAlias())
+                        .stream()
+                        .map(obj -> obj + " " + operation)
+                        .collect(Collectors.joining(" " + AND + " "));
 
             } else {
                 return escape(String.valueOf(x.getRawData())) + " " + operation;
@@ -372,19 +371,17 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         if (x.hasProperty() && y.hasProperty()) {
             // Two properties
-            return implode(
-                    bindProperties(x.getProperty(), x.getTableAlias(), y.getProperty(), y.getTableAlias()),
-                    obj -> obj.first + operation + obj.second,
-                    " " + AND + " "
-            );
+            return bindProperties(x.getProperty(), x.getTableAlias(), y.getProperty(), y.getTableAlias())
+                    .stream()
+                    .map(obj -> obj.first + operation + obj.second)
+                    .collect(Collectors.joining(" " + AND + " "));
 
         } else if (x.hasProperty()) {
             // Property + value
-            return implode(
-                    bindPropertyObject(x.getProperty(), y.getRawData()),
-                    obj -> obj.first + operation + obj.second,
-                    " " + AND + " "
-            );
+            return bindPropertyObject(x.getProperty(), y.getRawData())
+                    .stream()
+                    .map(obj -> obj.first + operation + obj.second)
+                    .collect(Collectors.joining(" " + AND + " "));
 
         } else {
             // Two values

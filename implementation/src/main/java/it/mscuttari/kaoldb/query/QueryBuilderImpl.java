@@ -16,26 +16,27 @@
 
 package it.mscuttari.kaoldb.query;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
-import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.Column;
-import it.mscuttari.kaoldb.mapping.BaseColumnObject;
-import it.mscuttari.kaoldb.mapping.DatabaseObject;
-import it.mscuttari.kaoldb.mapping.EntityObject;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
+import it.mscuttari.kaoldb.mapping.BaseColumnObject;
+import it.mscuttari.kaoldb.mapping.DatabaseObject;
+import it.mscuttari.kaoldb.mapping.EntityObject;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 
 /**
  * QueryBuilder implementation.
@@ -243,7 +244,7 @@ class QueryBuilderImpl<T> implements QueryBuilder<T> {
             }
         }
 
-        return implode(columns, obj -> obj, ", ");
+        return columns.stream().collect(Collectors.joining(", "));
     }
 
 }

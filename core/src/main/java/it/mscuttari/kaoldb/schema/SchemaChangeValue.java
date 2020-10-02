@@ -24,6 +24,7 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import it.mscuttari.kaoldb.dump.DatabaseDumpImpl;
 import it.mscuttari.kaoldb.dump.RowDumpImpl;
@@ -32,7 +33,6 @@ import it.mscuttari.kaoldb.interfaces.RowDump;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
 
 /**
@@ -108,16 +108,18 @@ public final class SchemaChangeValue<T> extends SchemaBaseAction implements Sche
                 db.update(
                         table,
                         cv,
-                        implode(primaryKeys, pk -> {
-                            // The row to be updated is identified by using its primary keys values
-                            Object pkVal = rowDump.getColumnValue(pk);
+                        primaryKeys.stream()
+                                .map(primaryKey -> {
+                                    // The row to be updated is identified by using its primary keys values
+                                    Object pkVal = rowDump.getColumnValue(primaryKey);
 
-                            if (pkVal instanceof String) {
-                                pkVal = escape((String) pkVal);
-                            }
+                                    if (pkVal instanceof String) {
+                                        pkVal = escape((String) pkVal);
+                                    }
 
-                            return escape(pk) + "=" + pkVal;
-                        }, " AND "),
+                                    return escape(primaryKey) + "=" + pkVal;
+                                })
+                                .collect(Collectors.joining(" AND ")),
                         null
                 );
             }

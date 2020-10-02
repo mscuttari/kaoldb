@@ -20,13 +20,6 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.ArraySet;
@@ -35,6 +28,17 @@ import org.objenesis.Objenesis;
 import org.objenesis.ObjenesisStd;
 import org.objenesis.instantiator.ObjectInstantiator;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import it.mscuttari.kaoldb.ConcurrentSession;
+import it.mscuttari.kaoldb.LogUtils;
+import it.mscuttari.kaoldb.StringUtils;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorColumn;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
@@ -46,9 +50,6 @@ import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.annotations.UniqueConstraint;
-import it.mscuttari.kaoldb.ConcurrentSession;
-import it.mscuttari.kaoldb.LogUtils;
-import it.mscuttari.kaoldb.StringUtils;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.exceptions.PojoException;
@@ -58,9 +59,8 @@ import it.mscuttari.kaoldb.interfaces.EntityManager;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.mscuttari.kaoldb.ConcurrentSession.doAndNotifyAll;
 import static it.mscuttari.kaoldb.ConcurrentSession.waitWhile;
-import static it.mscuttari.kaoldb.mapping.Propagation.Action.*;
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
+import static it.mscuttari.kaoldb.mapping.Propagation.Action.CASCADE;
 
 /**
  * Each {@link EntityObject} maps a class annotated with the {@link Entity} annotation.
@@ -195,7 +195,7 @@ public class EntityObject<T> {
     public String toString() {
         return "Class: " + getName() + ", " +
                 "Parent: " + (getParent() == null ? "null" : getParent().getName()) + ", " +
-                "Children: {" + implode(children, EntityObject::getName, ", ") + "}, " +
+                "Children: {" + children.stream().map(EntityObject::getName).collect(Collectors.joining(", ")) + "}, " +
                 "Columns: " + columns + ", " +
                 "Primary keys: " + columns.getPrimaryKeys();
     }
@@ -704,7 +704,7 @@ public class EntityObject<T> {
         // Unique keys (multiple columns)
         String uniqueKeysSql = getTableUniquesSql(getMultipleUniqueColumns());
 
-        if (uniqueKeysSql != null && !uniqueKeysSql.isEmpty()) {
+        if (!uniqueKeysSql.isEmpty()) {
             result.append(", ").append(uniqueKeysSql);
         }
 
@@ -735,7 +735,9 @@ public class EntityObject<T> {
         }
 
         return "PRIMARY KEY (" +
-                implode(primaryKeys, column -> escape(column.name), ", ") +
+                primaryKeys.stream()
+                        .map(StringUtils::escape)
+                        .collect(Collectors.joining(", ")) +
                 ")";
     }
 
@@ -748,32 +750,17 @@ public class EntityObject<T> {
      * statement <code>UNIQUE("column_1", "column_2"), UNIQUE("column_2", "column_3", "column_4")</code></p>
      *
      * @param uniqueColumns     unique columns groups
-     * @return SQL statement (<code>null</code> if the SQL statement is not needed in the main query)
+     * @return SQL statement
      */
-    @Nullable
     private static String getTableUniquesSql(Collection<Collection<BaseColumnObject>> uniqueColumns) {
-        if (uniqueColumns == null || uniqueColumns.size() == 0) {
-            return null;
-        }
-
-        Collection<String> uniqueSets = new ArrayList<>(uniqueColumns.size());
-
-        for (Collection<BaseColumnObject> uniqueSet : uniqueColumns) {
-            if (uniqueSet == null || uniqueSet.size() == 0)
-                continue;
-
-            uniqueSets.add(
-                    "UNIQUE (" +
-                    implode(uniqueSet, column -> escape(column.name), ", ") +
-                    ")"
-            );
-        }
-
-        if (uniqueSets.size() == 0) {
-            return null;
-        }
-
-        return implode(uniqueSets, obj -> obj, ", ");
+        return uniqueColumns.stream()
+                .filter(columns -> columns != null && !columns.isEmpty())
+                .map(columns -> "UNIQUE (" +
+                        columns.stream()
+                                .map(column -> escape(column.name))
+                                .collect(Collectors.joining(", ")) +
+                        ")")
+                .collect(Collectors.joining(", "));
     }
 
     /**
@@ -811,7 +798,7 @@ public class EntityObject<T> {
             return null;
         }
 
-        return implode(constraints, obj -> obj, ", ");
+        return constraints.stream().collect(Collectors.joining(", "));
     }
 
     /**
@@ -836,7 +823,11 @@ public class EntityObject<T> {
 
         // Create associations
         Collection<FieldColumnObject> parentPrimaryKeys = parent.columns.getPrimaryKeys();
-        String columns = implode(parentPrimaryKeys, primaryKey -> escape(primaryKey.name), ", ");
+
+        String columns = parentPrimaryKeys.stream()
+                .map(primaryKey -> escape(primaryKey.name))
+                .collect(Collectors.joining(", "));
+
         Propagation propagation = new Propagation(CASCADE, CASCADE);
 
         return "FOREIGN KEY (" + columns + ") " +
@@ -893,9 +884,9 @@ public class EntityObject<T> {
                 }
 
                 constraints.add(
-                        "FOREIGN KEY (" + implode(local, StringUtils::escape, ", ") + ") " +
+                        "FOREIGN KEY (" + local.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
                         "REFERENCES " + escape(linkedEntity.tableName) + " (" +
-                        implode(referenced, StringUtils::escape, ", ") + ") " +
+                        referenced.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
                         joinColumns.propagation
                 );
             }
@@ -905,7 +896,7 @@ public class EntityObject<T> {
             return null;
         }
 
-        return implode(constraints, obj -> obj, ", ");
+        return constraints.stream().collect(Collectors.joining(", "));
     }
 
 }

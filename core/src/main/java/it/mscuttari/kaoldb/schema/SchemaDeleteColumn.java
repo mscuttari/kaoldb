@@ -30,7 +30,6 @@ import it.mscuttari.kaoldb.dump.SQLiteUtils;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 
 import static it.mscuttari.kaoldb.StringUtils.escape;
-import static it.mscuttari.kaoldb.StringUtils.implode;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getColumnStatement;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTableForeignKeys;
 import static it.mscuttari.kaoldb.dump.SQLiteUtils.getTablePrimaryKeys;
@@ -101,7 +100,7 @@ public final class SchemaDeleteColumn extends SchemaBaseAction implements Schema
         }
 
         newColumnsStatements.add("PRIMARY KEY(" +
-                implode(primaryKeys, StringUtils::escape, ",") +
+                primaryKeys.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) +
                 ")");
 
         // Foreign key constraints
@@ -128,7 +127,7 @@ public final class SchemaDeleteColumn extends SchemaBaseAction implements Schema
         // Create new table without the column
         String newTable = getTemporaryTableName(db);
         String newTableSql = "CREATE TABLE " + escape(newTable) +
-                "(" + StringUtils.implode(newColumnsStatements, obj -> obj, ",") + ")";
+                "(" + newColumnsStatements.stream().collect(Collectors.joining(", "))+ ")";
 
         log(newTableSql);
         db.execSQL(newTableSql);
@@ -144,7 +143,7 @@ public final class SchemaDeleteColumn extends SchemaBaseAction implements Schema
             }
         }
 
-        String newColumns = implode(columns, StringUtils::escape, ",");
+        String newColumns = columns.stream().map(StringUtils::escape).collect(Collectors.joining(", "));
 
         String dataCopySql = "INSERT INTO " + escape(newTable) + "(" + newColumns + ") " +
                 "SELECT " + newColumns + " FROM " + escape(table);

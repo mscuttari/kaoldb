@@ -18,18 +18,17 @@ package it.mscuttari.kaoldb.dump;
 
 import android.database.sqlite.SQLiteDatabase;
 
+import androidx.annotation.NonNull;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import androidx.annotation.NonNull;
+import java.util.stream.Collectors;
 
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
-
-import static it.mscuttari.kaoldb.StringUtils.implode;
 
 public class DatabaseDumpImpl implements DatabaseDump {
 
@@ -59,11 +58,10 @@ public class DatabaseDumpImpl implements DatabaseDump {
     @Override
     public String toString() {
         return "{" +
-                implode(
-                        tables.keySet(),
-                        obj -> obj + ": " + tables.get(obj),
-                        ", "
-                ) +
+                tables.keySet()
+                        .stream()
+                        .map(table -> table + ": " + tables.get(table))
+                        .collect(Collectors.joining(", ")) +
                 "}";
     }
 

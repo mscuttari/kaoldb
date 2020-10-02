@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import it.mscuttari.kaoldb.StringUtils;
 import it.mscuttari.kaoldb.interfaces.RowDump;
 import it.mscuttari.kaoldb.interfaces.TableDump;
 import it.mscuttari.kaoldb.query.CachedCursor;
@@ -79,7 +78,11 @@ public class TableDumpImpl implements TableDump {
     @NonNull
     @Override
     public String toString() {
-        return "[" + StringUtils.implode(rows, Object::toString, ", ") + "]";
+        return "[" +
+                rows.stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", ")) +
+                "]";
     }
 
     @NonNull

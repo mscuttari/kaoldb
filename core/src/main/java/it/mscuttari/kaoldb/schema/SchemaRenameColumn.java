@@ -82,7 +82,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction implements Schema
         // Disable foreign key checks
         db.execSQL("PRAGMA foreign_keys=OFF");
 
-        List<Column> columns = getTableColumns(db, table);
+        Collection<Column> columns = getTableColumns(db, table);
 
         // Create the new table
 
@@ -164,7 +164,7 @@ public final class SchemaRenameColumn extends SchemaBaseAction implements Schema
 
             for (ForeignKey foreignKey : getTableForeignKeys(db, table)) {
                 if (foreignKey.destinationTable.equals(this.table) && foreignKey.destinationColumns.contains(oldName)) {
-                    List<Column> columns = getTableColumns(db, table);
+                    Collection<Column> columns = getTableColumns(db, table);
 
                     Collection<ForeignKey> newForeignKeys = getTableForeignKeys(db, table)
                             .stream()

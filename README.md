@@ -7,8 +7,8 @@ It is sufficient to add the two following Gradle dependencies to the application
 
 ```gradle
 dependencies {
-    implementation 'it.mscuttari.kaoldb:core:1.0.0'
-    annotationProcessor 'it.mscuttari.kaoldb:annotation-processor:1.0.0'
+    implementation 'it.mscuttari.kaoldb:core:1.0.2'
+    annotationProcessor 'it.mscuttari.kaoldb:annotation-processor:1.0.2'
 }
 ```
 

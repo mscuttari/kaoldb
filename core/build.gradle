@@ -73,11 +73,11 @@ dependencies {
     testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
 
     // https://mvnrepository.com/artifact/androidx.test/core
-    testImplementation group: 'androidx.test', name: 'core', version: '1.2.0'
+    testImplementation group: 'androidx.test', name: 'core', version: '1.3.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-alpha06'
+    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-beta01'
 }
 
 apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload')
+bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload', ':implementation:bintrayUpload')

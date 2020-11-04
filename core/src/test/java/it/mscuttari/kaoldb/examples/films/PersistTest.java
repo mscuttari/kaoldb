@@ -25,6 +25,7 @@ import it.mscuttari.kaoldb.examples.films.models.Country_;
 import it.mscuttari.kaoldb.examples.films.models.FantasyFilm;
 import it.mscuttari.kaoldb.examples.films.models.FantasyFilm_;
 import it.mscuttari.kaoldb.examples.films.models.Film;
+import it.mscuttari.kaoldb.examples.films.models.FilmRestriction;
 import it.mscuttari.kaoldb.examples.films.models.Film_;
 import it.mscuttari.kaoldb.examples.films.models.Genre;
 import it.mscuttari.kaoldb.examples.films.models.Genre_;
@@ -36,7 +37,7 @@ import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class PersistTest extends AbstractFilmTest {
 
@@ -132,7 +133,7 @@ public class PersistTest extends AbstractFilmTest {
     @Test
     public void persistThrillerFilm() {
         Person director = new Person("Christopher", "Nolan", getCalendar(1970, Calendar.JULY, 30), new Country("UK"));
-        ThrillerFilm film = new ThrillerFilm("Memento", 2000, director, 113, null);
+        ThrillerFilm film = new ThrillerFilm("Memento", 2000, director, 113, FilmRestriction.MIN14);
 
         em.persist(director.country);
         em.persist(director);

@@ -219,21 +219,14 @@ public abstract class BaseColumnObject implements ColumnsContainer {
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
             if (type.isEnum()) {
-                Enum<?> enumClass = Enum.class.cast(type);
-
-                if (enumClass == null)
-                    throw new PojoException("Enum class \"" + type.getSimpleName() + "\" not found");
-
-                value = Enum.valueOf(enumClass.getClass(), c.getString(columnIndex));
+                value = Enum.valueOf((Class<Enum>) type, c.getString(columnIndex));
 
             } else if (String.class.isAssignableFrom(type)) {
                 value = c.getString(columnIndex);
-            }
 
-            if (!(type.equals(String.class))) {
+            } else {
                 throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found String");
             }
-
         }
 
         return value;

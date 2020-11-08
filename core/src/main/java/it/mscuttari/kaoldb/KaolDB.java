@@ -19,17 +19,17 @@ package it.mscuttari.kaoldb;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 
-import java.util.Map;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.XmlRes;
 
-import it.mscuttari.kaoldb.exceptions.MappingException;
-import it.mscuttari.kaoldb.mapping.DatabaseObject;
-import it.mscuttari.kaoldb.query.EntityManagerImpl;
+import java.util.Map;
+
 import it.mscuttari.kaoldb.exceptions.ConfigParseException;
 import it.mscuttari.kaoldb.exceptions.KaolDBException;
+import it.mscuttari.kaoldb.exceptions.MappingException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
+import it.mscuttari.kaoldb.mapping.DatabaseObject;
+import it.mscuttari.kaoldb.query.EntityManagerImpl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -42,7 +42,7 @@ public final class KaolDB {
     private static KaolDB instance;
 
     /** Configuration */
-    final Config config = new Config();
+    private final Config config = new Config();
 
     /**
      * Private constructor for singleton.
@@ -105,12 +105,6 @@ public final class KaolDB {
         }
 
         LogUtils.i("Configuration loaded");
-
-        // Map the entities
-        for (String dbName : config.getDatabaseMapping().keySet()) {
-            DatabaseObject database = config.getDatabaseMapping().get(dbName);
-            database.mapEntities();
-        }
     }
 
     /**
@@ -136,6 +130,10 @@ public final class KaolDB {
 
         if (db == null)
             throw new IllegalArgumentException("Database \"" + databaseName + "\" not found");
+
+        // Lazily map the entities
+        if (!db.isMapped())
+            db.mapEntities();
 
         return EntityManagerImpl.getEntityManager(context, db);
     }

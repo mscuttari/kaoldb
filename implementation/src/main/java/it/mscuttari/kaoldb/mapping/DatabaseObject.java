@@ -29,13 +29,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.dump.DatabaseDumpImpl;
 import it.mscuttari.kaoldb.exceptions.DatabaseManagementException;
-import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.DatabaseDump;
+import it.mscuttari.kaoldb.interfaces.DatabaseSchemaMigrator;
 import it.mscuttari.kaoldb.interfaces.SchemaAction;
 import it.mscuttari.kaoldb.interfaces.TableDump;
 
@@ -242,7 +242,7 @@ public class DatabaseObject {
      * @return <code>true</code> if the entities have been mapped at least once;
      *         <code>false</code> otherwise
      */
-    private boolean isMapped() {
+    public boolean isMapped() {
         return mappedOnce && !isMapping();
     }
 

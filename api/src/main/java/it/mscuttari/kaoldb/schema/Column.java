@@ -101,7 +101,9 @@ public final class Column {
      * @return column type
      */
     public static String classToDbType(Class<?> clazz) {
-        if (clazz.equals(int.class) || clazz.equals(Integer.class)) {
+        if (clazz.equals(boolean.class) || clazz.equals(Boolean.class)) {
+            return "INTEGER";
+        } else if (clazz.equals(int.class) || clazz.equals(Integer.class)) {
             return "INTEGER";
         } else if (clazz.equals(long.class) || clazz.equals(Long.class)) {
             return "INTEGER";

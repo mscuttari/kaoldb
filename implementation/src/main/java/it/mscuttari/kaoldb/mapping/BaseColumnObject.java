@@ -183,13 +183,17 @@ public abstract class BaseColumnObject implements ColumnsContainer {
      */
     @SuppressWarnings("unchecked")
     public final Object parseCursor(Cursor c, String alias) {
-        int columnIndex = c.getColumnIndexOrThrow(alias + "." + name);
+        String columnName = alias + "." + name;
+        int columnIndex = c.getColumnIndexOrThrow(columnName);
         int columnType = c.getType(columnIndex);
 
         Object value = null;
 
         if (columnType == Cursor.FIELD_TYPE_INTEGER) {
-            if (type.equals(Integer.class) || type.equals(int.class)) {
+            if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+                value = c.getInt(columnIndex) != 0;
+
+            } else if (type.equals(Integer.class) || type.equals(int.class)) {
                 value = c.getInt(columnIndex);
 
             } else if (type.equals(Long.class) || type.equals(long.class)) {
@@ -203,7 +207,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
                 ((Calendar) value).setTimeInMillis(c.getLong(columnIndex));
 
             } else {
-                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Integer");
+                throw new PojoException("Incompatible data type for column '" + columnName + "': expected " + type.getSimpleName() + ", found Integer");
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_FLOAT) {
@@ -214,7 +218,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
                 value = c.getDouble(columnIndex);
 
             } else {
-                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found Float");
+                throw new PojoException("Incompatible data type for column '" + columnName + "': expected " + type.getSimpleName() + ", found Float");
             }
 
         } else if (columnType == Cursor.FIELD_TYPE_STRING) {
@@ -225,7 +229,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
                 value = c.getString(columnIndex);
 
             } else {
-                throw new PojoException("Incompatible data type: expected " + type.getSimpleName() + ", found String");
+                throw new PojoException("Incompatible data type for column '" + columnName + "': expected " + type.getSimpleName() + ", found String");
             }
         }
 

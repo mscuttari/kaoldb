@@ -53,10 +53,10 @@ public class RowDumpImpl implements RowDump {
                 values.put(column, null);
 
             } else if (dataType == Cursor.FIELD_TYPE_INTEGER) {
-                values.put(column, c.getInt(columnIndex));
+                values.put(column, c.getLong(columnIndex));
 
             } else if (dataType == Cursor.FIELD_TYPE_FLOAT) {
-                values.put(column, c.getFloat(columnIndex));
+                values.put(column, c.getDouble(columnIndex));
 
             } else if (dataType == Cursor.FIELD_TYPE_STRING) {
                 values.put(column, c.getString(columnIndex));

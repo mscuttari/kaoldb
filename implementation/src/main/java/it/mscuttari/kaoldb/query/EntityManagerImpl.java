@@ -18,7 +18,7 @@ package it.mscuttari.kaoldb.query;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.DatabaseUtils;
+import android.database.Cursor;
 
 import androidx.annotation.NonNull;
 import androidx.collection.ArrayMap;
@@ -185,10 +185,8 @@ public class EntityManagerImpl implements EntityManager {
                 ContentValues cv = currentEntity.toContentValues(obj, this);
 
                 // Persist
-                if (cv.size() != 0) {
-                    LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + currentEntity.tableName + ": " + cv.toString());
-                    dbHelper.insert(currentEntity.tableName, null, cv);
-                }
+                LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + currentEntity.tableName + ": " + cv.toString());
+                dbHelper.insert(currentEntity.tableName, null, cv);
 
                 // Go up in the entity hierarchy
                 currentEntity = currentEntity.getParent();
@@ -200,10 +198,6 @@ public class EntityManagerImpl implements EntityManager {
             throw new QueryException(e);
 
         } finally {
-            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM films", null)));
-            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM fantasy_films", null)));
-            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM thriller_films", null)));
-
             // End the transaction and close the database
             dbHelper.endTransaction();
             dbHelper.close();
@@ -257,11 +251,42 @@ public class EntityManagerImpl implements EntityManager {
                     touchedObservers.addAll(obs);
                 }
 
+                boolean isSameChild = true;
+
+                if (currentEntity.getParent() != null) {
+                    EntityObject<?> parent = currentEntity.getParent();
+
+                    for (EntityObject<?> child : parent.children) {
+                        StringBuilder where = new StringBuilder();
+                        Collection<FieldColumnObject> primaryKeys = parent.columns.getPrimaryKeys();
+                        List<String> whereArgs = new ArrayList<>(primaryKeys.size());
+
+                        for (BaseColumnObject primaryKey : primaryKeys) {
+                            if (where.length() > 0)
+                                where.append(" AND ");
+
+                            where.append(primaryKey.name).append(" = ?");
+                            whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
+                        }
+
+                        if (child.equals(currentEntity)) {
+                            try (Cursor c = dbHelper.select("SELECT * FROM " + child.tableName + " WHERE " + where, whereArgs.toArray(new String[primaryKeys.size()]))) {
+                                isSameChild = c.getCount() > 0;
+                            }
+                        } else {
+                            int deleted = dbHelper.delete(child.tableName, where.toString(), whereArgs.toArray(new String[primaryKeys.size()]));
+                            isSameChild &= deleted == 0;
+
+                            if (deleted > 0)
+                                break;
+                        }
+                    }
+                }
+
                 // Extract the current entity data from the object to be persisted
                 ContentValues cv = currentEntity.toContentValues(obj, this);
 
-                // Update
-                if (cv.size() != 0) {
+                if (isSameChild) {
                     StringBuilder where = new StringBuilder();
                     Collection<FieldColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
                     List<String> whereArgs = new ArrayList<>(primaryKeys.size());
@@ -281,6 +306,10 @@ public class EntityManagerImpl implements EntityManager {
                             where.toString(),
                             whereArgs.toArray(new String[primaryKeys.size()])
                     );
+
+                } else {
+                    LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + currentEntity.tableName + ": " + cv.toString());
+                    dbHelper.insert(currentEntity.tableName, null, cv);
                 }
 
                 // Go up in the entity hierarchy

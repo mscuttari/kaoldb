@@ -62,12 +62,12 @@ public class SchemaAddPrimaryColumnTest extends SchemaAbstractTest {
         TableDump tableDump = new TableDumpImpl(db, "table_1");
         List<RowDump> tableRows = tableDump.getRows();
 
-        assertEquals(1, (int) tableRows.get(0).getColumnValue("id"));
-        assertEquals(1, (int) tableRows.get(0).getColumnValue("col_1"));
+        assertEquals(1, (long) tableRows.get(0).getColumnValue("id"));
+        assertEquals(1, (long) tableRows.get(0).getColumnValue("col_1"));
         assertEquals("Test", tableRows.get(0).getColumnValue("col_2"));
 
-        assertEquals(2, (int) tableRows.get(1).getColumnValue("id"));
-        assertEquals(2, (int) tableRows.get(1).getColumnValue("col_1"));
+        assertEquals(2, (long) tableRows.get(1).getColumnValue("id"));
+        assertEquals(2, (long) tableRows.get(1).getColumnValue("col_1"));
         assertNull(tableRows.get(1).getColumnValue("col_2"));
     }
 

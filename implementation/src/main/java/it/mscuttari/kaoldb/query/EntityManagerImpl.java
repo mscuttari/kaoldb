@@ -18,6 +18,12 @@ package it.mscuttari.kaoldb.query;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.DatabaseUtils;
+
+import androidx.annotation.NonNull;
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
+import androidx.lifecycle.LiveData;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -26,22 +32,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import androidx.annotation.NonNull;
-import androidx.collection.ArrayMap;
-import androidx.collection.ArraySet;
-import androidx.lifecycle.LiveData;
-
 import it.mscuttari.kaoldb.LogUtils;
-import it.mscuttari.kaoldb.mapping.BaseColumnObject;
-import it.mscuttari.kaoldb.mapping.DatabaseObject;
-import it.mscuttari.kaoldb.mapping.EntityObject;
-import it.mscuttari.kaoldb.mapping.FieldColumnObject;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.interfaces.PostActionListener;
 import it.mscuttari.kaoldb.interfaces.PreActionListener;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
+import it.mscuttari.kaoldb.mapping.BaseColumnObject;
+import it.mscuttari.kaoldb.mapping.DatabaseObject;
+import it.mscuttari.kaoldb.mapping.EntityObject;
+import it.mscuttari.kaoldb.mapping.FieldColumnObject;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -185,6 +186,7 @@ public class EntityManagerImpl implements EntityManager {
 
                 // Persist
                 if (cv.size() != 0) {
+                    LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + currentEntity.tableName + ": " + cv.toString());
                     dbHelper.insert(currentEntity.tableName, null, cv);
                 }
 
@@ -198,6 +200,10 @@ public class EntityManagerImpl implements EntityManager {
             throw new QueryException(e);
 
         } finally {
+            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM films", null)));
+            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM fantasy_films", null)));
+            LogUtils.d(DatabaseUtils.dumpCursorToString(dbHelper.select("SELECT * FROM thriller_films", null)));
+
             // End the transaction and close the database
             dbHelper.endTransaction();
             dbHelper.close();
@@ -236,7 +242,7 @@ public class EntityManagerImpl implements EntityManager {
         Collection<WeakReference<LiveQuery<?>>> touchedObservers = new ArraySet<>();
 
         // Current working entity and the previous child entity
-        EntityObject currentEntity = database.getEntity(obj.getClass());
+        EntityObject<?> currentEntity = database.getEntity(obj.getClass());
 
         // Open the database and start a transaction
         dbHelper.open();
@@ -267,6 +273,8 @@ public class EntityManagerImpl implements EntityManager {
                         where.append(primaryKey.name).append(" = ?");
                         whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
                     }
+
+                    LogUtils.d("[Database \"" + database.getName() + "\"] update into " + currentEntity.tableName + " where " + where.toString() + " (" + whereArgs + "): " + cv.toString());
 
                     dbHelper.update(currentEntity.tableName,
                             cv,
@@ -350,6 +358,8 @@ public class EntityManagerImpl implements EntityManager {
                     where.append(primaryKey.name).append(" = ?");
                     whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
                 }
+
+                LogUtils.d("[Database \"" + database.getName() + "\"] delete from " + currentEntity.tableName + " where " + where.toString() + " (" + whereArgs + ")");
 
                 dbHelper.delete(currentEntity.tableName,
                         where.toString(),

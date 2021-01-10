@@ -18,6 +18,11 @@ package it.mscuttari.kaoldb.mapping;
 
 import android.content.ContentValues;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
+
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,16 +31,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.collection.ArrayMap;
-import androidx.collection.ArraySet;
-
+import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.JoinTable;
-import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.exceptions.InvalidConfigException;
 
 public class Columns implements ColumnsContainer {
@@ -116,6 +116,11 @@ public class Columns implements ColumnsContainer {
         }
     }
 
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
     /**
      * Get an unmodifiable version of {@link #columns}.
      *
@@ -189,6 +194,13 @@ public class Columns implements ColumnsContainer {
 
                 // Add the column name to the names map
                 namesMap.put(column.name, column);
+
+                if (column instanceof FieldColumnObject) {
+                    FieldColumnObject fieldColumn = (FieldColumnObject) column;
+
+                    if (fieldColumn.primaryKey != null && fieldColumn.primaryKey)
+                        primaryKeys.add(fieldColumn);
+                }
 
                 LogUtils.d("[Entity \"" + entity.getName() + "\"] added column " + column);
             }
@@ -328,7 +340,7 @@ public class Columns implements ColumnsContainer {
      * Iterator to be used to navigate the columns tree and get only the leaves, which indeed are
      * the real columns.
      */
-    static class ColumnsIterator implements Iterator<BaseColumnObject> {
+    static class ColumnsIterator implements Iterator<BaseColumnObject>, Visitor<BaseColumnObject> {
 
         private final Stack<Iterator<? extends ColumnsContainer>> stack = new Stack<>();
         private BaseColumnObject next;
@@ -376,20 +388,42 @@ public class Columns implements ColumnsContainer {
                 // Now an iterator sits on top
                 // Consume next elem from topmost iterator
                 ColumnsContainer peek = stack.peek().next();
+                BaseColumnObject result = peek.accept(this);
 
-                if (peek instanceof BaseColumnObject) {
-                    // Next element found
-                    return (BaseColumnObject) peek;
-
-                } else {
-                    stack.push(peek.iterator());
-                }
+                if (result != null)
+                    return result;
             }
 
             // No further elements are available, all iterators are depleted
             return null;
         }
 
+        @Override
+        public BaseColumnObject visit(Columns container) {
+            stack.push(container.iterator());
+            return null;
+        }
+
+        @Override
+        public BaseColumnObject visit(DiscriminatorColumnObject column) {
+            return column;
+        }
+
+        @Override
+        public BaseColumnObject visit(JoinColumnObject column) {
+            return column;
+        }
+
+        @Override
+        public BaseColumnObject visit(JoinColumnsObject container) {
+            stack.push(container.iterator());
+            return null;
+        }
+
+        @Override
+        public BaseColumnObject visit(SimpleColumnObject column) {
+            return column;
+        }
     }
 
 }

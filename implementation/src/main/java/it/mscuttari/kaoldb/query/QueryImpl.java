@@ -19,6 +19,10 @@ package it.mscuttari.kaoldb.query;
 import android.database.Cursor;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
+import androidx.collection.ArraySet;
+import androidx.lifecycle.LiveData;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,27 +30,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import androidx.annotation.NonNull;
-import androidx.collection.ArraySet;
-import androidx.lifecycle.LiveData;
-
+import it.mscuttari.kaoldb.ConcurrentSession;
+import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
-import it.mscuttari.kaoldb.ConcurrentSession;
-import it.mscuttari.kaoldb.LogUtils;
-import it.mscuttari.kaoldb.mapping.DatabaseObject;
-import it.mscuttari.kaoldb.mapping.EntityObject;
-import it.mscuttari.kaoldb.mapping.FieldColumnObject;
-import it.mscuttari.kaoldb.mapping.Relationship;
 import it.mscuttari.kaoldb.exceptions.QueryException;
 import it.mscuttari.kaoldb.interfaces.Expression;
 import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
+import it.mscuttari.kaoldb.mapping.DatabaseObject;
+import it.mscuttari.kaoldb.mapping.EntityObject;
+import it.mscuttari.kaoldb.mapping.FieldColumnObject;
+import it.mscuttari.kaoldb.mapping.Relationship;
 
-import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.*;
+import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.MANY_TO_MANY;
+import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.MANY_TO_ONE;
+import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.ONE_TO_MANY;
+import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.ONE_TO_ONE;
 
 /**
  * @param <M>   result objects class

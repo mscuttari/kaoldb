@@ -18,6 +18,7 @@ package it.mscuttari.kaoldb.query;
 
 import android.util.Pair;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -577,7 +578,7 @@ final class PredicateImpl<T> implements ExpressionInt {
         if (property.columnAnnotation == Column.class) {
             Column annotation = field.getAnnotation(Column.class);
             String column = escape(root.getAlias()) + "." + escape(annotation.name());
-            result.add(new Pair<>(column, escape(obj)));
+            result.add(new Pair<>(column, escapeObject(String.valueOf(obj))));
 
             return result;
         }
@@ -595,7 +596,7 @@ final class PredicateImpl<T> implements ExpressionInt {
 
             for (BaseColumnObject primaryKey : referencedEntity.columns.getPrimaryKeys()) {
                 String column = escape(referencedEntityAlias) + "." + escape(primaryKey.name);
-                String primaryKeyValue = escape(String.valueOf(primaryKey.getValue(obj)));
+                String primaryKeyValue = escapeObject(String.valueOf(primaryKey.getValue(obj)));
 
                 result.add(new Pair<>(column, primaryKeyValue));
             }
@@ -621,6 +622,33 @@ final class PredicateImpl<T> implements ExpressionInt {
 
         return result;
     }
+
+    @CheckResult
+    public static String escapeObject(String str) {
+        if (str == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("'");
+
+        int length = str.length();
+        for (int i = 0; i < length; i++) {
+            char c = str.charAt(i);
+
+            if (c == '\'') {
+                sb.append("'");
+            }
+
+            sb.append(c);
+        }
+
+        sb.append("'");
+
+        return sb.toString();
+    }
+
 
     /**
      * Fake iterator to be used to iterate on a single predicate.

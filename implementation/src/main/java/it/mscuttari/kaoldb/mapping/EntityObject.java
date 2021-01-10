@@ -31,6 +31,7 @@ import org.objenesis.instantiator.ObjectInstantiator;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -175,7 +176,7 @@ public class EntityObject<T> {
         EntityObject<T> result = new EntityObject<>(db, clazz);
 
         ConcurrentSession.singleTask(() -> {
-            LogUtils.d("[Database \"" + db.getName() + "\"] mapping class " + clazz.getSimpleName());
+            LogUtils.d("[Database \"" + db.getName() + "\"] mapping class \"" + clazz.getSimpleName() + "\"");
 
             result.loadTableName();
             result.loadParent();
@@ -284,6 +285,7 @@ public class EntityObject<T> {
         }
 
         if (parent != null) {
+            LogUtils.d("[Entity \"" + getName() + "\"] found parent \"" + parent.getName() + "\"");
             parent.addChild(this);
         }
 
@@ -302,7 +304,7 @@ public class EntityObject<T> {
      */
     private void addChild(EntityObject<? extends T> child) {
         doAndNotifyAll(this, () -> {
-            LogUtils.d("[Entity \"" + getName() + "\"] found child " + child.getName());
+            LogUtils.d("[Entity \"" + getName() + "\"] found child \"" + child.getName() + "\"");
             children.add(child);
         });
     }
@@ -467,7 +469,7 @@ public class EntityObject<T> {
         EntityObject<? super T> parent = getParent();
 
         if (parent != null) {
-            waitWhile(this, () -> !parent.parentColumnsInherited.get());
+            waitWhile(parent, () -> !parent.parentColumnsInherited.get());
             columns.addAll(parent.columns.getPrimaryKeys());
         }
 
@@ -478,7 +480,7 @@ public class EntityObject<T> {
 
         if (children.size() != 0) {
             if (!clazz.isAnnotationPresent(DiscriminatorColumn.class))
-                throw new InvalidConfigException("Class " + getName() + " has @Inheritance annotation but not @DiscriminatorColumn");
+                throw new InvalidConfigException("Class " + getName() + " has no @DiscriminatorColumn");
 
             DiscriminatorColumn discriminatorColumnAnnotation = clazz.getAnnotation(DiscriminatorColumn.class);
 
@@ -857,39 +859,7 @@ public class EntityObject<T> {
         Collection<String> constraints = new ArrayList<>();
 
         for (ColumnsContainer container : columns.getColumnsContainers()) {
-            if (container instanceof JoinColumnObject) {
-                // @JoinColumn
-                JoinColumnObject joinColumn = (JoinColumnObject) container;
-                JoinColumn annotation = joinColumn.field.getAnnotation(JoinColumn.class);
-                EntityObject<?> linkedEntity = db.getEntity(joinColumn.field.getType());
-
-                constraints.add(
-                        "FOREIGN KEY (" + escape(joinColumn.name) + ") " +
-                        "REFERENCES " + escape(linkedEntity.tableName) + " (" + escape(annotation.referencedColumnName()) + ") " +
-                        joinColumn.propagation
-                );
-
-            } else if (container instanceof JoinColumnsObject) {
-                // @JoinColumns
-                JoinColumnsObject joinColumns = (JoinColumnsObject) container;
-                EntityObject<?> linkedEntity = db.getEntity(joinColumns.field.getType());
-
-                List<String> local = new ArrayList<>();          // Local columns
-                List<String> referenced = new ArrayList<>();     // Referenced columns
-
-                for (BaseColumnObject column : joinColumns) {
-                    JoinColumnObject joinColumn = (JoinColumnObject) column;
-                    local.add(joinColumn.name);
-                    referenced.add(joinColumn.linkedColumn.name);
-                }
-
-                constraints.add(
-                        "FOREIGN KEY (" + local.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
-                        "REFERENCES " + escape(linkedEntity.tableName) + " (" +
-                        referenced.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
-                        joinColumns.propagation
-                );
-            }
+            constraints.addAll(container.accept(new RelationshipsContraintsVisitor(db)));
         }
 
         if (constraints.isEmpty()) {
@@ -897,6 +867,70 @@ public class EntityObject<T> {
         }
 
         return constraints.stream().collect(Collectors.joining(", "));
+    }
+
+    private static class RelationshipsContraintsVisitor implements ColumnsContainer.Visitor<Collection<String>> {
+
+        private final DatabaseObject db;
+
+        public RelationshipsContraintsVisitor(DatabaseObject db) {
+            this.db = db;
+        }
+
+        @Override
+        public Collection<String> visit(Columns container) {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public Collection<String> visit(DiscriminatorColumnObject column) {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public Collection<String> visit(JoinColumnObject column) {
+            Collection<String> constraints = new ArrayList<>();
+
+            JoinColumn annotation = column.field.getAnnotation(JoinColumn.class);
+            EntityObject<?> linkedEntity = db.getEntity(column.field.getType());
+
+            String constraint = "FOREIGN KEY (" + escape(column.name) + ") " +
+                    "REFERENCES " + escape(linkedEntity.tableName) +
+                    " (" + escape(annotation.referencedColumnName()) + ") " +
+                    column.propagation;
+
+            constraints.add(constraint);
+            return constraints;
+        }
+
+        @Override
+        public Collection<String> visit(JoinColumnsObject container) {
+            Collection<String> constraints = new ArrayList<>();
+
+            EntityObject<?> linkedEntity = db.getEntity(container.field.getType());
+
+            List<String> local = new ArrayList<>();          // Local columns
+            List<String> referenced = new ArrayList<>();     // Referenced columns
+
+            for (BaseColumnObject column : container) {
+                JoinColumnObject joinColumn = (JoinColumnObject) column;
+                local.add(joinColumn.name);
+                referenced.add(joinColumn.linkedColumn.name);
+            }
+
+            String constraint = "FOREIGN KEY (" + local.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
+                    "REFERENCES " + escape(linkedEntity.tableName) + " (" +
+                    referenced.stream().map(StringUtils::escape).collect(Collectors.joining(", ")) + ") " +
+                    container.propagation;
+
+            constraints.add(constraint);
+            return constraints;
+        }
+
+        @Override
+        public Collection<String> visit(SimpleColumnObject column) {
+            return Collections.emptyList();
+        }
     }
 
 }

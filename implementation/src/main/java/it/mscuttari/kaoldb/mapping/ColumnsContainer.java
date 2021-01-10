@@ -60,4 +60,23 @@ public interface ColumnsContainer extends Iterable<BaseColumnObject> {
      */
     void addToContentValues(@NonNull ContentValues cv, Object obj);
 
+    /**
+     * Accept a visitor.
+     *
+     * @param visitor visitor
+     * @param <T>     result data type
+     * @return data
+     */
+    <T> T accept(Visitor<T> visitor);
+
+    interface Visitor<T> {
+
+        T visit(Columns container);
+        T visit(DiscriminatorColumnObject column);
+        T visit(JoinColumnObject column);
+        T visit(JoinColumnsObject container);
+        T visit(SimpleColumnObject column);
+
+    }
+
 }

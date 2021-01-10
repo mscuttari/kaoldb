@@ -16,6 +16,8 @@
 
 package it.mscuttari.kaoldb.mapping;
 
+import androidx.annotation.NonNull;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -26,16 +28,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import androidx.annotation.NonNull;
+import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.annotations.ManyToMany;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
 import it.mscuttari.kaoldb.annotations.OneToMany;
 import it.mscuttari.kaoldb.annotations.OneToOne;
-import it.mscuttari.kaoldb.query.LazyCollection;
-import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.exceptions.MappingException;
+import it.mscuttari.kaoldb.query.LazyCollection;
 
-import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.*;
+import static it.mscuttari.kaoldb.mapping.Relationship.RelationshipType.ONE_TO_ONE;
 
 /**
  * Maps a relationship.
@@ -81,8 +82,8 @@ public class Relationship {
     /**
      * Constructor.
      *
-     * @param db        database
-     * @param field     field declaring the relationship
+     * @param db    database
+     * @param field field declaring the relationship
      */
     public Relationship(@NonNull DatabaseObject db, @NonNull Field field) {
         this.field = field;
@@ -131,7 +132,7 @@ public class Relationship {
     /**
      * Get the data type of a field that implements the {@link Collection} interface.
      *
-     * @param field     field implementing the Collection interface
+     * @param field field implementing the Collection interface
      * @return data type (class specified in the diamond operator of the Collection)
      */
     private Class<?> getCollectionType(Field field) {
@@ -226,7 +227,7 @@ public class Relationship {
     /**
      * Get the raw class (thus without any diamond operator) of a Type.
      *
-     * @param type  Type representing the class
+     * @param type Type representing the class
      * @return class erasure
      */
     private Class<?> getTypeRawClass(Type type) {
@@ -240,7 +241,7 @@ public class Relationship {
     /**
      * Get the class that owns the relationship.
      *
-     * @return  owning class
+     * @return owning class
      */
     public Class<?> getOwningClass() {
         return owning ? local : linked;

@@ -80,8 +80,8 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Constructor.
      *
-     * @param db                database
-     * @param entity            entity the column belongs to
+     * @param db     database
+     * @param entity entity the column belongs to
      */
     public BaseColumnObject(@NonNull DatabaseObject db,
                             @NonNull EntityObject<?> entity) {
@@ -118,8 +118,23 @@ public abstract class BaseColumnObject implements ColumnsContainer {
 
     @Override
     public final void map() {
-        mappingSession.submit(this::mapAsync);
+        mappingSession.submit(() -> {
+            loadCustomColumnDefinition();
+            loadType();
+            loadNullableProperty();
+            loadPrimaryKeyProperty();
+            loadUniqueProperty();
+            loadDefaultValue();
+            mapAsync();
+        });
     }
+
+    protected abstract void loadCustomColumnDefinition();
+    protected abstract void loadType();
+    protected abstract void loadNullableProperty();
+    protected abstract void loadPrimaryKeyProperty();
+    protected abstract void loadUniqueProperty();
+    protected abstract void loadDefaultValue();
 
     /**
      * Actions that are executed asynchronously in order to load the column properties.
@@ -139,7 +154,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Extract from an object the value associated to this column.
      *
-     * @param obj       object to get the value from
+     * @param obj object to get the value from
      * @return value
      */
     @Nullable
@@ -148,8 +163,8 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Set the object's field associated to this column to a given value.
      *
-     * @param obj       object containing the field to be set
-     * @param value     value to be set
+     * @param obj   object containing the field to be set
+     * @param value value to be set
      */
     public abstract void setValue(Object obj, Object value);
 
@@ -164,21 +179,27 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Check if the object returned by {@link #getValue(Object)} already exists in the database.
      *
-     * @param obj               object containing this column
-     * @param entityManager     entity manager
-     *
+     * @param obj           object containing this column
+     * @param entityManager entity manager
      * @return <code>true</code> if the data already exits in the database; <code>false</code> otherwise
      */
     public abstract boolean isDataExisting(Object obj, EntityManager entityManager);
 
     /**
+     * Accept a visitor.
+     *
+     * @param visitor visitor
+     * @param <T>     return type
+     * @return data
+     */
+    public abstract <T> T accept(Visitor<T> visitor);
+
+    /**
      * Extract the column value from a {@link Cursor}.
      *
-     * @param c         cursor
-     * @param alias     alias of the table
-     *
+     * @param c     cursor
+     * @param alias alias of the table
      * @return column value
-     *
      * @throws PojoException if the data type is not compatible with the one found in the cursor
      */
     @SuppressWarnings("unchecked")
@@ -254,9 +275,9 @@ public abstract class BaseColumnObject implements ColumnsContainer {
      * </ul>
      * </p>
      *
-     * @param cv        content values
-     * @param column    column name
-     * @param value     value
+     * @param cv     content values
+     * @param column column name
+     * @param value  value
      */
     public static void insertIntoContentValues(ContentValues cv, String column, Object value) {
         if (value == null) {
@@ -359,7 +380,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Get the database column type corresponding to a given Java class
      *
-     * @param clazz     Java class
+     * @param clazz Java class
      * @return column type
      */
     public static String classToDbType(Class<?> clazz) {
@@ -392,7 +413,7 @@ public abstract class BaseColumnObject implements ColumnsContainer {
         /**
          * Constructor.
          *
-         * @param column    column to be returned during iteration
+         * @param column column to be returned during iteration
          */
         public SingleColumnIterator(BaseColumnObject column) {
             this.column = column;
@@ -411,6 +432,14 @@ public abstract class BaseColumnObject implements ColumnsContainer {
                 column = null;
             }
         }
+
+    }
+
+    public interface Visitor<T> {
+
+        T visit(DiscriminatorColumnObject column);
+        T visit(JoinColumnObject column);
+        T visit(SimpleColumnObject column);
 
     }
 

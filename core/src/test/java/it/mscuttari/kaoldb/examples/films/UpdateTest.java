@@ -21,8 +21,14 @@ import org.junit.Test;
 import java.util.Calendar;
 
 import it.mscuttari.kaoldb.examples.films.models.Country;
+import it.mscuttari.kaoldb.examples.films.models.FantasyFilm;
+import it.mscuttari.kaoldb.examples.films.models.Film;
+import it.mscuttari.kaoldb.examples.films.models.FilmRestriction;
+import it.mscuttari.kaoldb.examples.films.models.Film_;
 import it.mscuttari.kaoldb.examples.films.models.Person;
 import it.mscuttari.kaoldb.examples.films.models.Person_;
+import it.mscuttari.kaoldb.examples.films.models.ThrillerFilm;
+import it.mscuttari.kaoldb.interfaces.Query;
 import it.mscuttari.kaoldb.interfaces.QueryBuilder;
 import it.mscuttari.kaoldb.interfaces.Root;
 
@@ -49,6 +55,44 @@ public class UpdateTest extends AbstractFilmTest {
         );
 
         assertEquals(person, qb.build(personRoot).getSingleResult());
+    }
+
+    @Test
+    public void updateFilm() {
+        FantasyFilm film = new FantasyFilm("Test", 2020, null, 160, null);
+        film.test = "AAA";
+
+        em.persist(film.genre);
+        em.persist(film);
+
+        film.test = "BBB";
+        em.update(film);
+
+        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
+        Root<Film> root = qb.getRoot(Film.class);
+
+        Query<Film> query = qb.from(root).where(root.eq(Film_.title, "Test")).build(root);
+        Film result = query.getSingleResult();
+        assertEquals(film, result);
+    }
+
+    @Test
+    public void changeFilm() {
+        Film film = new FantasyFilm("Test", 2020, null, 160, null);
+
+        em.persist(film.genre);
+        em.persist(film);
+
+        film = new ThrillerFilm("Test", 2020, null, 160, FilmRestriction.MIN14);
+        em.persist(film.genre);
+        em.update(film);
+
+        QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);
+        Root<Film> root = qb.getRoot(Film.class);
+
+        Query<Film> query = qb.from(root).where(root.eq(Film_.title, "Test")).build(root);
+        Film result = query.getSingleResult();
+        assertEquals(film, result);
     }
 
 }

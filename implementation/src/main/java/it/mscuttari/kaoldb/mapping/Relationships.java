@@ -65,7 +65,7 @@ public class Relationships implements Iterable<Relationship> {
     /**
      * Add a relationship.
      *
-     * @param relationship      relationship to be added
+     * @param relationship relationship to be added
      * @return <code>true</code> if the relationships collection has changed; <code>false otherwise</code>
      */
     public synchronized boolean add(Relationship relationship) {
@@ -76,7 +76,7 @@ public class Relationships implements Iterable<Relationship> {
     /**
      * Check if a field leads to a relationship.
      *
-     * @param fieldName     field name
+     * @param fieldName field name
      * @return <code>true</code> if the field is annotated with {@link OneToOne},
      *         {@link OneToMany}, {@link ManyToOne} or {@link ManyToMany}; <code>false</code>
      *         otherwise
@@ -89,7 +89,7 @@ public class Relationships implements Iterable<Relationship> {
     /**
      * Get a relationship given the name of the field generating it.
      *
-     * @param fieldName     field name
+     * @param fieldName field name
      * @return relationship
      * @throws NoSuchElementException if there is no relationship linked to that field
      */

@@ -58,25 +58,21 @@ final class DiscriminatorColumnObject extends BaseColumnObject {
 
     @Override
     protected void mapAsync() {
-        loadCustomColumnDefinition();
-        loadType();
-        loadNullableProperty();
-        loadPrimaryKeyProperty();
-        loadUniqueProperty();
-        loadDefaultValue();
+
     }
 
-    /**
-     * Determine the custom column definition.
-     */
-    private void loadCustomColumnDefinition() {
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    protected void loadCustomColumnDefinition() {
         doAndNotifyAll(this, () -> customColumnDefinition = null);
     }
 
-    /**
-     * Determine the column type.
-     */
-    private void loadType() {
+    @Override
+    protected void loadType() {
         doAndNotifyAll(this, () -> {
             if (annotation.discriminatorType() == DiscriminatorType.CHAR) {
                 type = Character.class;
@@ -88,32 +84,23 @@ final class DiscriminatorColumnObject extends BaseColumnObject {
         });
     }
 
-    /**
-     * Determine whether the column is nullable or not.
-     */
-    private void loadNullableProperty() {
+    @Override
+    protected void loadNullableProperty() {
         doAndNotifyAll(this, () -> nullable = false);
     }
 
-    /**
-     * Determine whether the column is a primary key or not.
-     */
-    private void loadPrimaryKeyProperty() {
+    @Override
+    protected void loadPrimaryKeyProperty() {
         doAndNotifyAll(this, () -> primaryKey = false);
     }
 
-    /**
-     * Determine whether the column value should be unique or not.
-     */
-    private void loadUniqueProperty() {
+    @Override
+    protected void loadUniqueProperty() {
         doAndNotifyAll(this, () -> unique = false);
     }
 
-    /**
-     * Determine the default value.<br>
-     * The value is stored as a string in order to be ready for SQL statement generation.
-     */
-    private void loadDefaultValue() {
+    @Override
+    protected void loadDefaultValue() {
         doAndNotifyAll(this, () -> defaultValue = null);
     }
 
@@ -159,4 +146,8 @@ final class DiscriminatorColumnObject extends BaseColumnObject {
         }
     }
 
+    @Override
+    public <T> T accept(ColumnsContainer.Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

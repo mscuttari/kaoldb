@@ -18,9 +18,9 @@ package it.mscuttari.kaoldb.mapping;
 
 import android.content.ContentValues;
 
-import java.lang.reflect.Field;
-
 import androidx.annotation.NonNull;
+
+import java.lang.reflect.Field;
 
 import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
@@ -69,41 +69,28 @@ final class JoinColumnObject extends FieldColumnObject {
         super(db, entity, field);
 
         this.annotation = annotation;
-        loadName();
+        this.name = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
     }
 
     @Override
     protected void mapAsync() {
-        loadCustomColumnDefinition();
-        loadType();
-        loadNullableProperty();
-        loadPrimaryKeyProperty();
-        loadUniqueProperty();
-        loadDefaultValue();
         loadPropagationProperty();
         loadLinkedColumn();
     }
 
-    /**
-     * Determine the column name.
-     */
-    private void loadName() {
-        String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
-        doAndNotifyAll(this, () -> name = result);
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
-    /**
-     * Determine the custom column definition.
-     */
-    private void loadCustomColumnDefinition() {
+    @Override
+    protected void loadCustomColumnDefinition() {
         String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
         doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
 
-    /**
-     * Determine the column type.
-     */
-    private void loadType() {
+    @Override
+    protected void loadType() {
         Class<?> referencedClass = null;
         String referencedColumnName = null;
 
@@ -178,10 +165,8 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> type = column.type);
     }
 
-    /**
-     * Determine whether the column is nullable or not.
-     */
-    private void loadNullableProperty() {
+    @Override
+    protected void loadNullableProperty() {
         boolean result;
 
         if (annotation.nullable()) {
@@ -205,26 +190,20 @@ final class JoinColumnObject extends FieldColumnObject {
         doAndNotifyAll(this, () -> nullable = result);
     }
 
-    /**
-     * Determine whether the column is a primary key or not.
-     */
-    private void loadPrimaryKeyProperty() {
+    @Override
+    protected void loadPrimaryKeyProperty() {
         boolean result = field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(JoinTable.class);
         doAndNotifyAll(this, () -> primaryKey = result);
     }
 
-    /**
-     * Determine whether the column value should be unique or not.
-     */
-    private void loadUniqueProperty() {
+    @Override
+    protected void loadUniqueProperty() {
         boolean result = annotation.unique();
         doAndNotifyAll(this, () -> unique = result);
     }
 
-    /**
-     * Determine the default value.
-     */
-    private void loadDefaultValue() {
+    @Override
+    protected void loadDefaultValue() {
         String result = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
         doAndNotifyAll(this, () -> defaultValue = result);
     }
@@ -275,6 +254,11 @@ final class JoinColumnObject extends FieldColumnObject {
     }
 
     @Override
+    public boolean hasRelationship() {
+        return true;
+    }
+
+    @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {
         Object sourceObject = getValue(obj);
 
@@ -290,8 +274,10 @@ final class JoinColumnObject extends FieldColumnObject {
     }
 
     @Override
-    public boolean hasRelationship() {
-        return true;
+    public <T> T accept(ColumnsContainer.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
+
+
 
 }

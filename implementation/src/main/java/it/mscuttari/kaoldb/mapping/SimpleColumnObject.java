@@ -18,11 +18,11 @@ package it.mscuttari.kaoldb.mapping;
 
 import android.content.ContentValues;
 
+import androidx.annotation.NonNull;
+
 import java.lang.reflect.Field;
 import java.util.Calendar;
 import java.util.Date;
-
-import androidx.annotation.NonNull;
 
 import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.Id;
@@ -50,76 +50,55 @@ final class SimpleColumnObject extends FieldColumnObject {
 
         super(db, entity, field);
 
-        loadName();
+        Column annotation = field.getAnnotation(Column.class);
+        this.name = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
     }
 
     @Override
     public void mapAsync() {
-        loadCustomColumnDefinition();
-        loadType();
-        loadNullableProperty();
-        loadPrimaryKeyProperty();
-        loadUniqueProperty();
-        loadDefaultValue();
+
     }
 
-    /**
-     * Determine the column name.
-     */
-    private void loadName() {
-        Column annotation = field.getAnnotation(Column.class);
-        String result = annotation.name().isEmpty() ? getDefaultName(field) : annotation.name();
-        doAndNotifyAll(this, () -> name = result);
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
-    /**
-     * Determine the custom column definition.
-     */
-    private void loadCustomColumnDefinition() {
+    @Override
+    protected void loadCustomColumnDefinition() {
         Column annotation = field.getAnnotation(Column.class);
         String result = annotation.columnDefinition().isEmpty() ? null : annotation.columnDefinition();
         doAndNotifyAll(this, () -> customColumnDefinition = result);
     }
 
-    /**
-     * Determine the column type.
-     */
-    private void loadType() {
+    @Override
+    protected void loadType() {
         Class<?> result = field.getType();
         doAndNotifyAll(this, () -> type = result);
     }
 
-    /**
-     * Determine whether the column is nullable or not.
-     */
-    private void loadNullableProperty() {
+    @Override
+    protected void loadNullableProperty() {
         Column annotation = field.getAnnotation(Column.class);
         boolean result = annotation.nullable();
         doAndNotifyAll(this, () -> nullable = result);
     }
 
-    /**
-     * Determine whether the column is a primary key or not.
-     */
-    private void loadPrimaryKeyProperty() {
+    @Override
+    protected void loadPrimaryKeyProperty() {
         boolean result = field.isAnnotationPresent(Id.class);
         doAndNotifyAll(this, () -> primaryKey = result);
     }
 
-    /**
-     * Determine whether the column value should be unique or not.
-     */
-    private void loadUniqueProperty() {
+    @Override
+    protected void loadUniqueProperty() {
         Column annotation = field.getAnnotation(Column.class);
         boolean result = annotation.unique();
         doAndNotifyAll(this, () -> unique = result);
     }
 
-    /**
-     * Determine the default value.<br>
-     * The value is stored as a string in order to be ready for SQL statement generation.
-     */
-    private void loadDefaultValue() {
+    @Override
+    protected void loadDefaultValue() {
         Column annotation = field.getAnnotation(Column.class);
         String def = annotation.defaultValue().isEmpty() ? null : annotation.defaultValue();
 
@@ -161,14 +140,19 @@ final class SimpleColumnObject extends FieldColumnObject {
     }
 
     @Override
+    public boolean hasRelationship() {
+        return false;
+    }
+
+    @Override
     public void addToContentValues(@NonNull ContentValues cv, Object obj) {
         Object value = getValue(obj);
         insertIntoContentValues(cv, name, value);
     }
 
     @Override
-    public boolean hasRelationship() {
-        return false;
+    public <T> T accept(ColumnsContainer.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

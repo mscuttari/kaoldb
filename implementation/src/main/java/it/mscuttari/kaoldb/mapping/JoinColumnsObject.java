@@ -16,9 +16,10 @@
 
 package it.mscuttari.kaoldb.mapping;
 
+import androidx.annotation.NonNull;
+
 import java.lang.reflect.Field;
 
-import androidx.annotation.NonNull;
 import it.mscuttari.kaoldb.annotations.JoinColumn;
 import it.mscuttari.kaoldb.annotations.JoinColumns;
 import it.mscuttari.kaoldb.annotations.ManyToOne;
@@ -81,6 +82,11 @@ final class JoinColumnsObject extends Columns {
         for (BaseColumnObject column : this) {
             column.map();
         }
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

@@ -16,9 +16,6 @@
 
 package it.mscuttari.kaoldb.examples.films.models;
 
-import java.util.Objects;
-
-import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Table;
@@ -27,9 +24,6 @@ import it.mscuttari.kaoldb.annotations.Table;
 @Table(name = "fantasy_films")
 @DiscriminatorValue(value = "Fantasy")
 public final class FantasyFilm extends Film {
-
-    @Column(name = "test")
-    public String test;
 
     /**
      * Constructor
@@ -42,20 +36,6 @@ public final class FantasyFilm extends Film {
      */
     public FantasyFilm(String title, Integer year, Person director, Integer length, FilmRestriction restriction) {
         super(title, year, new Genre("Fantasy"), director, length, restriction);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        FantasyFilm that = (FantasyFilm) o;
-        return Objects.equals(test, that.test);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), test);
     }
 
 }

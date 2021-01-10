@@ -593,6 +593,7 @@ public class EntityObject<T> {
         // which will be a subclass of the requested one.
 
         EntityObject<? extends T> resultEntity = this;
+        String fullAlias = alias;
 
         // Go down to the child class.
         // Each iteration will go one step down through the hierarchy tree.
@@ -600,7 +601,7 @@ public class EntityObject<T> {
         while (resultEntity.children.size() != 0) {
             // Get the discriminator value
             assert resultEntity.discriminatorColumn != null;
-            String discriminatorColumnName = alias + "." + resultEntity.discriminatorColumn.name;
+            String discriminatorColumnName = fullAlias + "." + resultEntity.discriminatorColumn.name;
             int columnIndex = c.getColumnIndexOrThrow(discriminatorColumnName);
             Object discriminatorValue = null;
 
@@ -612,6 +613,7 @@ public class EntityObject<T> {
 
             // Determine the child class according to the discriminator value specified
             resultEntity = resultEntity.getChild(discriminatorValue);
+            fullAlias = alias + resultEntity.getName();
         }
 
         T result = resultEntity.newInstance();

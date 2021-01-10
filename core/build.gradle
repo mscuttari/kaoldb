@@ -53,7 +53,7 @@ dependencies {
     implementation project(path: ':implementation')
 
     implementation 'com.android.support:multidex:1.0.3'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.1'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
     implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
@@ -76,7 +76,7 @@ dependencies {
     testImplementation group: 'androidx.test', name: 'core', version: '1.3.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-beta01'
+    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-rc01'
 }
 
 apply from: rootProject.file('release-bintray.gradle')

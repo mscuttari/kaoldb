@@ -60,12 +60,10 @@ public class UpdateTest extends AbstractFilmTest {
     @Test
     public void updateFilm() {
         FantasyFilm film = new FantasyFilm("Test", 2020, null, 160, null);
-        film.test = "AAA";
 
         em.persist(film.genre);
         em.persist(film);
 
-        film.test = "BBB";
         em.update(film);
 
         QueryBuilder<Film> qb = em.getQueryBuilder(Film.class);

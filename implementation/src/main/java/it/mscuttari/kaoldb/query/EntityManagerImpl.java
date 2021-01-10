@@ -19,6 +19,7 @@ package it.mscuttari.kaoldb.query;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.collection.ArrayMap;
@@ -27,6 +28,7 @@ import androidx.lifecycle.LiveData;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +44,6 @@ import it.mscuttari.kaoldb.interfaces.Root;
 import it.mscuttari.kaoldb.mapping.BaseColumnObject;
 import it.mscuttari.kaoldb.mapping.DatabaseObject;
 import it.mscuttari.kaoldb.mapping.EntityObject;
-import it.mscuttari.kaoldb.mapping.FieldColumnObject;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -70,8 +71,8 @@ public class EntityManagerImpl implements EntityManager {
     /**
      * Constructor.
      *
-     * @param context       application context
-     * @param database      database
+     * @param context  application context
+     * @param database database
      */
     private EntityManagerImpl(@NonNull Context context, @NonNull DatabaseObject database) {
         this.context = new WeakReference<>(checkNotNull(context));
@@ -87,9 +88,8 @@ public class EntityManagerImpl implements EntityManager {
      * database connection opened towards each database.
      * </p>
      *
-     * @param context       context
-     * @param database      database object
-     *
+     * @param context  context
+     * @param database database object
      * @return singleton instance
      */
     public static EntityManagerImpl getEntityManager(@NonNull Context context, @NonNull DatabaseObject database) {
@@ -251,30 +251,22 @@ public class EntityManagerImpl implements EntityManager {
                     touchedObservers.addAll(obs);
                 }
 
+                // If the subclass is changed, we need to remove the entries of the old subclass tables
                 boolean isSameChild = true;
 
                 if (currentEntity.getParent() != null) {
                     EntityObject<?> parent = currentEntity.getParent();
 
                     for (EntityObject<?> child : parent.children) {
-                        StringBuilder where = new StringBuilder();
-                        Collection<FieldColumnObject> primaryKeys = parent.columns.getPrimaryKeys();
-                        List<String> whereArgs = new ArrayList<>(primaryKeys.size());
-
-                        for (BaseColumnObject primaryKey : primaryKeys) {
-                            if (where.length() > 0)
-                                where.append(" AND ");
-
-                            where.append(primaryKey.name).append(" = ?");
-                            whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
-                        }
+                        Pair<String, String[]> where = getWhereFilter(parent.columns.getPrimaryKeys(), obj);
 
                         if (child.equals(currentEntity)) {
-                            try (Cursor c = dbHelper.select("SELECT * FROM " + child.tableName + " WHERE " + where, whereArgs.toArray(new String[primaryKeys.size()]))) {
+                            try (Cursor c = dbHelper.select("SELECT * FROM " + child.tableName + " WHERE " + where.first, where.second)) {
                                 isSameChild = c.getCount() > 0;
                             }
                         } else {
-                            int deleted = dbHelper.delete(child.tableName, where.toString(), whereArgs.toArray(new String[primaryKeys.size()]));
+                            LogUtils.d("[Database \"" + database.getName() + "\"] delete from " + child.tableName + " where " + where.first + " (" + Arrays.toString(where.second) + ")");
+                            int deleted = dbHelper.delete(child.tableName, where.first, where.second);
                             isSameChild &= deleted == 0;
 
                             if (deleted > 0)
@@ -287,24 +279,13 @@ public class EntityManagerImpl implements EntityManager {
                 ContentValues cv = currentEntity.toContentValues(obj, this);
 
                 if (isSameChild) {
-                    StringBuilder where = new StringBuilder();
-                    Collection<FieldColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
-                    List<String> whereArgs = new ArrayList<>(primaryKeys.size());
-
-                    for (BaseColumnObject primaryKey : primaryKeys) {
-                        if (where.length() > 0)
-                            where.append(" AND ");
-
-                        where.append(primaryKey.name).append(" = ?");
-                        whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
-                    }
-
-                    LogUtils.d("[Database \"" + database.getName() + "\"] update into " + currentEntity.tableName + " where " + where.toString() + " (" + whereArgs + "): " + cv.toString());
+                    Pair<String, String[]> where = getWhereFilter(currentEntity.columns.getPrimaryKeys(), obj);
+                    LogUtils.d("[Database \"" + database.getName() + "\"] update into " + currentEntity.tableName + " where " + where.first + " (" + Arrays.toString(where.second) + "): " + cv.toString());
 
                     dbHelper.update(currentEntity.tableName,
                             cv,
-                            where.toString(),
-                            whereArgs.toArray(new String[primaryKeys.size()])
+                            where.first,
+                            where.second
                     );
 
                 } else {
@@ -376,24 +357,9 @@ public class EntityManagerImpl implements EntityManager {
                 }
 
                 // Remove
-                StringBuilder where = new StringBuilder();
-                Collection<FieldColumnObject> primaryKeys = currentEntity.columns.getPrimaryKeys();
-                List<String> whereArgs = new ArrayList<>(primaryKeys.size());
-
-                for (BaseColumnObject primaryKey : primaryKeys) {
-                    if (where.length() > 0)
-                        where.append(" AND ");
-
-                    where.append(primaryKey.name).append(" = ?");
-                    whereArgs.add(String.valueOf(primaryKey.getValue(obj)));
-                }
-
-                LogUtils.d("[Database \"" + database.getName() + "\"] delete from " + currentEntity.tableName + " where " + where.toString() + " (" + whereArgs + ")");
-
-                dbHelper.delete(currentEntity.tableName,
-                        where.toString(),
-                        whereArgs.toArray(new String[primaryKeys.size()])
-                );
+                Pair<String, String[]> where = getWhereFilter(currentEntity.columns.getPrimaryKeys(), obj);
+                LogUtils.d("[Database \"" + database.getName() + "\"] delete from " + currentEntity.tableName + " where " + where.first + " (" + Arrays.toString(where.second) + ")");
+                dbHelper.delete(currentEntity.tableName, where.first, where.second);
 
                 // Go up in the entity hierarchy
                 currentEntity = currentEntity.getParent();
@@ -447,7 +413,7 @@ public class EntityManagerImpl implements EntityManager {
      * If any of its observed entities is affected by a change, the query is re-executed in order
      * to retrieve the latest data from the database.
      *
-     * @param query     live query
+     * @param query live query
      */
     public void registerLiveQuery(LiveQuery<?> query) {
         // Weak references are used in order to avoid query execution when their result
@@ -474,6 +440,28 @@ public class EntityManagerImpl implements EntityManager {
                     iterator.remove();
             }
         }
+    }
+
+    /**
+     * Get the selection clause corresponding to a given object and columns.
+     *
+     * @param columns columns to be used in the statement
+     * @param obj     object from which the values have to be extracted
+     * @return pair composed by statement and arguments
+     */
+    private static Pair<String, String[]> getWhereFilter(Collection<? extends BaseColumnObject> columns, Object obj) {
+        StringBuilder where = new StringBuilder();
+        List<String> whereArgs = new ArrayList<>(columns.size());
+
+        for (BaseColumnObject column : columns) {
+            if (where.length() > 0)
+                where.append(" AND ");
+
+            where.append(column.name).append(" = ?");
+            whereArgs.add(String.valueOf(column.getValue(obj)));
+        }
+
+        return new Pair<>(where.toString(), whereArgs.toArray(new String[columns.size()]));
     }
 
 }

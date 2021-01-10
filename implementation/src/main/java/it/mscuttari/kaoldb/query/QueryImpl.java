@@ -104,7 +104,6 @@ class QueryImpl<M> implements Query<M> {
 
         // Iterate among the rows and convert them to POJOs
         try (Cursor c = entityManager.dbHelper.select(sql, null)) {
-
             // Prepare a result list of the same size of the cursor rows amount
             // (it's just a small performance improvement done in order to prevent the collection rescaling)
             List<M> result = new ArrayList<>(c.getCount());

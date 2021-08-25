@@ -16,6 +16,7 @@
 
 package it.mscuttari.kaoldb.examples.films.models;
 
+import it.mscuttari.kaoldb.annotations.Column;
 import it.mscuttari.kaoldb.annotations.DiscriminatorValue;
 import it.mscuttari.kaoldb.annotations.Entity;
 import it.mscuttari.kaoldb.annotations.Table;

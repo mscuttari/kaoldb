@@ -197,14 +197,29 @@ public abstract class BaseColumnObject implements ColumnsContainer {
     /**
      * Extract the column value from a {@link Cursor}.
      *
+     * @param c cursor
+     * @return column value
+     * @throws PojoException if the data type is not compatible with the one found in the cursor
+     */
+    public final Object parseCursor(Cursor c) {
+        return parseCursor(c, null);
+    }
+
+    /**
+     * Extract the column value from a {@link Cursor}.
+     *
      * @param c     cursor
      * @param alias alias of the table
      * @return column value
      * @throws PojoException if the data type is not compatible with the one found in the cursor
      */
     @SuppressWarnings("unchecked")
-    public final Object parseCursor(Cursor c, String alias) {
-        String columnName = alias + "." + name;
+    public final Object parseCursor(Cursor c, @Nullable String alias) {
+        String columnName = name;
+
+        if (alias != null)
+            columnName = alias + "." + columnName;
+
         int columnIndex = c.getColumnIndexOrThrow(columnName);
         int columnType = c.getType(columnIndex);
 

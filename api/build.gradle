@@ -19,13 +19,13 @@ apply plugin: 'com.android.library'
 description = 'Public interfaces for KaolDB'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 
     defaultConfig {
         multiDexEnabled true
 
         minSdkVersion 14
-        targetSdkVersion 28
+        targetSdkVersion 30
 
         versionCode 1
         versionName "1.0"
@@ -57,13 +57,13 @@ dependencies {
     implementation project(path: ':annotations')
 
     implementation 'com.android.support:multidex:1.0.3'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.10'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
-    implementation group: 'androidx.annotation', name: 'annotation', version: '1.1.0'
+    implementation group: 'androidx.annotation', name: 'annotation', version: '1.2.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.3.0-beta01'
+    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.4.0-alpha03'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

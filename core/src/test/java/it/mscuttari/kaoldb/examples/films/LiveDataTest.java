@@ -6,9 +6,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import it.mscuttari.kaoldb.examples.films.models.Country;
 import it.mscuttari.kaoldb.examples.films.models.FantasyFilm;
 import it.mscuttari.kaoldb.examples.films.models.Film;

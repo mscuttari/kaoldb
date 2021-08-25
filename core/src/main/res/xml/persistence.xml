@@ -9,4 +9,10 @@
         <class>it.mscuttari.kaoldb.examples.films.models.Person</class>
         <class>it.mscuttari.kaoldb.examples.films.models.ThrillerFilm</class>
     </database>
+
+    <database name="generic" version="1" migrator="it.mscuttari.kaoldb.examples.generic.migrators.Migrator">
+        <class>it.mscuttari.kaoldb.examples.generic.models.A</class>
+        <class>it.mscuttari.kaoldb.examples.generic.models.AA</class>
+        <class>it.mscuttari.kaoldb.examples.generic.models.AB</class>
+    </database>
 </databases>

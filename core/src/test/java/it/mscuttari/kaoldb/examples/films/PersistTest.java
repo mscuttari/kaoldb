@@ -56,7 +56,6 @@ public class PersistTest extends AbstractFilmTest {
         assertEquals(country, qb.build(countryRoot).getSingleResult());
     }
 
-
     @Test
     public void persistPerson() {
         Person person = new Person("Robert", "Downey Jr.", getCalendar(1965, Calendar.APRIL, 4), new Country("USA"));
@@ -76,7 +75,6 @@ public class PersistTest extends AbstractFilmTest {
         assertEquals(person, result);
     }
 
-
     @Test
     public void persistGenre() {
         Genre genre = new Genre("Adventure");
@@ -92,7 +90,6 @@ public class PersistTest extends AbstractFilmTest {
         Genre result = qb.build(genreRoot).getSingleResult();
         assertEquals(genre, result);
     }
-
 
     @Test
     public void persistFantasyFilm() {
@@ -128,7 +125,6 @@ public class PersistTest extends AbstractFilmTest {
 
         assertEquals(film, fantasyFilmQb.build(fantasyFilmRoot).getSingleResult());
     }
-
 
     @Test
     public void persistThrillerFilm() {

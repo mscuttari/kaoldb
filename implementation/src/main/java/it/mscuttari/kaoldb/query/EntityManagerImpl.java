@@ -19,6 +19,7 @@ package it.mscuttari.kaoldb.query;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -30,9 +31,11 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import it.mscuttari.kaoldb.LogUtils;
 import it.mscuttari.kaoldb.exceptions.QueryException;
@@ -173,6 +176,13 @@ public class EntityManagerImpl implements EntityManager {
         dbHelper.beginTransaction();
 
         try {
+            Stack<Pair<EntityObject<?>, ContentValues>> data = new Stack<>();
+
+            // When the primary key is not set and left to the autoincrement, then the subclasses
+            // need to wait for their parent to be persisted and then copy their inherited primary
+            // keys. Otherwise, the autoincrement key of the children can potentially be different.
+            // This forces us to persist the data starting for the top of the hierarchy tree.
+
             while (currentEntity != null) {
                 // Save the observers for this entity
                 Collection<WeakReference<LiveQuery<?>>> obs = observers.get(currentEntity);
@@ -184,12 +194,43 @@ public class EntityManagerImpl implements EntityManager {
                 // Extract the current entity data from the object to be persisted
                 ContentValues cv = currentEntity.toContentValues(obj, this);
 
-                // Persist
-                LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + currentEntity.tableName + ": " + cv.toString());
-                dbHelper.insert(currentEntity.tableName, null, cv);
+                // Save the data for later, when we will insert it starting from the parent entity
+                data.push(new Pair<>(currentEntity, cv));
 
                 // Go up in the entity hierarchy
                 currentEntity = currentEntity.getParent();
+            }
+
+            ContentValues primaryKeys = new ContentValues();
+
+            while (!data.empty()) {
+                Pair<EntityObject<?>, ContentValues> current = data.pop();
+
+                EntityObject<?> entity = current.first;
+                ContentValues cv = current.second;
+
+                // Inherit the primary keys of the parent entities. Overwriting is safe, as
+                // inherited primary key values should be equal to the parent ones by design.
+                cv.putAll(primaryKeys);
+
+                // Persist the current entity
+                LogUtils.d("[Database \"" + database.getName() + "\"] insert into " + entity.tableName + ": " + cv.toString());
+                long rowId = dbHelper.insert(entity.tableName, null, cv);
+
+                Cursor c = dbHelper.select("SELECT * FROM " + entity.tableName + " WHERE rowid = ?", new String[]{ String.valueOf(rowId) });
+                c.moveToFirst();
+
+                for (BaseColumnObject primaryKey : entity.columns.getPrimaryKeys()) {
+                    int columnIndex = c.getColumnIndex(primaryKey.name);
+
+                    if (c.getType(columnIndex) == Cursor.FIELD_TYPE_BLOB) {
+                        primaryKeys.put(primaryKey.name, c.getBlob(columnIndex));
+                    } else {
+                        primaryKeys.put(primaryKey.name, c.getString(columnIndex));
+                    }
+                }
+
+                c.close();
             }
 
             dbHelper.setTransactionSuccessful();

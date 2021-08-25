@@ -15,6 +15,9 @@ import it.mscuttari.kaoldb.annotations.Table;
 public abstract class A {
 
     @Id
+    @Column(name = "PK")
+    public Integer pk;
+
     @Column(name = "A1")
     public Integer a1;
 
@@ -25,7 +28,8 @@ public abstract class A {
 
     }
 
-    public A(Integer a1, Integer a2) {
+    public A(Integer pk, Integer a1, Integer a2) {
+        this.pk = pk;
         this.a1 = a1;
         this.a2 = a2;
     }
@@ -35,13 +39,14 @@ public abstract class A {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         A a = (A) o;
-        return Objects.equals(a1, a.a1) &&
+        return Objects.equals(pk, a.pk) &&
+                Objects.equals(a1, a.a1) &&
                 Objects.equals(a2, a.a2);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(a1, a2);
+        return Objects.hash(pk, a1, a2);
     }
 
 }

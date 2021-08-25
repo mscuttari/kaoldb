@@ -299,6 +299,8 @@ public class EntityManagerImpl implements EntityManager {
                     EntityObject<?> parent = currentEntity.getParent();
 
                     for (EntityObject<?> child : parent.children) {
+                        // The where clause is built upon the parent primary keys, because those
+                        // are the columns that are shared by all the children tables.
                         Pair<String, String[]> where = getWhereFilter(parent.columns.getPrimaryKeys(), obj);
 
                         if (child.equals(currentEntity)) {
@@ -307,11 +309,20 @@ public class EntityManagerImpl implements EntityManager {
                             }
                         } else {
                             LogUtils.d("[Database \"" + database.getName() + "\"] delete from " + child.tableName + " where " + where.first + " (" + Arrays.toString(where.second) + ")");
+
+                            // Delete the orphan child entry. Foreign key constraints will take
+                            // care of automatically delete subsequent children.
                             int deleted = dbHelper.delete(child.tableName, where.first, where.second);
+
+                            // & is used because we may have not yet encountered the right child
+                            // to be deleted.
                             isSameChild &= deleted == 0;
 
-                            if (deleted > 0)
+                            if (deleted > 0) {
+                                // The previous child class has been found. There is no need to
+                                // keep iterating on the children list.
                                 break;
+                            }
                         }
                     }
                 }

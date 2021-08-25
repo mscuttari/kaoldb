@@ -22,8 +22,8 @@ public class AA extends A {
 
     }
 
-    public AA(Integer a1, Integer a2, Integer aa1, Integer aa2) {
-        super(a1, a2);
+    public AA(Integer pk, Integer a1, Integer a2, Integer aa1, Integer aa2) {
+        super(pk, a1, a2);
         this.aa1 = aa1;
         this.aa2 = aa2;
     }

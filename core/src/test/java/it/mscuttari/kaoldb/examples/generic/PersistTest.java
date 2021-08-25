@@ -22,7 +22,7 @@ public class PersistTest extends AbstractGenericTest {
 
     @Test
     public void persistSingleChild() {
-        AA child = new AA(0, 1, 10, 11);
+        AA child = new AA(0, 1, 2, 10, 11);
 
         em.persist(child);
 
@@ -34,8 +34,8 @@ public class PersistTest extends AbstractGenericTest {
 
     @Test
     public void persistSameClassChildren() {
-        AA child1 = new AA(0, 1, 10, 11);
-        AA child2 = new AA(1, 2, 20, 21);
+        AA child1 = new AA(0, 1, 2, 10, 11);
+        AA child2 = new AA(1, 3, 4, 12, 13);
 
         em.persist(child1);
         em.persist(child2);
@@ -48,8 +48,8 @@ public class PersistTest extends AbstractGenericTest {
 
     @Test
     public void persistDifferentClassChildren() {
-        AA child1 = new AA(0, 1, 10, 11);
-        AB child2 = new AB(1, 2, 20, 21);
+        AA child1 = new AA(0, 1, 2, 10, 11);
+        AB child2 = new AB(1, 3, 4, 20, 21);
 
         em.persist(child1);
         em.persist(child2);
@@ -62,8 +62,8 @@ public class PersistTest extends AbstractGenericTest {
 
     @Test
     public void persisteDifferentClassChildrenWithAutoIncrement() {
-        AA child1 = new AA(null, 1, 10, 11);
-        AB child2 = new AB(null, 2, 20, 21);
+        AA child1 = new AA(null, 1, 2, 10, 11);
+        AB child2 = new AB(null, 3, 4, 20, 21);
 
         em.persist(child1);
         em.persist(child2);

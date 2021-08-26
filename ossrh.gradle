@@ -40,6 +40,11 @@ apply plugin: 'maven'
 
 signing {
     sign configurations.archives
+
+    def signingKeyId = findProperty("signingKeyId")
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
 }
 
 if (project.hasProperty("android")) {

@@ -13,13 +13,13 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
       - name: Grant Permission to Execute
         run: chmod +x gradlew
       - name: Publish Library
         env:
           ossrhUser: ${{ secrets.OSSRH_USER }}
           ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
-          signingKeyId: ${{ secrets.OSSRH_GPG_KEY_ID }}
-          signingKey: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-          signingPassword: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-        run: ./gradlew uploadArchives
+        run: ./gradlew uploadArchives -Psigning.gnupg.executable=gpg -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_KEY_ID }} -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}

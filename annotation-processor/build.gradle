@@ -31,5 +31,5 @@ dependencies {
     implementation group: 'com.squareup', name: 'javapoet', version: '1.11.1'
 }
 
-apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload')
+apply from: rootProject.file('ossrh.gradle')
+uploadArchives.mustRunAfter(':annotations:uploadArchives')

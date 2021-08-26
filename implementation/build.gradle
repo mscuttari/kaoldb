@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
 
 description = 'Private implementation of KaolDB'
 
@@ -81,5 +80,5 @@ dependencies {
     testImplementation group: 'androidx.test', name: 'core', version: '1.4.0'
 }
 
-apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload')
+apply from: rootProject.file('ossrh.gradle')
+uploadArchives.mustRunAfter(':annotations:uploadArchives', ':api:uploadArchives')

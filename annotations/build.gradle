@@ -25,4 +25,4 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-apply from: rootProject.file('release-bintray.gradle')
+apply from: rootProject.file('ossrh.gradle')

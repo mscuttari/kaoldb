@@ -15,7 +15,6 @@
  */
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
 
 description = 'Core functionalities of KaolDB'
 
@@ -79,5 +78,6 @@ dependencies {
     testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.4.0-alpha03'
 }
 
-apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload', ':api:bintrayUpload', ':implementation:bintrayUpload')
+apply from: rootProject.file('ossrh.gradle')
+uploadArchives.mustRunAfter(':annotations:uploadArchives', ':api:uploadArchives', ':implementation:uploadArchives')
+

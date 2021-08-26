@@ -69,5 +69,5 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
 }
 
-apply from: rootProject.file('release-bintray.gradle')
-bintrayUpload.mustRunAfter(':annotations:bintrayUpload')
+apply from: rootProject.file('ossrh.gradle')
+uploadArchives.mustRunAfter(':annotations:uploadArchives')

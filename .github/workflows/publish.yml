@@ -20,6 +20,6 @@ jobs:
         run: chmod +x gradlew
       - name: Publish Library
         env:
-          ossrhUser: ${{secrets.OSSRH_USER}}
-          ossrhPassword: ${{secrets.OSSRH_PASSWORD}}
-        run: ./gradlew uploadArchives
+          ossrhUser: ${{ secrets.OSSRH_USER }}
+          ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
+        run: ./gradlew uploadArchives -Psigning.secretKeyRingFile=~/.gnupg/secring.gpg -Psigning.keyId=${{ secrets.OSSRH_GPG_KEY_ID }} -Psigning.password=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}

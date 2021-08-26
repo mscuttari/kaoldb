@@ -16,10 +16,12 @@ jobs:
       - id: install-secret-key
         name: Install gpg secret key
         run: cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+      - name: Export key
+        run: gpg --export-secret-keys -o /home/runner/.gnupg/secring.gpg ${{ secrets.OSSRH_GPG_KEY_ID }}
       - name: Grant Permission to Execute
         run: chmod +x gradlew
       - name: Publish Library
         env:
           ossrhUser: ${{ secrets.OSSRH_USER }}
           ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew uploadArchives -Psigning.secretKeyRingFile=/home/runner/.gnupg/pubring.kbx -Psigning.keyId=${{ secrets.OSSRH_GPG_KEY_ID }} -Psigning.password=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+        run: ./gradlew uploadArchives -Psigning.secretKeyRingFile=/home/runner/.gnupg/secring.gpg -Psigning.keyId=${{ secrets.OSSRH_GPG_KEY_ID }} -Psigning.password=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}

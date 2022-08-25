@@ -19,13 +19,13 @@ apply plugin: 'com.android.library'
 description = 'Private implementation of KaolDB'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 32
 
     defaultConfig {
         multiDexEnabled true
 
-        minSdkVersion 14
-        targetSdkVersion 30
+        minSdkVersion 23
+        targetSdkVersion 32
     }
 
     compileOptions {
@@ -45,20 +45,22 @@ dependencies {
     implementation project(path: ':api')
 
     implementation 'com.android.support:multidex:1.0.3'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
-    implementation group: 'androidx.annotation', name: 'annotation', version: '1.2.0'
+    implementation group: 'androidx.annotation', name: 'annotation', version: '1.4.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.4.0-alpha03'
+    implementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.6.0-alpha01'
 
     // https://mvnrepository.com/artifact/com.android.support/support-v4
     //implementation group: 'com.android.support', name: 'support-v4', version: '28.0.0'
 
     // https://mvnrepository.com/artifact/androidx.legacy/legacy-support-v4
-    implementation group: 'androidx.legacy', name: 'legacy-support-v4', version: '1.0.0'
+    //implementation group: 'androidx.legacy', name: 'legacy-support-v4', version: '1.0.0'
 
+    // https://mvnrepository.com/artifact/androidx.collection/collection
+    implementation group: 'androidx.collection', name: 'collection', version: '1.2.0'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
@@ -68,10 +70,10 @@ dependencies {
     implementation group: 'org.objenesis', name: 'objenesis', version: '2.6'
 
     // https://mvnrepository.com/artifact/junit/junit
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
 
     // https://mvnrepository.com/artifact/org.robolectric/robolectric
-    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.6.1'
+    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.8.2'
 
     // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
     testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'

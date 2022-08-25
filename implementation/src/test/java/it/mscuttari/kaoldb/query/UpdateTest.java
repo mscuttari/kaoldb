@@ -1,5 +1,7 @@
 package it.mscuttari.kaoldb.query;
 
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+
 import androidx.test.core.app.ApplicationProvider;
 
 import org.hamcrest.Matchers;
@@ -20,8 +22,6 @@ import it.mscuttari.kaoldb.annotations.Id;
 import it.mscuttari.kaoldb.annotations.Table;
 import it.mscuttari.kaoldb.interfaces.EntityManager;
 import it.mscuttari.kaoldb.mapping.DatabaseObject;
-
-import static org.junit.Assert.assertThat;
 
 public class UpdateTest extends AbstractTest {
 

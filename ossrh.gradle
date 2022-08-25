@@ -20,7 +20,7 @@
 
 ext {
     libraryName = 'KaolDB'
-    libraryVersion = '1.1.1'
+    libraryVersion = '1.1.2'
     publishedGroupId = 'it.mscuttari.kaoldb'
     packagingType = 'jar'
 

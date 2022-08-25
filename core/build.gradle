@@ -19,13 +19,13 @@ apply plugin: 'com.android.library'
 description = 'Core functionalities of KaolDB'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 32
 
     defaultConfig {
         multiDexEnabled true
 
-        minSdkVersion 14
-        targetSdkVersion 30
+        minSdkVersion 23
+        targetSdkVersion 32
     }
 
     compileOptions {
@@ -52,10 +52,10 @@ dependencies {
     implementation project(path: ':implementation')
 
     implementation 'com.android.support:multidex:1.0.3'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
 
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
-    implementation group: 'androidx.annotation', name: 'annotation', version: '1.2.0'
+    implementation group: 'androidx.annotation', name: 'annotation', version: '1.4.0'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
@@ -63,10 +63,10 @@ dependencies {
     testAnnotationProcessor project(':annotation-processor')
 
     // https://mvnrepository.com/artifact/junit/junit
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
 
     // https://mvnrepository.com/artifact/org.robolectric/robolectric
-    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.6.1'
+    testImplementation group: 'org.robolectric', name: 'robolectric', version: '4.8.2'
 
     // https://mvnrepository.com/artifact/org.hamcrest/hamcrest-junit
     testImplementation group: 'org.hamcrest', name: 'hamcrest-junit', version: '2.0.0.0'
@@ -75,7 +75,10 @@ dependencies {
     testImplementation group: 'androidx.test', name: 'core', version: '1.4.0'
 
     // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-livedata
-    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.4.0-alpha03'
+    testImplementation group: 'androidx.lifecycle', name: 'lifecycle-livedata', version: '2.6.0-alpha01'
+
+    // https://mvnrepository.com/artifact/androidx.appcompat/appcompat
+    testImplementation group: 'androidx.appcompat', name: 'appcompat', version: '1.5.0'
 }
 
 apply from: rootProject.file('ossrh.gradle')
